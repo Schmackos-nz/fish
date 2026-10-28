@@ -2,6 +2,11 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '1.3', name: 'Hot Wired', date: '29 Oct 2026', notes: [
+    ['new', 'Stealing a ride is now a lockpicking job: three random lock puzzles (pins, latches and a dial) against a rising alert meter'],
+    ['changed', 'The alert climbs faster with the owner or the law nearby (crouch to stay calmer). Hit 100% and the owner comes for you with a wanted star'],
+    ['changed', 'Finish quietly and nobody sees. The owner only notices their ride is gone after you leave'],
+  ] },
   { v: '1.2', name: 'Wild Things', date: '29 Oct 2026', notes: [
     ['changed', 'Black out at zero health and wake up in the clinic: Nurse Ngaio tells you what hurt you most, the final blow, and the bill'],
     ['new', 'Rolling hills across the backcountry: climb them for a view, ride them for air'],

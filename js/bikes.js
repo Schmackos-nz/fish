@@ -148,18 +148,18 @@ const Bikes = {
   riderPos(r) { return this.onFoot(r) ? { x: r.px, y: r.py } : { x: r.x, y: r.y }; },
 
   // Nick a parked bike. The owner takes yours (if you had one) or chases you on foot.
-  steal(r) {
+  steal(r, quiet = false) {
     const old = Game.bike ? { ...Game.bike } : null;
     Game.bike = { id: r.bikeId, x: r.x, y: r.y, ang: r.ang, plate: r.plate, owner: r.owner };
     Game.fuel = Math.max(10, Math.min(100, r.fuel));
     this.syncMine();
     this.group.remove(r.bike);
-    r.state = 'stranded'; r.stateT = old ? 60 : 45; r.chaseT = 25; r.foot = null; r.armed = Math.random() < 0.55; r.hitCD = 1.5;
+    r.state = 'stranded'; r.stateT = old ? 60 : 45; r.chaseT = quiet ? 0 : 25; r.foot = null; r.armed = Math.random() < 0.55; r.hitCD = 1.5;
     if (old) { r.bikeId = old.id; r.plate = old.plate; r.owner = old.owner; r.bike = this.modelFor(old.id); this.group.add(r.bike); r.x = old.x; r.y = old.y; r.ang = old.ang || 0; r.noBike = false; }
     else { r.noBike = true; }
-    r.bubble = old ? 'OI! THAT\'S MY BIKE! …Fine, I\'ll take YOURS!' : 'OI! THAT\'S MY BIKE!'; r.bubbleT = 3;
-    Wanted.crime(1);
-    Hud.toast('You stole ' + r.name + '\'s ' + BIKE_BY_ID[Game.bike.id].name + ' (plate ' + r.plate + '). No permit for it — avoid the law, and don\'t fill it up!', UI.bad, 3.2);
+    if (quiet) { r.bubble = 'Hang on… where\'s my bike?!'; r.bubbleT = 3; }
+    else { r.bubble = old ? 'OI! THAT\'S MY BIKE! …Fine, I\'ll take YOURS!' : 'OI! THAT\'S MY BIKE!'; r.bubbleT = 3; Wanted.crime(1); }
+    Hud.toast((quiet ? 'Clean getaway! ' : 'They saw you! ') + 'You stole ' + r.name + '\'s ' + BIKE_BY_ID[Game.bike.id].name + ' (plate ' + r.plate + '). No permit for it — avoid the law, and don\'t fill it up!', quiet ? UI.accent : UI.bad, 3.2);
     this.mount();
     Game.save();
   },

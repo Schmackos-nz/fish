@@ -360,7 +360,7 @@ const Interact = {
         else add(dr.x, dr.y, 1.6, b.name, () => Hud.toast(b.name + ' — the door\'s locked.', UI.muted, 1.6));
       }
       for (const r of Bikes.riders) {
-        if ((r.state === 'refuel' || r.state === 'break') && !(r.ko > 0)) add(r.x, r.y, 1.8, 'Steal ' + r.name + '\'s ' + BIKE_BY_ID[r.bikeId].name + ' (crime!)', () => Bikes.steal(r));
+        if ((r.state === 'refuel' || r.state === 'break') && !(r.ko > 0)) add(r.x, r.y, 1.8, 'Attempt to steal ' + r.name + '\'s ' + BIKE_BY_ID[r.bikeId].name, () => LockPick.open(r));
       }
       if (Bikes.near()) add(Game.bike.x, Game.bike.y, 2, (Bikes.ownsIt() ? 'Ride your ' : 'Ride the stolen ') + BIKE_BY_ID[Game.bike.id].name, () => Bikes.mount());
       add(World.bbq.x, World.bbq.y, 2, 'BBQ — cook your catch', () => Life.openCook('the BBQ'));
