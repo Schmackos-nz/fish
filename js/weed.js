@@ -17,11 +17,7 @@ const Weed = {
     this.group = new THREE.Group();
     Scene3D.scene.add(this.group);
     if (!this.tex) this.tex = this.paintPlant();
-    const c = document.createElement('canvas'); c.width = Folk.W; c.height = Folk.H;
-    Folk.draw(c.getContext('2d'), DUSTY_PAL, 'down', 0, 'normal');
-    this.dusty = Actors.billboard(c, 1, 1.25);
-    this.dusty.material.map.magFilter = THREE.LinearFilter; this.dusty.material.map.minFilter = THREE.LinearFilter;
-    this.dusty.position.set(World.dusty.x, Scene3D.standH(World.dusty.x, World.dusty.y), World.dusty.y);
+    this.dusty = standee(DUSTY_PAL, World.dusty.x, World.dusty.y);
     this.group.add(this.dusty);
     this.sync();
   },

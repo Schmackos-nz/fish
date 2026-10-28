@@ -53,9 +53,7 @@ const Bikes = {
       const i = paths.length ? paths[(Math.random() * paths.length) | 0] : World.idx(World.town.x, World.town.y + 10);
       const r = { x: i % World.W + 0.5, y: ((i / World.W) | 0) + 0.5, ang: Math.random() * 6.28, speed: 8 + Math.random() * 3, target: null, wheelie: 0, bubbleT: 0, bubble: null, pal };
       r.bike = this.model(BIKES[k % BIKES.length].color);
-      r.frames = { side: Folk.texture(pal, 'side', 0, 'grip'), down: Folk.texture(pal, 'down', 0, 'grip'), up: Folk.texture(pal, 'up', 0, 'grip') };
-      r.mesh = Actors.billboard(document.createElement('canvas'), 1, 1.25);
-      r.mesh.material.map = r.frames.side;
+      r.mesh = Models.person(pal);
       this.group.add(r.bike, r.mesh);
       return r;
     });
@@ -184,9 +182,9 @@ const Bikes = {
         const h = base(r.x, r.y), pitch = r.wheelie > 0 ? Math.min(0.5, r.wheelie) : 0;
         r.bike.position.set(r.x, h, r.y); r.bike.rotation.set(0, -r.ang, pitch);
         const dir = Math.abs(Math.cos(r.ang)) > Math.abs(Math.sin(r.ang)) ? 'side' : Math.sin(r.ang) > 0 ? 'down' : 'up';
-        r.mesh.material.map = r.frames[dir];
-        r.mesh.scale.x = dir === 'side' && Math.cos(r.ang) < 0 ? -1 : 1;
-        r.mesh.position.set(r.x, h + 0.38 + pitch * 0.3, r.y);
+        r.mesh.position.set(r.x - Math.cos(r.ang) * 0.25, h + 0.52 + pitch * 0.3, r.y - Math.sin(r.ang) * 0.25);
+        r.mesh.userData.rig.yaw.rotation.y = -r.ang;
+        Models.pose(r.mesh.userData.rig, { pose: 'ride', t: Game.time });
       }
       const lv = (d < 28 ? (1 - d / 28) ** 2 : 0) * (Interior.active ? 0 : 0.7); // locals fade fast with distance
       if (lv > loud) { loud = lv; rpm = 70 + r.speed * 10 + (r.wheelie > 0 ? 30 : 0); }

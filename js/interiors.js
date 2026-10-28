@@ -20,18 +20,9 @@ const Interior = {
       if (b.type === 'store') World.clerk = this.layout(b).vendor;
       if (b.type === 'bikes') World.revs = this.layout(b).vendor;
     }
-    const clerkC = document.createElement('canvas'); clerkC.width = Folk.W; clerkC.height = Folk.H;
-    Folk.draw(clerkC.getContext('2d'), CLERK_PAL, 'down', 0, 'normal');
-    this.clerk = Actors.billboard(clerkC, 1, 1.25);
-    this.clerk.material.map.magFilter = THREE.LinearFilter; this.clerk.material.map.minFilter = THREE.LinearFilter;
-    this.clerk.position.set(World.clerk.x, 0.04, World.clerk.y);
-    this.group.add(this.clerk);
-    const rc = document.createElement('canvas'); rc.width = Folk.W; rc.height = Folk.H;
-    Folk.draw(rc.getContext('2d'), REVS_PAL, 'down', 0, 'normal');
-    this.revs = Actors.billboard(rc, 1, 1.25);
-    this.revs.material.map.magFilter = THREE.LinearFilter; this.revs.material.map.minFilter = THREE.LinearFilter;
-    this.revs.position.set(World.revs.x, 0.04, World.revs.y);
-    this.group.add(this.revs);
+    this.clerk = standee(CLERK_PAL, World.clerk.x, World.clerk.y);
+    this.revs = standee(REVS_PAL, World.revs.x, World.revs.y);
+    this.group.add(this.clerk, this.revs);
   },
 
   // Room geometry for a building: size, furniture rectangles and where people stand.

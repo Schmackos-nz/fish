@@ -350,15 +350,9 @@ const Npcs = {
   },
 
   buildMeshes(n) {
-    n.frames = {};
-    for (const dir of ['down', 'up', 'side']) {
-      for (let f = 0; f < 4; f++) n.frames[dir + f] = this.drawSprite(n.palette, dir, f, 'normal');
-      n.frames['g' + dir] = this.drawSprite(n.palette, dir, 0, 'grip');
-    }
-    n.frames.brag = this.drawSprite(n.palette, 'down', 0, 'brag');
-    n.frames.hold = this.drawSprite(n.palette, 'down', 0, 'hold');
-    n.mesh = Actors.billboard(document.createElement('canvas'), 1, 1.25);
-    n.mesh.material.map = n.frames.down0;
+    this.drawSprite(n.palette, 'down', 0, 'normal'); // fills in hat style etc. on the palette
+    n.mesh = Models.person(n.palette);
+    n.rig = n.mesh.userData.rig;
     n.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.3, 10), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.25, depthWrite: false }));
     n.shadow.rotation.x = -Math.PI / 2;
     n.rod = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x4a3a2a }));
@@ -382,15 +376,15 @@ const Npcs = {
       const a = n.face;
       const dir = Math.abs(Math.cos(a)) > Math.abs(Math.sin(a)) ? 'side' : Math.sin(a) > 0 ? 'down' : 'up';
       const walking = n.state === 'walk';
-      n.mesh.material.map = n.pose !== 'normal' ? n.frames[n.pose] : walking ? n.frames[dir + Math.floor(n.walkT * 8) % 4] : n.frames['g' + dir];
-      n.mesh.scale.x = n.pose === 'normal' && dir === 'side' && Math.cos(a) < 0 ? -1 : 1;
       n.mesh.position.set(n.x, base, n.y);
+      n.rig.yaw.rotation.y = n.pose === 'normal' ? -a : Math.PI * -0.5; // face the camera to show off
+      Models.pose(n.rig, { moving: walking, phase: n.walkT, t: Game.time + n.x, pose: n.pose !== 'normal' ? n.pose : walking ? 'normal' : 'grip' });
       n.shadow.position.set(n.x, Math.max(base, 0.01) + 0.015, n.y);
 
       // Rod: up and bent during a fight, laid back mid-cast, hidden while walking or posing.
       const showRod = !walking && n.pose === 'normal' && n.state !== 'brawl';
       n.rod.visible = n.line.visible = showRod;
-      const hand = Folk.handWorld(n.x, n.y, base, dir, n.mesh.scale.x);
+      const hand = Models.handPos(n.rig);
       const fighting = n.state === 'fight';
       const back = n.state === 'cast' && n.t < 0.4 ? -0.6 : 1;
       const tip = new THREE.Vector3(n.x + Math.cos(a) * 1.3 * back, base + (fighting ? 1.9 : 1.3), n.y + Math.sin(a) * 1.3 * back);
@@ -417,7 +411,7 @@ const Npcs = {
         if (n.heldMesh.material.map !== map) { n.heldMesh.material.map = map; n.heldMesh.material.needsUpdate = true; }
         const len = U.clamp(n.held.cm / 100 * 1.4, 0.5, 2.2);
         n.heldMesh.scale.set(len, len, 1);
-        n.heldMesh.position.set(n.x, base + 0.95 - len * 0.12, n.y + 0.08);
+        n.heldMesh.position.set(n.x, base + 1.15, n.y + 0.25); // held up over their head
       }
     }
   },

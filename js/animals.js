@@ -67,9 +67,8 @@ const Animals = {
       const boar = Math.random() < (tile === T.FOREST ? 0.55 : 0.2);
       const an = { type: boar ? 'boar' : 'deer', buck: !boar && Math.random() < 0.35, x, y, face: 1, state: 'graze', t: Math.random() * 3,
         heading: Math.random() * 6.28, speed: 0, walk: 0, cool: 0, deadT: 0 };
-      const w = boar ? 1.15 : 1.6, h = boar ? 0.83 : 1.33;
-      an.mesh = Actors.billboard(document.createElement('canvas'), w, h);
-      an.mesh.material.map = this.frames[(boar ? 'boar' : an.buck ? 'buck' : 'deer') + 0];
+      const w = boar ? 1.15 : 1.6;
+      an.mesh = boar ? Models.boar() : Models.deer(an.buck);
       an.shadow = new THREE.Mesh(new THREE.CircleGeometry(w * 0.4, 10), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.22, depthWrite: false }));
       an.shadow.rotation.x = -Math.PI / 2; an.shadow.scale.y = 0.5;
       this.group.add(an.mesh, an.shadow);
@@ -80,7 +79,7 @@ const Animals = {
 
   remove(an) {
     this.group.remove(an.mesh, an.shadow);
-    an.mesh.geometry.dispose(); an.shadow.geometry.dispose();
+    an.shadow.geometry.dispose();
     this.list.splice(this.list.indexOf(an), 1);
   },
 
@@ -187,10 +186,10 @@ const Animals = {
     for (const an of this.list) {
       const base = Scene3D.groundH(an.x, an.y);
       const key = an.type === 'boar' ? 'boar' : an.buck ? 'buck' : 'deer';
-      an.mesh.material.map = this.frames[key + (an.speed > 0.2 ? Math.floor(an.walk) % 2 : 0)];
-      an.mesh.position.set(an.x, base + (an.state === 'dead' ? 0.05 : 0), an.y);
-      an.mesh.scale.x = an.face;
-      an.mesh.rotation.set(-BILLBOARD_LEAN, 0, an.state === 'dead' ? an.face * 1.45 : 0, 'XYZ');
+      const rig = an.mesh.userData.rig, dead = an.state === 'dead';
+      an.mesh.position.set(an.x, base + (dead ? (an.type === 'boar' ? 0.3 : 0.32) : 0), an.y);
+      rig.yaw.rotation.set(dead ? Math.PI / 2 : 0, -an.heading, 0); // dead: rolled onto its side
+      Models.animateQuad(rig, an.speed > 0.2 && !dead, an.walk);
       an.shadow.position.set(an.x, base + 0.02, an.y);
     }
   },

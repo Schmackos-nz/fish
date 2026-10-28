@@ -11,10 +11,8 @@ const Actors = {
     this.group = new THREE.Group();
     Scene3D.scene.add(this.group);
     this.buildPlayer();
-    const kc = document.createElement('canvas'); kc.width = Folk.W; kc.height = Folk.H;
-    Folk.draw(kc.getContext('2d'), KEEPER_PAL, 'down', 0, 'normal');
-    this.keeper = this.billboard(kc, 1.0, 1.25);
-    this.keeper.material.map.magFilter = THREE.LinearFilter; this.keeper.material.map.minFilter = THREE.LinearFilter;
+    this.keeper = Models.person(KEEPER_PAL);
+    this.keeper.userData.rig.yaw.rotation.y = -Math.PI / 2;
     this.group.add(this.keeper);
     this.rod = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x3a2a1a }));
     this.line = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xf0f0f0, transparent: true, opacity: 0.8 }));
@@ -55,19 +53,12 @@ const Actors = {
 
   // ---------- the little angler ----------
   buildPlayer() {
-    for (const dir of ['down', 'up', 'side']) for (let f = 0; f < 4; f++) {
-      this.frames[dir + f] = Folk.texture(PLAYER_PAL, dir, f, 'normal');
-      this.frames['g' + dir + f] = Folk.texture(PLAYER_PAL, dir, f, 'grip');
-    }
-    this.player = this.billboard(document.createElement('canvas'), 1.0, 1.25);
-    this.player.material.map = this.frames.down0;
+    this.player = Models.person(PLAYER_PAL);
+    this.rig = this.player.userData.rig;
     const sh = new THREE.Mesh(new THREE.CircleGeometry(0.32, 12), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.28, depthWrite: false }));
     sh.rotation.x = -Math.PI / 2;
     this.playerShadow = sh;
-    // Faint silhouette so the angler stays visible behind trees.
-    this.ghost = new THREE.Mesh(this.player.geometry, new THREE.MeshBasicMaterial({ map: this.frames.down0, color: 0xfff2c8, transparent: true, opacity: 0.32, depthTest: false, depthWrite: false, alphaTest: 0.5 }));
-    this.ghost.rotation.x = -BILLBOARD_LEAN; this.ghost.renderOrder = 10;
-    this.group.add(this.player, sh, this.ghost);
+    this.group.add(this.player, sh);
   },
 
   buildLures() {
@@ -159,26 +150,25 @@ const Actors = {
 
   update(dt, env) {
     const p = Player, base = Scene3D.standH(p.x, p.y);
-    // Player frame: direction from facing angle, walk cycle from distance.
-    const a = p.face;
-    const dir = Math.abs(Math.cos(a)) > Math.abs(Math.sin(a)) ? 'side' : Math.sin(a) > 0 ? 'down' : 'up';
-    const frame = p.moving ? (Math.floor(p.walkT * 8) % 4) : 0;
+    // 3D angler: turn to face, walk cycle, poses.
     const holding = Tools.current === 'rod' || Tools.current === 'gun';
-    this.player.material.map = this.frames[(holding ? 'g' : '') + dir + frame];
-    this.player.scale.x = dir === 'side' && Math.cos(a) < 0 ? -1 : 1;
-    this.player.position.set(p.x, base + p.z + (Bikes.riding ? 0.38 : 0) + (p.moving && !p.rolling && !Bikes.riding ? Math.abs(Math.sin(p.walkT * 8 * Math.PI / 2)) * 0.04 : 0), p.y);
-    // Crouch squashes, the roll tumbles head over heels.
-    this.player.scale.y = p.rolling ? 0.6 : p.crouch ? 0.72 : 1;
-    this.player.rotation.z = p.rolling ? (Math.cos(p.rollDir) >= 0 ? -0.35 : 0.35) : 0; // leaning back into the slide
-    this.handWorld = Folk.handWorld(p.x, p.y, this.player.position.y, dir, this.player.scale.x, this.player.scale.y);
-    this.ghost.material.map = this.player.material.map;
-    this.ghost.position.copy(this.player.position); this.ghost.scale.copy(this.player.scale); this.ghost.rotation.z = this.player.rotation.z;
+    const riding = Bikes.riding;
+    let px = p.x, py = p.y, y = base + p.z;
+    if (riding) { const a = p.face; px -= Math.cos(a) * 0.25; py -= Math.sin(a) * 0.25; y += 0.52; } // on the seat
+    this.player.position.set(px, y, py);
+    this.rig.yaw.rotation.y = -p.face;
+    Models.pose(this.rig, {
+      moving: p.moving && !riding && !p.rolling, phase: p.walkT, t: Game.time, crouch: p.crouch && !p.rolling,
+      pose: riding ? 'ride' : p.rolling ? 'slide' : holding ? 'grip' : 'normal',
+    });
+    this.handWorld = Models.handPos(this.rig, this.handWorld || new THREE.Vector3());
     // While wading the shadow becomes a foam ring at the waterline.
     this.playerShadow.position.set(p.x, p.wading ? 0.03 : Math.max(base, 0.01) + 0.015, p.y);
     this.playerShadow.material.color.set(p.wading ? 0xeaf6f4 : 0x000000);
     this.playerShadow.material.opacity = p.wading ? 0.55 : 0.28;
     this.playerShadow.scale.setScalar(p.wading ? 1.25 + Math.sin(Game.time * 3) * 0.06 : 1 - p.z * 0.5);
     this.keeper.position.set(World.shopkeeper.x, Scene3D.standH(World.shopkeeper.x, World.shopkeeper.y), World.shopkeeper.y);
+    Models.pose(this.keeper.userData.rig, { t: Game.time });
     Scene3D.lantern.position.set(p.x, base + 1.4, p.y);
 
     // Rod

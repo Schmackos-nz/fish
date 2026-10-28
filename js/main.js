@@ -194,7 +194,7 @@ function refreshTitle() {
     info.textContent = 'Day ' + Game.env.day + '  ·  ' + U.fmtMoney(Game.money) + '  ·  ' + species + ' species  ·  ' + Game.stats.caught + ' caught';
     info.classList.remove('hidden');
   } else info.classList.add('hidden');
-  $('newBtn').querySelector('span').textContent = 'New valley';
+  $('newBtn').querySelector('span').textContent = 'New Game';
   $('newBtn').classList.remove('danger');
 }
 
@@ -264,7 +264,7 @@ function wireScreens() {
   $('newBtn').onclick = () => {
     if (!hasSave || Date.now() - newArmed < 4000) return newValley();
     newArmed = Date.now();
-    $('newBtn').querySelector('span').textContent = 'Click again — replaces your valley';
+    $('newBtn').querySelector('span').textContent = 'Click again — overwrites your save';
     $('newBtn').classList.add('danger');
   };
   $('helpBtn').onclick = () => openModal('help');

@@ -32,10 +32,8 @@ const Tim = {
     if (this.group) Scene3D.scene.remove(this.group);
     this.group = new THREE.Group();
     Scene3D.scene.add(this.group);
-    const c = document.createElement('canvas'); c.width = Folk.W; c.height = Folk.H;
-    Folk.draw(c.getContext('2d'), TIM_PAL, 'down', 0, 'normal');
-    this.mesh = Actors.billboard(c, 1, 1.25);
-    this.mesh.material.map.magFilter = THREE.LinearFilter; this.mesh.material.map.minFilter = THREE.LinearFilter;
+    this.mesh = Models.person(TIM_PAL);
+    this.mesh.userData.rig.yaw.rotation.y = -Math.PI / 2;
     // Umbrella: striped canopy on a hooked handle, held over his head when it rains.
     const u = new THREE.Group();
     const canopy = new THREE.Mesh(new THREE.ConeGeometry(0.85, 0.38, 8, 1, true), new THREE.MeshLambertMaterial({ color: 0xD23A3A, side: THREE.DoubleSide }));
@@ -68,6 +66,8 @@ const Tim = {
     this.mesh.visible = vis;
     this.umbrella.visible = vis && Game.env.weather.id === 'rain';
     this.mesh.position.set(t.x, base, t.y);
+    const rain = Game.env.weather.id === 'rain';
+    Models.pose(this.mesh.userData.rig, { t: Game.time, pose: rain ? 'grip' : this.bubbleT > 0 ? 'brag' : 'normal' });
     this.umbrella.position.set(t.x + 0.25, base, t.y + 0.05);
     this.umbrella.rotation.z = Math.sin(Game.time * 1.2) * 0.05;
   },

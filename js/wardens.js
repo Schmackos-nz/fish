@@ -41,20 +41,12 @@ const Wardens = {
     if (this.group) Scene3D.scene.remove(this.group);
     this.group = new THREE.Group();
     Scene3D.scene.add(this.group);
-    if (!this.frames) {
-      this.frames = {};
-      for (const dir of ['down', 'up', 'side']) for (let f = 0; f < 4; f++) this.frames[dir + f] = Folk.texture(WARDEN_PAL, dir, f, 'normal');
-      this.frames.point = Folk.texture(WARDEN_PAL, 'down', 0, 'brag');
-    }
-    const rc = document.createElement('canvas'); rc.width = Folk.W; rc.height = Folk.H;
-    Folk.draw(rc.getContext('2d'), RANGER_PAL, 'down', 0, 'normal');
-    this.ranger = Actors.billboard(rc, 1, 1.25);
-    this.ranger.material.map.magFilter = THREE.LinearFilter; this.ranger.material.map.minFilter = THREE.LinearFilter;
+    this.ranger = Models.person(RANGER_PAL);
+    this.ranger.userData.rig.yaw.rotation.y = -Math.PI / 2;
     this.group.add(this.ranger);
     this.list = WARDEN_NAMES.slice(0, 2).map((name, i) => {
       const w = { name, x: 0, y: 0, face: 0, state: 'patrol', t: 0, target: null, walk: 0, checkCool: 60 + i * 90, bubble: null, bubbleT: 0, lost: 0, reason: null };
-      w.mesh = Actors.billboard(document.createElement('canvas'), 1, 1.25);
-      w.mesh.material.map = this.frames.down0;
+      w.mesh = Models.person(WARDEN_PAL);
       w.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.3, 10), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.25, depthWrite: false }));
       w.shadow.rotation.x = -Math.PI / 2;
       this.group.add(w.mesh, w.shadow);
@@ -163,14 +155,15 @@ const Wardens = {
   render() {
     const r = World.ranger;
     this.ranger.position.set(r.x, Scene3D.standH(r.x, r.y), r.y);
+    Models.pose(this.ranger.userData.rig, { t: Game.time });
     for (const w of this.list) {
       const vis = U.dist(w.x, w.y, Player.x, Player.y) < 50;
       w.mesh.visible = w.shadow.visible = vis;
       if (!vis) continue;
       const a = w.face, moving = w.state === 'chase' || w.state === 'inspect' || (w.state === 'patrol' && w.target);
       const dir = Math.abs(Math.cos(a)) > Math.abs(Math.sin(a)) ? 'side' : Math.sin(a) > 0 ? 'down' : 'up';
-      w.mesh.material.map = w.state === 'chase' && w.t < 1 ? this.frames.point : this.frames[dir + (moving ? Math.floor(w.walk * 4) % 4 : 0)];
-      w.mesh.scale.x = dir === 'side' && Math.cos(a) < 0 ? -1 : 1;
+      w.mesh.userData.rig.yaw.rotation.y = -a;
+      Models.pose(w.mesh.userData.rig, { moving: !!moving, phase: w.walk * 0.5, t: Game.time, pose: w.state === 'chase' && w.t < 1 ? 'brag' : 'normal' });
       const base = Scene3D.standH(w.x, w.y);
       w.mesh.position.set(w.x, base, w.y);
       w.shadow.position.set(w.x, Math.max(base, 0.01) + 0.015, w.y);
