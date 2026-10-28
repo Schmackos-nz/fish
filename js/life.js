@@ -66,6 +66,7 @@ const Life = {
     const inside = Interior.active && Interior.active.b.type === 'house';
     Game.home = null; Game.rentDebt = 0; Game.storage = emptyStorage();
     if (inside) Interior.exit();
+    Markers.refresh();
     Sfx.fail();
     Hud.toast('Evicted! The landlord threw out everything you had stored.', UI.bad, 4);
     Game.save();
@@ -77,7 +78,7 @@ const Life = {
     Game.home = { id: b.id }; Game.rentDebt = 0; Game.lastDay = Game.env.day;
     Sfx.coin();
     Hud.toast('It\'s yours! ' + U.fmtMoney(b.rent) + ' a day, charged each morning.', UI.good, 3);
-    Menus.close(); Game.save();
+    Menus.close(); Markers.refresh(); Game.save();
   },
 
   eat(i) {

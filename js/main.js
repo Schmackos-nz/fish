@@ -139,6 +139,7 @@ function buildWorld(seed, savedPos) {
   Npcs.init();
   Wardens.init();
   Interior.init();
+  Markers.init();
   Weed.init();
   Travel.list = null;
   Floaters.init();
@@ -356,6 +357,7 @@ function frame(now) {
     Floaters.render();
     Animals.render();
     Weed.render();
+    Markers.render();
     Scene3D.render(Game.time);
     Hud.draw();
     saveT += dt;
