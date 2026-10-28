@@ -39,10 +39,16 @@ const Fish = {
   spawn(x, y, env) {
     const sp = this.pickSpecies(x, y, env);
     if (!sp) return null;
-    const { kg, cm } = this.rollSize(sp);
+    let { kg, cm } = this.rollSize(sp);
+    // Prized fish: rare, oversized, golden. Legends always count.
+    const prized = !!sp.legendary || Math.random() < 0.04;
+    if (prized && !sp.legendary) {
+      kg = Math.round(U.lerp(Math.max(kg, sp.kg[1]), sp.kg[2], 0.45) * 1000) / 1000;
+      cm = Math.round((LEN_K[sp.id] || 45) * Math.cbrt(kg));
+    }
     const dep = World.depthAt(x, y);
     const f = {
-      sp, kg, cm, x, y, z: U.clamp(U.lerp(sp.depth[0], sp.depth[1], Math.random()), 0.2, dep * 0.9),
+      sp, kg, cm, prized, x, y, z: U.clamp(U.lerp(sp.depth[0], sp.depth[1], Math.random()), 0.2, dep * 0.9),
       heading: Math.random() * Math.PI * 2, speed: 0.3, state: 'wander', t: 0, cool: 0,
       interest: 0, nibbles: 0, wig: Math.random() * 10, alpha: 0,
     };
@@ -167,7 +173,10 @@ const Fish = {
     const sight = LURE_BY_ID[lure.id].sight * (0.5 + env.visibility * 0.6) * (0.8 + lure.action * 0.6);
     if (d > sight) return;
     const a = this.appeal(f, lure, env);
-    if (Math.random() < a * dt * 1.4) { f.state = 'follow'; f.t = 0; f.interest = 0.4; }
+    if (Math.random() < a * dt * 1.4) {
+      f.state = 'follow'; f.t = 0; f.interest = 0.4;
+      if (f.prized) Fishing.say('A golden flash is shadowing your lure…', '#f2c14e', 2);
+    }
   },
 
   strike(f, lure) {

@@ -29,6 +29,11 @@ const Fishing = {
     this.tip.y = p.y + Math.sin(this.aim) * 1.3;
   },
 
+  castDistance(p) {
+    const dmul = { worm: 0.72, popper: 0.9, spoon: 1.12, crank: 0.95, spinner: 1 }[this.lureId];
+    return Game.gear.rod.cast * dmul * (0.12 + 0.88 * p);
+  },
+
   canCastWith(id) { return (Game.lures[id] || 0) > 0; },
 
   selectLure(id) {
@@ -94,8 +99,7 @@ const Fishing = {
     const p = Player, rod = Game.gear.rod, L = LURE_BY_ID[this.lureId];
     const pw = this.power;
     const perfect = pw > 0.9;
-    const dmul = { worm: 0.72, popper: 0.9, spoon: 1.12, crank: 0.95, spinner: 1 }[L.id];
-    const dist = rod.cast * dmul * (0.12 + 0.88 * pw);
+    const dist = this.castDistance(pw);
     const err = perfect ? 0 : (Math.random() - 0.5) * (1 - pw) * 0.5;
     const ang = Math.atan2(Input.mouse.wy - p.y, Input.mouse.wx - p.x) + err;
     const ft = 0.45 + dist * 0.055;

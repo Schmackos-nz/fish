@@ -13,7 +13,7 @@ const Fight = {
     this.pickMode(true);
     Fishing.state = 'fight'; Fishing.engaged = f;
     Sfx.thunk(); Sfx.splash(0.8); Hud.ripple(f.x, f.y, 1.2);
-    Fishing.say(q > 0.9 ? 'FISH ON! Solid hookset!' : 'Fish on — hook is light, keep it tight!', '#8fd16a', 1.8);
+    Fishing.say(f.prized ? "FISH ON — it's a PRIZED one! Don't lose it!" : q > 0.9 ? 'FISH ON! Solid hookset!' : 'Fish on — hook is light, keep it tight!', f.prized ? '#f2c14e' : '#8fd16a', 2);
     Fish.list.forEach((o) => { if (o !== f && o.state !== 'wander') Fish.loseInterest(o); });
   },
 
@@ -61,7 +61,7 @@ const Fight = {
     if (strain > 0.2 && this.mode !== 'jump') this.swim += Math.sign(lateral) * -1 * strain * dt * 1.2;
 
     const effort = this.effort();
-    const thrust = Math.max(0.12, f.kg * sp.power * effort * (0.2 + 0.8 * f.stamina)) * 0.75;
+    const thrust = Math.max(0.12, f.kg * sp.power * (f.prized ? 1.15 : 1) * effort * (0.2 + 0.8 * f.stamina)) * 0.75;
     const speed = sp.speed * (0.5 + 0.9 * f.stamina) * effort + 0.15;
     let vx = Math.cos(this.swim) * speed, vy = Math.sin(this.swim) * speed;
     // Head to deeper water when sulking; rise before a jump.
@@ -173,6 +173,7 @@ const Fight = {
     Sfx.snap();
     f.state = 'spooked'; f.airborne = false; f.t = 0; f.cool = 30;
     this.end();
+    Npcs.onPlayerLoss();
     Fishing.loseLure('SNAP! Line broke at ' + this.tension.toFixed(1) + ' kg — ease the drag or lower the rod.');
   },
 
@@ -183,6 +184,7 @@ const Fight = {
     Fishing.state = 'line'; Fishing.bailOpen = false;
     Fishing.lure.action = 0;
     Sfx.fail();
+    Npcs.onPlayerLoss();
     Fishing.say(msg, '#e2584d', 2.6);
   },
 

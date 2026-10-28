@@ -41,6 +41,10 @@
   #catch canvas { background: rgba(0,0,0,.25); border-radius: 6px; margin: 6px 0; }
   #catch .big { font-size: 26px; color: var(--warn); font-weight: bold; }
   #catch .rec { color: var(--good); font-weight: bold; }
+  #catch .prize { color: #ffd76a; font-weight: bold; font-size: 18px; letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,200,80,.7); }
+  button.gold { background: #8a6a1e; border-color: #ffd76a; font-weight: bold; }
+  button.gold:hover { background: #a8822a; }
+  #share { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(720px, 94vw); max-height: 92vh; overflow-y: auto; z-index: 5; }
   #title { inset: 0; position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
     background: radial-gradient(ellipse at center, rgba(10,30,35,.75), rgba(5,10,12,.96)); text-align: center; }
   #title h1 { font-size: 64px; margin: 0; color: var(--warn); letter-spacing: 6px; text-shadow: 0 4px 0 #6a4b1c; }
@@ -68,7 +72,7 @@
     <div><kbd>Space</kbd> open / close the bail</div>
     <div>Hold <kbd>LMB</kbd> to load the cast, release on the peak</div>
     <div><kbd>Space</kbd> mid-flight to feather the line &amp; stop short</div>
-    <div>Hold <kbd>LMB</kbd> + <b>spin the mouse in circles</b> to crank</div>
+    <div>Hold <kbd>LMB</kbd> + <b>spin the mouse in circles</b> to crank (or hold <kbd>C</kbd>)</div>
     <div><kbd>RMB</kbd> twitch / pop the lure</div>
     <div><kbd>Space</kbd> on the bite to set the hook</div>
     <div>Fight: <kbd>A</kbd>/<kbd>D</kbd> side-strain, <kbd>S</kbd> drop rod on jumps</div>
@@ -76,6 +80,9 @@
     <div><kbd>F</kbd> net the fish &nbsp; <kbd>R</kbd> pick a wind knot</div>
     <div><kbd>1</kbd>–<kbd>5</kbd> change lure &nbsp; <kbd>J</kbd> journal</div>
     <div><kbd>M</kbd> map &nbsp; <kbd>E</kbd> talk at the tackle shack</div>
+    <div><kbd>H</kbd> show / hide the live controls overlay</div>
+    <div><kbd>E</kbd> chat to other anglers — take their stories with a grain of salt</div>
+    <div>Golden shadows are <b style="color:#ffd76a">prized fish</b> — land one to share a photo</div>
   </div>
   <p><button id="startBtn" style="font-size:18px;padding:10px 30px">Go fishing</button>
      <button id="newBtn" style="margin-left:8px">New valley</button></p>
@@ -84,6 +91,7 @@
 <div id="shop" class="panel hidden"></div>
 <div id="journal" class="panel hidden"></div>
 <div id="catch" class="panel hidden"></div>
+<div id="share" class="panel hidden"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="js/util.js"></script>
@@ -97,7 +105,9 @@
 <script src="js/fishing.js"></script>
 <script src="js/fight.js"></script>
 <script src="js/player.js"></script>
+<script src="js/npcs.js"></script>
 <script src="js/hud.js"></script>
+<script src="js/share.js"></script>
 <script src="js/menus.js"></script>
 <script src="js/main.js"></script>
 </body>

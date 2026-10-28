@@ -5,39 +5,47 @@ const Menus = {
   open: null,
 
   close() {
-    for (const id of ['shop', 'journal', 'catch']) document.getElementById(id).classList.add('hidden');
+    for (const id of ['shop', 'journal', 'catch', 'share']) document.getElementById(id).classList.add('hidden');
     this.open = null;
   },
 
-  value(sp, kg) {
-    let v = sp.price * kg * (sp.legendary ? 3 : sp.rare ? 1.6 : 1);
+  value(sp, kg, prized) {
+    let v = sp.price * kg * (sp.legendary ? 3 : sp.rare ? 1.6 : 1) * (prized && !sp.legendary ? 2.5 : 1);
     if (kg > sp.kg[1] * 2) v *= 1.3;
     return Math.max(1, Math.round(v));
   },
 
   showCatch(f) {
-    const sp = f.sp, val = this.value(sp, f.kg);
+    const sp = f.sp, val = this.value(sp, f.kg, f.prized);
     const j = Game.journal[sp.id] || { count: 0, best: 0, cm: 0 };
     const first = j.count === 0, record = f.kg > j.best;
     j.count++; if (record) { j.best = f.kg; j.cm = f.cm; }
+    if (f.prized) j.prized = (j.prized || 0) + 1;
     Game.journal[sp.id] = j;
     Game.stats.caught++;
+    Npcs.onPlayerCatch(f);
     const el = document.getElementById('catch');
     const full = Game.creel.length >= Game.creelMax;
     el.innerHTML = `
       <div class="desc" style="color:#a99f8a">${World.waterName(f.x, f.y) || 'the water'}</div>
       <div class="big">${sp.name}</div>
-      ${sp.legendary ? '<div class="rec">★ LEGENDARY ★</div>' : sp.rare ? '<div class="rec">Rare catch!</div>' : ''}
+      ${sp.legendary ? '<div class="prize">★ LEGENDARY ★</div>' : f.prized ? '<div class="prize">★ PRIZED FISH ★</div>' : sp.rare ? '<div class="rec">Rare catch!</div>' : ''}
       <canvas id="catchArt" width="300" height="130"></canvas>
       <div style="font-size:18px"><b>${U.fmtKg(f.kg)}</b> · ${f.cm} cm</div>
       ${first ? '<div class="rec">New species for the journal!</div>' : record ? '<div class="rec">New personal best!</div>' : `<div class="desc">Best: ${U.fmtKg(j.best)}</div>`}
       <div style="margin:8px 0;color:#8fd16a">Worth ${U.fmtMoney(val)} at the shack</div>
       <button id="keepBtn" ${full ? 'disabled' : ''}>Keep (creel ${Game.creel.length}/${Game.creelMax})</button>
-      <button id="releaseBtn">Release (+${U.fmtMoney(val * 0.35)} bounty)</button>`;
+      <button id="releaseBtn">Release (+${U.fmtMoney(val * 0.35)} bounty)</button>
+      ${f.prized ? '<div style="margin-top:10px"><button id="shareBtn" class="gold">📸 Share a photo with a friend</button></div>' : ''}`;
     el.classList.remove('hidden');
     this.open = 'catch';
     const g = document.getElementById('catchArt').getContext('2d');
     Fish.drawPortrait(g, sp, 150, 65, Math.min(280, 140 + Math.log2(1 + f.kg) * 40));
+    if (f.prized) {
+      const e = Game.env;
+      const info = { sp, kg: f.kg, cm: f.cm, prized: true, place: World.waterName(f.x, f.y) || 'the wild', kind: KIND_NAME[World.kindAt(f.x, f.y)], day: e.day, phase: e.phase };
+      document.getElementById('shareBtn').onclick = () => Share.open(info);
+    }
     document.getElementById('keepBtn').onclick = () => {
       Game.creel.push({ id: sp.id, kg: f.kg, cm: f.cm, value: val });
       this.close(); Game.save();
@@ -56,19 +64,32 @@ const Menus = {
     const known = SPECIES.filter((s) => Game.journal[s.id]).length;
     el.innerHTML = `<button class="close" id="jClose">✕</button><h2>Angler's Journal</h2>
       <div class="desc">${known}/${SPECIES.length} species · ${Game.stats.caught} caught · ${Game.stats.released} released</div>
+      <h3>Valley anglers — biggest fish</h3>
+      ${this.leaderboard()}
+      <h3>Species</h3>
       <div class="grid" style="margin-top:10px">${SPECIES.map((s) => {
         const j = Game.journal[s.id];
         const hab = Object.entries(s.habitats).filter(([, v]) => v > 0).map(([k]) => k).join(', ');
         const best = Object.entries(s.lures).sort((a, b) => b[1] - a[1])[0][0];
         const times = s.time.map((v, i) => v >= 1.2 ? TIME_NAMES[i] : null).filter(Boolean).join('/') || 'any time';
         return j ? `<div class="card"><canvas data-sp="${s.id}" width="150" height="60"></canvas><br><b>${s.name}</b><br>
-            Caught ${j.count} · best ${U.fmtKg(j.best)} (${j.cm} cm)<br><span class="desc">${hab} · ${times} · likes ${LURE_BY_ID[best].name}</span></div>`
+            ${j.prized ? '<span style="color:#f2c14e">★ ' + j.prized + ' prized</span><br>' : ''}Caught ${j.count} · best ${U.fmtKg(j.best)} (${j.cm} cm)<br><span class="desc">${hab} · ${times} · likes ${LURE_BY_ID[best].name}</span></div>`
           : `<div class="card unknown"><b>???</b><br><span class="desc">${s.legendary ? 'A legend of these waters.' : 'Found in: ' + hab}</span></div>`;
       }).join('')}</div>`;
     el.classList.remove('hidden');
     this.open = 'journal';
     el.querySelectorAll('canvas[data-sp]').forEach((c) => Fish.drawPortrait(c.getContext('2d'), SPECIES_BY_ID[c.dataset.sp], 75, 30, 130));
     document.getElementById('jClose').onclick = () => this.close();
+  },
+
+  leaderboard() {
+    let mine = null;
+    for (const [id, j] of Object.entries(Game.journal)) if (!mine || j.best > mine.best) mine = { best: j.best, sp: id };
+    const rows = [{ name: 'You', count: Game.stats.caught, best: mine ? mine.best : 0, sp: mine && mine.sp, you: true }]
+      .concat(Npcs.list.map((n) => ({ name: n.name, count: n.rec.count, best: n.rec.best, sp: n.rec.sp })))
+      .sort((a, b) => b.best - a.best);
+    return rows.map((r, i) => `<div class="row" ${r.you ? 'style="color:#f2c14e;font-weight:bold"' : ''}><div>${i + 1}. ${r.name}</div>
+      <div class="desc">${r.best ? U.fmtKg(r.best) + ' ' + SPECIES_BY_ID[r.sp].name : 'nothing yet'} · ${r.count} caught</div></div>`).join('');
   },
 
   openShop() {

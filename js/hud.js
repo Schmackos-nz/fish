@@ -2,13 +2,19 @@
 'use strict';
 
 const Hud = {
-  cv: null, g: null, toastT: 0, bigMap: false,
+  cv: null, g: null, toastT: 0, bigMap: false, showControls: true,
 
   init() {
     this.cv = document.getElementById('hud');
     this.g = this.cv.getContext('2d');
     const fit = () => { this.cv.width = window.innerWidth; this.cv.height = window.innerHeight; };
     fit(); window.addEventListener('resize', fit);
+    try { this.showControls = localStorage.getItem('reelwild.controls') !== 'off'; } catch (e) { /* default on */ }
+  },
+
+  toggleControls() {
+    this.showControls = !this.showControls;
+    try { localStorage.setItem('reelwild.controls', this.showControls ? 'on' : 'off'); } catch (e) { /* ignore */ }
   },
 
   toast(text, color = '#f3ead6', time = 2) {
@@ -42,10 +48,12 @@ const Hud = {
     const g = this.g, W = this.cv.width, H = this.cv.height;
     g.clearRect(0, 0, W, H);
     this.drawStatus(16, 16);
+    this.drawControls(16, 140);
     this.drawMinimap(W - 176, 16);
     this.drawReel(W - 120, H - 120);
     this.drawStatePanel(W / 2, H - 24);
     this.drawWorldLabels();
+    Npcs.drawBubbles(this);
     this.drawCursorInfo();
     if (this.bigMap) this.drawBigMap(W, H);
   },
@@ -63,6 +71,93 @@ const Hud = {
     if (where) this.text(where, x + 238, y + 22, '#8ec7d6', 12, 'right');
   },
 
+  // Live controls: only what you can do right now, keys light up while held, urgent ones flash.
+  controlRows() {
+    const F = Fishing, st = F.state, rows = [];
+    const r = (keys, label, opt = {}) => rows.push({ keys, label, ...opt });
+    const striking = F.engaged && F.engaged.state === 'strike';
+    const flash = Math.sin(Game.time * 14) > 0;
+    const k = World.shopkeeper;
+    switch (st) {
+      case 'idle':
+        r(['W', 'A', 'S', 'D'], 'Walk'); r(['Shift'], 'Run');
+        r(['Space'], 'Open the bail', { hot: World.isWater(Input.mouse.wx, Input.mouse.wy) });
+        r(['1-5'], 'Change lure'); r(['Wheel'], 'Zoom camera');
+        if (U.dist(Player.x, Player.y, k.x, k.y) < 3) r(['E'], 'Tackle shack', { hot: true });
+        if (Npcs.near(Player.x, Player.y, 2.5)) r(['E'], 'Chat to angler', { hot: true });
+        r(['J'], 'Journal'); r(['M'], 'Map');
+        break;
+      case 'ready':
+        r(['Mouse'], 'Aim — ring shows full range'); r(['LMB'], 'Hold to load the rod', { hot: true }); r(['Space'], 'Close bail');
+        break;
+      case 'charging':
+        r(['LMB'], 'Release on the peak!', { hot: true, flash: F.power > 0.9 && flash }); r(['Mouse'], 'Aim');
+        break;
+      case 'flying': r(['Space'], 'Feather — stop it short'); break;
+      case 'line':
+        if (striking) r(['Space'], 'SET THE HOOK!', { hot: true, flash });
+        if (F.bailOpen) r(['Space'], 'Close the bail', { hot: true });
+        r(['LMB', '⟳'], 'Circle the mouse to crank'); r(['C'], 'Hold to crank · +Shift fast');
+        r(['RMB'], 'Twitch / pop the lure');
+        if (!striking && !F.bailOpen) r(['Space'], 'Strike');
+        r(['W', 'A', 'S', 'D'], 'Walk the bank');
+        break;
+      case 'knot': r(['R'], 'Hold to pick the knot', { hot: true }); break;
+      case 'snagged':
+        r(['A', 'D'], 'Alternate to jiggle free', { hot: true }); r(['C'], 'Crank hard to break off');
+        break;
+      case 'fight': {
+        const jump = Fight.mode === 'jump' || (Fight.fish && Fight.fish.airborne);
+        if (Fight.landReady) r(['F'], 'NET IT!', { hot: true, flash });
+        if (jump) r(['S'], 'DROP THE ROD!', { hot: true, flash });
+        r(['LMB', '⟳'], 'Crank (not while drag screams)'); r(['C'], 'Hold to crank');
+        r(['A', 'D'], 'Side strain against runs');
+        if (!jump) r(['S'], 'Drop rod on jumps');
+        r(['W'], 'Rod high — soaks headshakes');
+        r(['Q', 'E'], 'Drag − / +', { hot: Fight.tension > Game.gear.line.strength * 0.85 });
+        r(['↑', '←', '↓', '→'], 'Walk with the fish');
+        if (!Fight.landReady) r(['F'], 'Net (when it tires)');
+        break;
+      }
+    }
+    return rows;
+  },
+
+  keyHeld(key) {
+    const m = { W: 'KeyW', A: 'KeyA', S: 'KeyS', D: 'KeyD', Q: 'KeyQ', E: 'KeyE', F: 'KeyF', R: 'KeyR', C: 'KeyC', J: 'KeyJ', M: 'KeyM',
+      Space: 'Space', Shift: 'ShiftLeft', '↑': 'ArrowUp', '↓': 'ArrowDown', '←': 'ArrowLeft', '→': 'ArrowRight' };
+    if (key === 'LMB' || key === '⟳') return Input.mouse.down;
+    if (key === 'RMB') return Input.mouse.rdown;
+    return m[key] ? Input.keys.has(m[key]) : false;
+  },
+
+  drawControls(x, y) {
+    const g = this.g;
+    if (!this.showControls) { this.text('[H] show controls', x + 4, y + 14, '#a99f8a', 12); return; }
+    const rows = this.controlRows();
+    const h = 30 + rows.length * 24;
+    this.panel(x, y, 250, h);
+    this.text('CONTROLS', x + 12, y + 19, '#c9a86a', 11, 'left', true);
+    this.text('H hide', x + 238, y + 19, '#a99f8a', 11, 'right');
+    rows.forEach((row, i) => {
+      const ry = y + 30 + i * 24;
+      let kx = x + 10;
+      g.font = 'bold 11px Trebuchet MS';
+      for (const key of row.keys) {
+        const w = Math.max(20, g.measureText(key).width + 10);
+        const held = this.keyHeld(key);
+        g.fillStyle = row.flash ? '#f2c14e' : held ? '#8fd16a' : row.hot ? '#5a4a22' : '#2b3638';
+        g.strokeStyle = row.hot || held ? '#f2c14e' : '#667';
+        g.lineWidth = 1;
+        g.beginPath(); g.roundRect(kx, ry, w, 19, 4); g.fill(); g.stroke();
+        g.fillStyle = row.flash || held ? '#1a1a1a' : '#f3ead6';
+        g.textAlign = 'center'; g.fillText(key, kx + w / 2, ry + 14);
+        kx += w + 3;
+      }
+      this.text(row.label, Math.max(kx + 6, x + 92), ry + 14, row.flash ? '#f2c14e' : row.hot ? '#f3ead6' : '#c8bfae', 12, 'left', row.hot);
+    });
+  },
+
   drawMinimap(x, y) {
     const g = this.g, R = 80, s = 2;
     this.panel(x, y, 160, 160);
@@ -70,6 +165,10 @@ const Hud = {
     g.beginPath(); g.rect(x + 4, y + 4, 152, 152); g.clip();
     g.imageSmoothingEnabled = false;
     g.drawImage(Art.minimap, Player.x - R / s, Player.y - R / s, R * 2 / s, R * 2 / s, x, y, 160, 160);
+    for (const n of Npcs.list) {
+      const nx = x + 80 + (n.x - Player.x) * s, ny = y + 80 + (n.y - Player.y) * s;
+      g.fillStyle = n.palette.shirt; g.fillRect(nx - 2, ny - 2, 4, 4);
+    }
     g.fillStyle = '#fff';
     g.beginPath(); g.arc(x + 80, y + 80, 3.5, 0, Math.PI * 2); g.fill();
     g.strokeStyle = '#fff'; g.beginPath(); g.moveTo(x + 80, y + 80);
@@ -123,7 +222,6 @@ const Hud = {
   drawStatePanel(cx, by) {
     const F = Fishing, L = LURE_BY_ID[F.lureId];
     const tips = {
-      idle: '[SPACE] open the bail  ·  [1-5] lure  ·  [J] journal',
       ready: 'Bail open — hold [LMB] to load the rod, aim with the mouse',
       flying: '[SPACE] feather the line to stop short',
       knot: 'Wind knot! Hold [R] to pick it out',
@@ -134,7 +232,7 @@ const Hud = {
       this.panel(x - 10, y - 26, w + 20, 62);
       this.bar(x, y, w, 18, F.power, F.power > 0.9 ? '#8fd16a' : '#f2c14e');
       this.g.fillStyle = 'rgba(143,209,106,.35)'; this.g.fillRect(x + w * 0.9, y, w * 0.1, 18);
-      this.text('Release on the peak!  ' + Math.round(Game.gear.rod.cast * (0.12 + 0.88 * F.power)) + ' m', cx, y - 8, '#f3ead6', 13, 'center', true);
+      this.text('Release on the peak!  ' + Math.round(F.castDistance(F.power)) + ' m', cx, y - 8, '#f3ead6', 13, 'center', true);
       return;
     }
     if (F.state === 'line' && F.lure) {
@@ -203,6 +301,11 @@ const Hud = {
     if (U.dist(Player.x, Player.y, k.x, k.y) < 3) {
       const [sx, sy] = Scene3D.project(k.x, k.y, 1.7);
       this.text('[E] Hettie\'s Tackle', sx, sy, '#f2c14e', 14, 'center', true);
+    }
+    const npc = Npcs.near(Player.x, Player.y, 2.5);
+    if (npc && !npc.bubbleT && Fishing.state !== 'fight') {
+      const [sx, sy] = Scene3D.project(npc.x, npc.y, 1.7);
+      this.text('[E] chat to ' + npc.name, sx, sy, '#f2c14e', 13, 'center', true);
     }
     const f = Fight.fish;
     if (Fishing.state === 'fight' && f) {

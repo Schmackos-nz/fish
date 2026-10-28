@@ -31,6 +31,11 @@ const Actors = {
       r.renderOrder = 4; r.visible = false; r.userData = { t: 1, size: 1 };
       this.group.add(r); this.ripples.push(r);
     }
+    // Where the cast will land.
+    const ag = new THREE.RingGeometry(0.32, 0.46, 28); ag.rotateX(-Math.PI / 2);
+    this.aimRing = new THREE.Mesh(ag, new THREE.MeshBasicMaterial({ color: 0xf2c14e, transparent: true, depthTest: false, depthWrite: false }));
+    this.aimRing.renderOrder = 9;
+    this.group.add(this.aimRing);
     this.jumpMesh = this.billboard(document.createElement('canvas'), 1, 0.5);
     this.jumpMesh.visible = false;
     this.group.add(this.jumpMesh);
@@ -208,6 +213,21 @@ const Actors = {
     this.rod.material.color.set(Game.gear.rod.color);
     this.tipScene = tip;
 
+    // Aim ring: faint at full range while ready, live while loading the rod.
+    const aiming = Fishing.state === 'ready' || Fishing.state === 'charging';
+    this.aimRing.visible = aiming;
+    if (aiming) {
+      const ca = Math.atan2(Input.mouse.wy - p.y, Input.mouse.wx - p.x);
+      const charging = Fishing.state === 'charging';
+      const d = Fishing.castDistance(charging ? Fishing.power : 1);
+      const ax = Fishing.tip.x + Math.cos(ca) * d, ay = Fishing.tip.y + Math.sin(ca) * d;
+      this.aimRing.position.set(ax, Math.max(0, Scene3D.groundH(ax, ay)) + 0.04, ay);
+      const s = 1 + Math.sin(Game.time * 6) * 0.08;
+      this.aimRing.scale.set(s, 1, s);
+      this.aimRing.material.color.set(charging && Fishing.power > 0.9 ? 0x8fd16a : 0xf2c14e);
+      this.aimRing.material.opacity = charging ? 0.9 : 0.4;
+    }
+
     // Line + lure
     const l = Fishing.lure;
     for (const id in this.lures) this.lures[id].visible = false;
@@ -257,7 +277,7 @@ const Actors = {
       m.position.set(f.x, -Math.min(f.z, 4) * SUB - 0.03, f.y);
       m.rotation.y = -f.heading;
       m.scale.set(len * (1 + Math.sin(f.wig) * 0.05), 1, len);
-      m.material.color.set(near ? f.sp.color : 0x0d2430);
+      m.material.color.set(f.prized ? (Math.sin(Game.time * 4 + f.wig) > 0.4 ? 0xd9b44a : 0x8a6a1e) : near ? f.sp.color : 0x0d2430);
       m.material.opacity = (near ? U.clamp(1 - f.z * 0.12, 0.55, 0.95) : U.clamp(0.75 - f.z * 0.1, 0.12, 0.75)) * env.visibility * Math.max(0, f.alpha);
     }
     for (; n < this.fishPool.length; n++) this.fishPool[n].visible = false;

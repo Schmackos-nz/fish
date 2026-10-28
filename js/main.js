@@ -46,7 +46,7 @@ const Input = {
 
 const Game = {
   time: 0, money: 0, lures: {}, owned: [], gear: null, drag: 2, creel: [], creelMax: 8, journal: {},
-  stats: { caught: 0, released: 0 }, seed: 1, running: false,
+  stats: { caught: 0, released: 0 }, seed: 1, running: false, npcRecords: {},
   env: { hour: 6, day: 1, phase: 0, daylight: 0.5, weather: WEATHERS[0], weatherT: 3, wind: { x: 0.5, y: 0.2 }, visibility: 1 },
 
   newGame(seed) {
@@ -57,6 +57,7 @@ const Game = {
     this.gear = { rod: RODS[0], reel: REELS[0], line: LINES[0] };
     this.drag = 1.75; this.creel = []; this.creelMax = 8; this.journal = {};
     this.stats = { caught: 0, released: 0 };
+    this.npcRecords = {};
     Object.assign(this.env, { hour: 6, day: 1, weather: WEATHERS[0], weatherT: 3 });
   },
 
@@ -65,7 +66,7 @@ const Game = {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         seed: this.seed, money: this.money, lures: this.lures, owned: this.owned, drag: this.drag,
         gear: { rod: this.gear.rod.id, reel: this.gear.reel.id, line: this.gear.line.id },
-        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats,
+        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords,
         px: Player.x, py: Player.y, hour: this.env.hour, day: this.env.day, weather: this.env.weather.id,
       }));
     } catch (e) { /* storage unavailable: play on without saving */ }
@@ -76,6 +77,7 @@ const Game = {
       const s = JSON.parse(localStorage.getItem(SAVE_KEY));
       if (!s) return null;
       this.newGame(s.seed);
+      this.npcRecords = s.npcRecords || {};
       Object.assign(this, { money: s.money, lures: s.lures, owned: s.owned, drag: s.drag, creel: s.creel, creelMax: s.creelMax, journal: s.journal, stats: s.stats });
       this.gear = {
         rod: RODS.find((r) => r.id === s.gear.rod) || RODS[0],
@@ -125,6 +127,7 @@ function buildWorld(seed, savedPos) {
   Art.buildMinimap();
   Scene3D.build();
   Fish.reset(); Fishing.reset();
+  Npcs.init();
   if (savedPos && !World.blocked(savedPos.x, savedPos.y)) Player.place(savedPos.x, savedPos.y);
   else Player.place(World.spawn.x, World.spawn.y);
   Scene3D.target.set(Player.x, 0, Player.y);
@@ -151,10 +154,15 @@ function handleGlobalKeys() {
   if (Menus.open === 'catch') return;
   if (Input.pressed('KeyJ')) Menus.toggleJournal();
   if (Input.pressed('KeyM')) Hud.bigMap = !Hud.bigMap;
+  if (Input.pressed('KeyH')) Hud.toggleControls();
   if (Menus.open) return;
   for (const L of LURES) if (Input.pressed('Digit' + L.key)) Fishing.selectLure(L.id);
   const k = World.shopkeeper;
-  if (Input.pressed('KeyE') && Fishing.state !== 'fight' && U.dist(Player.x, Player.y, k.x, k.y) < 3) Menus.openShop();
+  if (Input.pressed('KeyE') && Fishing.state !== 'fight') {
+    const npc = Npcs.near(Player.x, Player.y, 2.5);
+    if (U.dist(Player.x, Player.y, k.x, k.y) < 3) Menus.openShop();
+    else if (npc && npc.state !== 'fight' && npc.state !== 'show') Npcs.talk(npc);
+  }
   if (Fishing.state !== 'fight' && Input.wheel) Scene3D.camDist = U.clamp(Scene3D.camDist + Input.wheel * 1.5, 8, 34);
 }
 
@@ -165,7 +173,10 @@ function frame(now) {
   if (Game.running) {
     const w = Scene3D.screenToWorld(Input.mouse.sx, Input.mouse.sy);
     Input.mouse.wx = w.x; Input.mouse.wy = w.y;
-    Input.crank = CRANK_STATES.has(Fishing.state) && !Menus.open ? Input.crankAcc : 0;
+    let crank = Input.crankAcc;
+    // Hold C to crank at a steady medium speed (Shift for fast).
+    if (Input.keys.has('KeyC')) crank += Math.PI * 2 * (Input.keys.has('ShiftLeft') || Input.keys.has('ShiftRight') ? 2.6 : 1.5) * dt;
+    Input.crank = CRANK_STATES.has(Fishing.state) && !Menus.open ? crank : 0;
     Input.crankAcc = 0;
     handleGlobalKeys();
     if (!Menus.open) {
@@ -174,6 +185,7 @@ function frame(now) {
       Player.update(dt);
       Fishing.update(dt);
       Fish.update(dt, Player, Fishing.lure, Game.env);
+      Npcs.update(dt);
     }
     Hud.update(dt);
     // Frame the action: drift the camera toward the lure or the hooked fish.
@@ -183,6 +195,7 @@ function frame(now) {
     Scene3D.updateCamera(dt, { x: fx, y: fy });
     Scene3D.updateEnv(Game.env, dt);
     Actors.update(dt, Game.env);
+    Npcs.render();
     Scene3D.render(Game.time);
     Hud.draw();
     saveT += dt;
