@@ -1,4 +1,4 @@
-// Grand Trout Auto IV theme: an original, upbeat country jingle for the main menu.
+// Grand Trout Auto VI theme: an original, upbeat country jingle for the main menu.
 // Boom-chuck guitar, banjo rolls, brushed drums and a whistled melody, all synthesised.
 'use strict';
 
