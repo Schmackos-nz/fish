@@ -67,6 +67,14 @@ const Gun = {
 
   shoot() {
     if (this.cooldown > 0) return;
+    // Never at people. Not even the ones on lilos.
+    const aim = this.aimPoint();
+    const lilo = Floaters.near(aim.x, aim.y, 3.5);
+    if (lilo || Npcs.near(aim.x, aim.y, 2.5) || U.dist(aim.x, aim.y, World.shopkeeper.x, World.shopkeeper.y) < 2.5) {
+      Hud.toast('Whoa — there are people there. Not doing that.', '#f2c14e', 1.8);
+      if (lilo) Floaters.say(lilo, 'DON\'T SHOOT!!', 2);
+      return;
+    }
     if ((Game.ammo || 0) <= 0) { Sfx.click(); Hud.toast('*click* Out of shells — Hettie sells them, reluctantly.', '#f2c14e', 2); return; }
     Game.ammo--;
     this.cooldown = 0.6; this.kick = 1; this.flashT = 0.07;
@@ -94,6 +102,7 @@ const Gun = {
     Fish.spookNear(a.x, a.y, 16);
     Fish.list.forEach((f) => { if (U.dist(f.x, f.y, a.x, a.y) < 16) f.cool = 20; });
     Npcs.onGunshot(Player.x, Player.y);
+    Floaters.onGunshot();
     Game.save();
   },
 

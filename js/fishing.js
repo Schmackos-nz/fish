@@ -122,6 +122,8 @@ const Fishing = {
     this.bailOpen = false; Sfx.bail();
     this.lineOut = U.dist(this.tip.x, this.tip.y, l.x, l.y) + 0.3;
     if (World.isWater(l.x, l.y)) {
+      const fl = Floaters.near(l.x, l.y, 1.1);
+      if (fl) { Sfx.plop(); this.setSnag('floater'); this.snag.floater = fl; Floaters.onHooked(fl); return; }
       l.inWater = true;
       const dep = World.depthAt(l.x, l.y);
       l.z = l.id === 'worm' ? Math.min(1.4, dep * 0.8) : 0;
@@ -142,6 +144,7 @@ const Fishing = {
   setSnag(where) {
     this.state = 'snagged'; this.snag = { where, tension: 0, jiggles: 0 };
     Sfx.knot();
+    if (where === 'floater') { this.say('You hooked a sunbather\'s lilo!  Reel them in, or Space to cut the line', '#f2c14e', 3); return; }
     const txt = where === 'tree' ? 'Snagged in a tree!' : where === 'roof' ? 'Hooked the roof…' : 'Snagged on the bottom!';
     this.say(txt + '  Click to tug it free, or Space to cut the line', '#f2c14e', 3);
   },
@@ -194,6 +197,8 @@ const Fishing = {
 
     const wasWater = l.inWater;
     l.inWater = World.isWater(l.x, l.y);
+    const fl = l.inWater && Floaters.near(l.x, l.y, 0.8);
+    if (fl) { this.setSnag('floater'); this.snag.floater = fl; Floaters.onHooked(fl); return; }
     if (l.inWater && !wasWater) { Sfx.plop(); l.onLand = false; }
     if (!l.inWater) {
       l.onLand = true; l.z = 0; l.action = 0;
@@ -320,6 +325,7 @@ const Fishing = {
 
   updateSnag(dt, turns) {
     const s = this.snag;
+    if (s.where === 'floater') return this.reelFloater(dt, turns, s.floater);
     // Each click tugs at it; holding the reel down pulls until the line gives.
     if (Input.mousePressed) {
       s.jiggles++; this.tipBob = 0.8; Sfx.click();
@@ -336,6 +342,23 @@ const Fishing = {
     if (s.tension > Game.gear.line.strength) {
       Sfx.snap();
       this.loseLure('Line snapped — lure lost.');
+    }
+  },
+
+  // A hooked lilo comes in like a very heavy, very indignant fish.
+  reelFloater(dt, turns, f) {
+    const l = this.lure;
+    if (Input.pressed('Space')) { Floaters.release(f, true); this.loseLure('You cut the line. The sunbather keeps your lure.'); return; }
+    const pull = turns * Game.gear.reel.gear * LINE_PER_TURN * 0.6 + (Input.mousePressed ? 0.3 : 0);
+    const d = U.dist(this.tip.x, this.tip.y, f.x, f.y) || 1;
+    this.bend = U.lerp(this.bend, pull > 0 ? 0.7 : 0.2, Math.min(1, dt * 4));
+    const done = Floaters.drag(f, (this.tip.x - f.x) / d * pull, (this.tip.y - f.y) / d * pull, pull);
+    l.x = f.x; l.y = f.y;
+    this.lineOut = U.dist(this.tip.x, this.tip.y, f.x, f.y);
+    if (done) {
+      Floaters.release(f, false);
+      this.say('They unhook your lure and lob it back at you.', '#f2c14e', 2.4);
+      this.state = 'idle'; this.lure = null; this.lineOut = 0; this.snag = null; this.bend = 0;
     }
   },
 

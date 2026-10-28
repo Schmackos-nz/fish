@@ -16,7 +16,7 @@ const SAY = {
   prized: ['IS THAT GOLD?! Somebody pinch me!', 'Forty years I\'ve waited for a golden one!'],
   lost: ['NOOO! It threw the hook!', 'Snapped me off — that was a MONSTER!', 'Aw, nuts. The one that got away…'],
   lostBig: 'IT WAS THIS BIG, I swear!',
-  idle: ['Nothing biting…', 'Come on, little fishy…', 'Wind\'s from the east. Bad sign.', '*yawn*', 'Should\'ve brought more worms.', 'Shh — you\'ll spook \'em.'],
+  idle: ['Same lot on those lilos every summer.', 'Don\'t cast near the lilo crowd. Trust me.', 'Nothing biting…', 'Come on, little fishy…', 'Wind\'s from the east. Bad sign.', '*yawn*', 'Should\'ve brought more worms.', 'Shh — you\'ll spook \'em.'],
   tips: ['{sp} love a {lure} around {time}.', 'Hear the drag scream? LET IT RUN.', 'Drop your rod when they jump, kid.', 'Keep your line tight or they\'ll shake loose.', 'Rain\'s the best time to be out here.', 'Deep water holds the big ones.'],
   tall: ['You should\'ve been here yesterday — they were jumping onto the bank!', 'I once caught a {sp} so big the photo weighed two kilos.', 'The one that got away? Twice the size of THAT.', 'Been fishing these waters forty years. Fish know my name.'],
   playerBig: ['Hah! Beginner\'s luck!', 'Now THAT\'s a fish!', 'Where\'d you hook that?!', 'Alright, alright… nice one.'],

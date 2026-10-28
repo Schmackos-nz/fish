@@ -55,6 +55,7 @@ const Hud = {
     this.drawStatePanel(W / 2, H - 24);
     this.drawWorldLabels();
     Npcs.drawBubbles(this);
+    Floaters.drawBubbles(this);
     this.drawCursorInfo();
     Bugs.draw(g);
     if (this.bigMap) this.drawBigMap(W, H);
@@ -106,6 +107,7 @@ const Hud = {
         r(['Space'], 'Reel all the way in');
         break;
       case 'snagged':
+        if (F.snag && F.snag.where === 'floater') { r(['Hold L'], 'Reel the sunbather in'); r(['Space'], 'Cut the line'); break; }
         r(['Click'], 'Tug it free', { hot: true });
         r(['Space'], 'Cut the line');
         break;
@@ -267,7 +269,7 @@ const Hud = {
     if (F.state === 'snagged') {
       const w = 320, x = cx - w / 2, y = by - 40;
       this.panel(x - 10, y - 26, w + 20, 56);
-      this.text('Snagged!  Click to tug it free  ·  Space to cut the line', cx, y - 6, '#f2c14e', 13, 'center', true);
+      this.text(F.snag.where === 'floater' ? 'Hooked a lilo!  Reel them in  ·  Space to cut the line' : 'Snagged!  Click to tug it free  ·  Space to cut the line', cx, y - 6, '#f2c14e', 13, 'center', true);
       this.bar(x, y + 4, w, 10, F.snag.tension / Game.gear.line.strength, '#e2584d');
       return;
     }
