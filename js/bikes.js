@@ -52,7 +52,8 @@ const Bikes = {
     this.riders = BIKER_PALS.map((pal, k) => {
       const i = paths.length ? paths[(Math.random() * paths.length) | 0] : World.idx(World.town.x, World.town.y + 10);
       const r = { state: 'ride', fuel: 40 + Math.random() * 60, px: 0, py: 0, walkT: 0, x: i % World.W + 0.5, y: ((i / World.W) | 0) + 0.5, ang: Math.random() * 6.28, speed: 8 + Math.random() * 3, target: null, wheelie: 0, bubbleT: 0, bubble: null, pal };
-      r.bike = this.model(BIKES[k % BIKES.length].color);
+      r.bikeId = BIKES[k % BIKES.length].id;
+      r.bike = this.model(BIKE_BY_ID[r.bikeId].color);
       r.mesh = Models.person(pal);
       this.group.add(r.bike, r.mesh);
       return r;
@@ -81,7 +82,26 @@ const Bikes = {
   },
 
   // Where a rider is: on the bike, or on foot beside it while parked.
-  riderPos(r) { return r.state === 'refuel' || r.state === 'break' ? { x: r.px, y: r.py } : { x: r.x, y: r.y }; },
+  onFoot(r) { return ['refuel', 'break', 'stranded'].includes(r.state); },
+  riderPos(r) { return this.onFoot(r) ? { x: r.px, y: r.py } : { x: r.x, y: r.y }; },
+
+  // Nick a parked bike. The owner takes yours (if you had one) or chases you on foot.
+  steal(r) {
+    const old = Game.bike ? { ...Game.bike } : null;
+    Game.bike = { id: r.bikeId, x: r.x, y: r.y, ang: r.ang };
+    Game.fuel = Math.max(10, Math.min(100, r.fuel));
+    this.syncMine();
+    this.group.remove(r.bike);
+    r.state = 'stranded'; r.stateT = old ? 60 : 45; r.chaseT = 10; r.foot = null;
+    if (old) { r.bikeId = old.id; r.bike = this.model(BIKE_BY_ID[old.id].color); this.group.add(r.bike); r.x = old.x; r.y = old.y; r.ang = old.ang || 0; r.noBike = false; }
+    else { r.noBike = true; }
+    r.bubble = old ? 'OI! THAT\'S MY BIKE! …Fine, I\'ll take YOURS!' : 'OI! THAT\'S MY BIKE!'; r.bubbleT = 3;
+    Wanted.crime(1);
+    Hud.toast('You stole a ' + BIKE_BY_ID[Game.bike.id].name + '! The owner saw everything.', UI.bad, 2.6);
+    this.mount();
+    Game.save();
+  },
+
 
   blocked(x, y) { return World.blocked(x, y) || World.depthAt(x, y) > 0.45; },
 
@@ -170,7 +190,7 @@ const Bikes = {
       const pd = U.dist(r.x, r.y, Player.x, Player.y);
       if (pd < 25 && Math.random() < dt * 0.05) { r.bubble = U.pick(Math.random, BIKER_SAY); r.bubbleT = 1.8; }
       // Clipping the angler.
-      if (pd < 1.1 && !this.riding && !Player.evasive && !Interior.active && !r.hitCool && r.state !== 'refuel' && r.state !== 'break') {
+      if (pd < 1.1 && !this.riding && !Player.evasive && !Interior.active && !r.hitCool && !this.onFoot(r)) {
         r.hitCool = 3;
         const a = Math.atan2(Player.y - r.y, Player.x - r.x);
         for (let s = 0; s < 8; s++) { const x = Player.x + Math.cos(a) * 0.25, y = Player.y + Math.sin(a) * 0.25; if (World.blocked(x, y)) break; Player.x = x; Player.y = y; }
@@ -196,7 +216,27 @@ const Bikes = {
 
   // Off the bike: mill about nearby, gas up if that's why we stopped, then ride on.
   parkedTick(r, dt) {
-    if (r.state !== 'refuel' && r.state !== 'break') return false;
+    if (!this.onFoot(r)) return false;
+    if (r.state === 'stranded') {
+      // Chase the thief for a bit, then make for their old bike (or wait for a lift).
+      r.stateT -= dt; r.chaseT -= dt;
+      const goal = r.chaseT > 0 ? { x: Player.x, y: Player.y } : r.noBike ? null : { x: r.x, y: r.y };
+      if (goal) {
+        const a = Math.atan2(goal.y - r.py, goal.x - r.px), sp = r.chaseT > 0 ? 3.2 : 2.2;
+        const nx = r.px + Math.cos(a) * sp * dt, ny = r.py + Math.sin(a) * sp * dt;
+        if (!World.blocked(nx, ny)) { r.px = nx; r.py = ny; }
+        r.walkFace = a; r.walkT += dt; r.onFootMoving = true;
+        if (r.chaseT > 0 && Math.random() < dt * 0.4 && U.dist(r.px, r.py, Player.x, Player.y) < 30) { r.bubble = U.pick(Math.random, ['COME BACK HERE!', 'THIEF!', 'That\'s MY bike!']); r.bubbleT = 1.6; }
+        if (!r.noBike && r.chaseT <= 0 && U.dist(r.px, r.py, r.x, r.y) < 0.8) { r.state = 'ride'; r.target = this.pickTarget(r); }
+      } else r.onFootMoving = false;
+      if (r.noBike && r.stateT <= 0) {
+        // A mate dropped off a new bike.
+        r.bikeId = BIKES[(Math.random() * BIKES.length) | 0].id;
+        r.bike = this.model(BIKE_BY_ID[r.bikeId].color); this.group.add(r.bike);
+        r.x = r.px; r.y = r.py; r.noBike = false; r.state = 'ride'; r.fuel = 100; r.target = this.pickTarget(r);
+      }
+      return true;
+    }
     r.stateT -= dt;
     if (!r.foot || U.dist(r.px, r.py, r.foot.x, r.foot.y) < 0.3) {
       if (Math.random() < 0.5) r.foot = { x: r.px, y: r.py, wait: true };
@@ -230,12 +270,12 @@ const Bikes = {
     let loud = 0, rpm = 60;
     for (const r of this.riders) {
       const d = U.dist(r.x, r.y, Player.x, Player.y), vis = d < 70 && !Interior.active;
-      r.bike.visible = r.mesh.visible = vis;
+      r.mesh.visible = vis; r.bike.visible = vis && !r.noBike;
       if (vis) {
         const h = base(r.x, r.y), pitch = r.wheelie > 0 ? Math.min(0.5, r.wheelie) : 0;
         r.bike.position.set(r.x, h, r.y); r.bike.rotation.set(0, -r.ang, pitch);
         const dir = Math.abs(Math.cos(r.ang)) > Math.abs(Math.sin(r.ang)) ? 'side' : Math.sin(r.ang) > 0 ? 'down' : 'up';
-        if (r.state === 'refuel' || r.state === 'break') {
+        if (this.onFoot(r)) {
           r.mesh.position.set(r.px, base(r.px, r.py), r.py);
           if (r.walkFace !== undefined) r.mesh.userData.rig.yaw.rotation.y = -r.walkFace;
           Models.pose(r.mesh.userData.rig, { moving: r.onFootMoving, phase: r.walkT, t: Game.time });
@@ -245,7 +285,7 @@ const Bikes = {
           Models.pose(r.mesh.userData.rig, { pose: 'ride', t: Game.time });
         }
       }
-      const lv = (d < 28 ? (1 - d / 28) ** 2 : 0) * (Interior.active || r.state === 'refuel' || r.state === 'break' ? 0 : 0.7); // locals fade fast with distance
+      const lv = (d < 28 ? (1 - d / 28) ** 2 : 0) * (Interior.active || this.onFoot(r) ? 0 : 0.7); // locals fade fast with distance
       if (lv > loud) { loud = lv; rpm = 70 + r.speed * 10 + (r.wheelie > 0 ? 30 : 0); }
     }
     // Your bike: parked where you left it, or under you.
@@ -266,8 +306,9 @@ const Bikes = {
 
   drawBubbles(hud) {
     for (const r of this.riders) {
-      if (r.bubbleT <= 0 || U.dist(r.x, r.y, Player.x, Player.y) > 30) continue;
-      const [sx, sy, ok] = Scene3D.project(r.x, r.y, Scene3D.standH(r.x, r.y) + 2);
+      const rp = this.riderPos(r);
+      if (r.bubbleT <= 0 || U.dist(rp.x, rp.y, Player.x, Player.y) > 30) continue;
+      const [sx, sy, ok] = Scene3D.project(rp.x, rp.y, Scene3D.standH(rp.x, rp.y) + 2);
       if (ok) hud.pill(r.bubble, sx, sy, UI.accent, 12);
     }
   },

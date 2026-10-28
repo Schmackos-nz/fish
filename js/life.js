@@ -342,6 +342,9 @@ const Interact = {
         else if (b.vacant) add(dr.x, dr.y, 1.6, 'Cottage for rent — ' + U.fmtMoney(b.rent) + '/day', () => Life.openRent(b));
         else add(dr.x, dr.y, 1.6, b.name, () => Hud.toast(b.name + ' — the door\'s locked.', UI.muted, 1.6));
       }
+      for (const r of Bikes.riders) {
+        if ((r.state === 'refuel' || r.state === 'break') && !(r.ko > 0)) add(r.x, r.y, 1.8, 'Steal the ' + BIKE_BY_ID[r.bikeId].name + ' (crime!)', () => Bikes.steal(r));
+      }
       if (Bikes.near()) add(Game.bike.x, Game.bike.y, 2, 'Ride your ' + BIKE_BY_ID[Game.bike.id].name, () => Bikes.mount());
       add(World.bbq.x, World.bbq.y, 2, 'BBQ — cook your catch', () => Life.openCook('the BBQ'));
       for (const p of World.pumps || []) {
