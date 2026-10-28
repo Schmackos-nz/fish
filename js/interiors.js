@@ -111,6 +111,7 @@ const Interior = {
       if (f.kind === 'stove') for (const ox of [0.35, 1.05]) { const bn = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.03, 12), new THREE.MeshBasicMaterial({ color: 0x8a2a1a })); bn.position.set(f.x + ox, 0.92, f.y + 0.4); g.add(bn); }
       if (f.kind === 'board') { const map = new THREE.Mesh(new THREE.PlaneGeometry(f.w * 0.9, 0.9), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(Art.minimap) })); map.position.set(f.x + f.w / 2, 1.4, r.y0 + 0.02); g.add(map); }
     }
+    Toon.apply(g);
     g.visible = false;
     this.group.add(g);
     return g;

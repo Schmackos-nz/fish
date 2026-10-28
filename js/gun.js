@@ -76,6 +76,7 @@ const Gun = {
     this.flash.position.x = 0.76;
     g.add(this.flash);
     g.scale.setScalar(1.25);
+    Toon.apply(g);
     return g;
   },
 

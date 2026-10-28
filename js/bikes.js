@@ -36,6 +36,7 @@ const Bikes = {
     const bars = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.62, 6), black); bars.rotation.x = Math.PI / 2; bars.position.set(0.4, 1.0, 0); g.add(bars);
     const plate = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.2, 0.2), new THREE.MeshLambertMaterial({ color: 0xF4F0E6 })); plate.position.set(0.58, 0.86, 0); g.add(plate);
     const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.55, 8), steel); pipe.rotation.z = Math.PI / 2 - 0.25; pipe.position.set(-0.35, 0.5, 0.14); g.add(pipe);
+    Toon.apply(g);
     return g;
   },
 

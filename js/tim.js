@@ -46,6 +46,7 @@ const Tim = {
     shaft.position.y = 1.2;
     u.add(canopy, stripes, shaft);
     u.position.set(0.25, 0, 0.05);
+    Toon.apply(u, false);
     this.umbrella = u;
     this.group.add(this.mesh, u);
   },

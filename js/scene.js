@@ -44,6 +44,7 @@ const Scene3D = {
     for (const b of World.buildings) this.buildBuilding(b);
     this.buildCampProps();
     this.buildRain();
+    Toon.apply(this.world);
   },
 
   disposeTree(o) {
@@ -100,7 +101,6 @@ const Scene3D = {
     }
     geo.computeVertexNormals();
     const tex = new THREE.CanvasTexture(Art.buildGroundTexture());
-    tex.magFilter = THREE.NearestFilter;
     tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
     const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex }));
     this.world.add(mesh);
@@ -138,23 +138,22 @@ const Scene3D = {
           float depth = d.b * 12.0;
           vec2 flow = d.rg * 2.0 - 1.0;
           float running = d.a;
-          vec3 shallow = mix(vec3(0.36,0.70,0.68), vec3(0.42,0.76,0.72), running);
-          vec3 deep = mix(vec3(0.06,0.22,0.38), vec3(0.14,0.36,0.46), running);
-          vec3 col = mix(shallow, deep, smoothstep(0.0, 7.0, depth));
-          float a = mix(0.32, 0.9, smoothstep(0.0, 2.6, depth));
-          // Streaks carried along the current.
+          // Flat colour bands by depth, like a cartoon map.
+          vec3 col = depth < 0.9 ? vec3(0.47, 0.84, 0.88) : depth < 3.2 ? vec3(0.22, 0.60, 0.84) : vec3(0.11, 0.33, 0.64);
+          col = mix(col, vec3(0.33, 0.72, 0.88), running * 0.35);
+          float a = depth < 0.9 ? 0.78 : 0.95;
+          // White squiggles: drifting with the current in rivers, lazily on still water.
           float fl = length(flow);
           vec2 fd = fl > 0.01 ? flow / fl : vec2(1.0, 0.0);
-          vec2 fq = vec2(dot(p, fd) * 0.7 - uTime * (0.8 + running), dot(p, vec2(-fd.y, fd.x)) * 3.0);
-          float st = n(fq + vec2(n(p * 0.8) * 1.5, 0.0));
-          col += smoothstep(0.8, 0.97, st) * fl * 0.22;
-          // Still-water glints.
-          float s = n(p * 3.1 + vec2(uTime * 0.25, uTime * 0.17)) * n(p * 4.3 - uTime * 0.21);
-          col += smoothstep(0.58, 0.8, s) * 0.12;
-          // Foam line where the water meets the bank.
-          float foam = smoothstep(0.45, 0.12, depth) * (0.55 + 0.45 * n(p * 5.0 + uTime * 0.6));
-          col = mix(col, vec3(0.92, 0.98, 0.96), foam * 0.55);
-          a = max(a, foam * 0.75);
+          vec2 fq = fl > 0.01 ? vec2(dot(p, fd) * 0.8 - uTime * (0.9 + running), dot(p, vec2(-fd.y, fd.x)) * 3.4)
+                              : vec2(p.x * 0.7 + uTime * 0.15, p.y * 2.2 + sin(p.x * 0.6 + uTime * 0.5));
+          float w = n(fq + vec2(n(p * 0.5) * 2.0, 0.0));
+          col = mix(col, vec3(0.96, 0.99, 1.0), step(0.84, w) * 0.9);
+          // Shoreline: a crisp foam band with an ink line right at the edge.
+          float foam = 1.0 - step(0.34, depth);
+          col = mix(col, vec3(0.97, 0.99, 0.98), foam);
+          a = max(a, foam);
+          col = mix(col, vec3(0.08, 0.16, 0.24), 1.0 - step(0.13, depth));
           gl_FragColor = vec4(col * uLight, a);
         }`,
     });
@@ -168,7 +167,7 @@ const Scene3D = {
 
   spriteMaterial(canvas) {
     const tex = new THREE.CanvasTexture(canvas);
-    tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+    tex.anisotropy = 4;
     return new THREE.MeshLambertMaterial({ map: tex, alphaTest: 0.5, side: THREE.DoubleSide });
   },
 
@@ -194,7 +193,7 @@ const Scene3D = {
         if (k.test(World.obj[World.idx(x, y)], x, y)) cells.push([x, y]);
       }
       if (!cells.length) continue;
-      const w = k.spr.width / TS, h = k.spr.height / TS;
+      const w = (k.spr.lw || k.spr.width) / TS, h = (k.spr.lh || k.spr.height) / TS;
       const geo = new THREE.PlaneGeometry(w, h);
       geo.translate(0, h / 2, 0);
       const mesh = new THREE.InstancedMesh(geo, this.spriteMaterial(k.spr), cells.length);
@@ -369,7 +368,7 @@ const Scene3D = {
     const sky = new THREE.Color().setHSL(0.57, 0.45, 0.06 + 0.55 * day * w);
     if (env.phase === 0 || env.phase === 2) sky.lerp(new THREE.Color(0xe39a6a), 0.35 * day);
     this.scene.background = sky;
-    this.hemi.intensity = 0.18 + 0.62 * day * w;
+    this.hemi.intensity = 0.25 + 0.75 * day * w;
     this.sun.intensity = 0.05 + 0.95 * day * (env.weather.id === 'clear' ? 1 : 0.45);
     this.sun.color.set(env.phase === 0 || env.phase === 2 ? 0xffc48a : 0xfff2d8);
     this.lantern.intensity = (1 - day) * 1.6;
