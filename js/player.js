@@ -72,9 +72,10 @@ const Player = {
       this.face = Math.atan2(iy, ix);
     }
     if (dx || dy) {
-      const r = 0.22;
+      const r = 0.22, ox = this.x, oy = this.y;
       if (!this.hit(this.x + dx, this.y, r)) this.x += dx;
       if (!this.hit(this.x, this.y + dy, r)) this.y += dy;
+      this.unstick(dt, dx, dy, U.dist(ox, oy, this.x, this.y) < Math.hypot(dx, dy) * 0.2);
       this.walkT += dt * (this.running ? 1.5 : this.crouch ? 0.6 : 1);
       this.stepAcc += dt * (this.running ? 3 : 2);
       if (this.stepAcc > 1) {
@@ -84,6 +85,28 @@ const Player = {
     } else if (!this.rolling && (F === 'idle' || F === 'charging')) {
       this.face = Math.atan2(Input.mouse.wy - this.y, Input.mouse.wx - this.x);
     } else if (!this.rolling && F !== 'idle') this.face = Fishing.aim;
+  },
+
+  // Keep pushing into a tree, bush or rock and you squeeze past it; push long enough
+  // against anything and you wriggle free to the nearest open ground.
+  unstick(dt, dx, dy, blocked) {
+    this.pushT = blocked ? (this.pushT || 0) + dt : Math.max(0, (this.pushT || 0) - dt * 2);
+    if (this.pushT > 0.7) {
+      const nx = this.x + dx * 0.5, ny = this.y + dy * 0.5;
+      if (Interior.active ? !Interior.blocked(nx, ny) : !World.blockedSoft(nx, ny)) {
+        this.x = nx; this.y = ny;
+        if (!this.squeezing) { this.squeezing = true; Hud.toast('Squeezing past…', UI.muted, 1); Sfx.burst(0.4, 1400, 0.15, 'bandpass', 1.5); }
+        return;
+      }
+    }
+    this.squeezing = false;
+    if (this.pushT > 3) {
+      this.pushT = 0;
+      for (let r = 0.5; r < 6; r += 0.5) for (let k = 0; k < 12; k++) {
+        const a = k / 12 * Math.PI * 2, x = this.x + Math.cos(a) * r, y = this.y + Math.sin(a) * r;
+        if (!this.hit(x, y, 0.22)) { this.x = x; this.y = y; Hud.toast('You wriggle free.', UI.muted, 1.2); return; }
+      }
+    }
   },
 
   // Mid-jump you clear bushes and logs. If you land inside one, you can still walk out.

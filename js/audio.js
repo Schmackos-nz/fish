@@ -103,7 +103,7 @@ const Sfx = {
   slap(v) { this.burst(0.07, 1800, 0.25 * v + 0.1, 'bandpass', 1.2); this.tone(180, 0.05, 0.15 * v, 'square', 90); },
   setBuzz(level, pitch) {
     if (!this.ctx) return;
-    this.buzzGain.gain.setTargetAtTime(level * level * 0.05, this.ctx.currentTime, 0.08);
+    this.buzzGain.gain.setTargetAtTime(level * level * 0.012, this.ctx.currentTime, 0.08);
     this.buzzOsc.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.2);
   },
 

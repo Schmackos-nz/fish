@@ -42,6 +42,15 @@ const World = {
     return !!this.buildingAt(x, y);
   },
 
+  // Collision ignoring props (trees, bushes, rocks): used when squeezing past them.
+  blockedSoft(x, y) {
+    const tx = Math.floor(x), ty = Math.floor(y);
+    if (!this.inB(tx, ty)) return true;
+    const i = this.idx(tx, ty);
+    if (this.tile[i] === T.WATER && this.depth[i] > 1.05) return true;
+    return !!this.buildingAt(x, y);
+  },
+
   // Collision while airborne: bushes and logs can be hopped.
   blockedLow(x, y) {
     const tx = Math.floor(x), ty = Math.floor(y);
