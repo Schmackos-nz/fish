@@ -1,8 +1,8 @@
-// The little angler: walking, running, crouching, jumping, dodge-rolling, wading.
+// The little angler: walking, running, crouching, sliding, jumping, wading.
 'use strict';
 
 const JUMP_TIME = 0.55;
-const ROLL_TIME = 0.42;
+const ROLL_TIME = 0.6; // slide duration (kept as rollT internally)
 
 const Player = {
   x: 0, y: 0, z: 0, face: Math.PI / 2, moving: false, running: false, walkT: 0, wading: false, stepAcc: 0,
@@ -12,7 +12,7 @@ const Player = {
 
   get airborne() { return this.jumpT > 0; },
   get rolling() { return this.rollT > 0; },
-  // Rolling or mid-jump: a charging boar goes right past you.
+  // Sliding or mid-jump: a charging boar goes right past you.
   get evasive() { return this.rollT > 0 || this.z > 0.25; },
 
   update(dt) {
@@ -31,17 +31,17 @@ const Player = {
     const free = F === 'idle' && !Menus.open;
     if (!free) ix = iy = 0;
 
-    // Moves: Space jump, Q dodge roll, C crouch toggle.
+    // Moves: Space jump; C crouches — or, while running, drops you into a slide.
     this.rollCool = Math.max(0, this.rollCool - dt);
-    if (free && Input.pressed('KeyC')) { this.crouch = !this.crouch; Hud.toast(this.crouch ? 'Crouching — sneaky.' : 'Standing up.', '#c8bfae', 0.9); }
+    const runningNow = (ix || iy) && (k.has('ShiftLeft') || k.has('ShiftRight')) && !this.crouch;
+    if (free && Input.pressed('KeyC') && runningNow && !this.rolling && !this.airborne && this.rollCool <= 0) {
+      this.rollT = ROLL_TIME; this.rollCool = 0.5; this.crouch = true;
+      this.rollDir = Math.atan2(iy, ix);
+      Sfx.burst(0.5, 700, 0.3, 'lowpass', 0.8, 200);
+    } else if (free && Input.pressed('KeyC') && !this.rolling) { this.crouch = !this.crouch; Hud.toast(this.crouch ? 'Crouching — sneaky.' : 'Standing up.', '#c8bfae', 0.9); }
     if (free && Input.pressed('Space') && !this.airborne && !this.rolling) {
       this.jumpT = JUMP_TIME; this.crouch = false;
       Sfx.whoosh(0.2);
-    }
-    if (free && Input.pressed('KeyQ') && !this.rolling && this.rollCool <= 0 && !this.airborne) {
-      this.rollT = ROLL_TIME; this.rollCool = 0.8; this.crouch = false;
-      this.rollDir = ix || iy ? Math.atan2(iy, ix) : this.face;
-      Sfx.burst(0.25, 500, 0.3, 'lowpass');
     }
 
     if (this.jumpT > 0) {
@@ -60,7 +60,8 @@ const Player = {
     let dx = 0, dy = 0;
     if (this.rolling) {
       this.rollT = Math.max(0, this.rollT - dt);
-      const sp = 9 * (this.wading ? 0.5 : 1);
+      // Slide: a burst of speed that bleeds off as you skid.
+      const sp = (2 + 8 * (this.rollT / ROLL_TIME)) * (this.wading ? 0.5 : 1);
       dx = Math.cos(this.rollDir) * sp * dt; dy = Math.sin(this.rollDir) * sp * dt;
     } else if (ix || iy) {
       const len = Math.hypot(ix, iy);

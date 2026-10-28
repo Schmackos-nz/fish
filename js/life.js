@@ -109,6 +109,7 @@ const Life = {
     Game.creel.splice(i, 1);
     const energy = Math.round(U.clamp(18 + c.kg * 14, 18, 70) * recipe.mult);
     Game.pantry.push({ name: recipe.name(sp), energy });
+    Game.stats.cooked = (Game.stats.cooked || 0) + 1;
     Sfx.burst(0.6, 1800, 0.2, 'highpass'); // sizzle
     Hud.toast('Cooked ' + recipe.name(sp) + ' (+' + energy + ' energy when eaten)', UI.good, 2);
     Game.save();
@@ -288,10 +289,11 @@ const Interact = {
         else add(dr.x, dr.y, 1.6, b.name, () => Hud.toast(b.name + ' — the door\'s locked.', UI.muted, 1.6));
       }
       add(World.bbq.x, World.bbq.y, 2, 'BBQ — cook your catch', () => Life.openCook('the BBQ'));
+      add(World.tim.x, World.tim.y, 2.6, 'Talk to Tim — tips & goals', () => Tim.open());
       add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
       Weed.interactions(add);
       const n = Npcs.near(P.x, P.y, 2.5);
-      if (n && !['fight', 'show', 'brawl', 'home'].includes(n.state)) {
+      if (n && !['fight', 'show', 'brawl', 'home', 'bush'].includes(n.state)) {
         add(n.x, n.y, 2.5, Game.weed > 0 ? 'Offer ' + n.name + ' a bag' : 'Chat to ' + n.name, () => (Game.weed > 0 ? Weed.deal(n) : Npcs.talk(n)));
       }
     }

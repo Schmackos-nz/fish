@@ -292,6 +292,7 @@ const World = {
     this.spawn = { x: cx + 0.5, y: cy + 3.5 };
     this.town = { x: cx, y: cy };
     this.bbq = { x: cx + 2.5, y: sy + 1.5 };
+    this.tim = { x: cx - 2.3, y: sy + 2.2 }; // the guide's patch, where the street meets the dock
     this.placeDusty(rng, cx, cy);
     this.placeHouses(rng);
 
@@ -358,6 +359,22 @@ const World = {
       default: return { x: b.x + lx, y: b.y + lz };
     }
   },
+  // Nearest point of shallow water next to land, for anyone heading out of the lake.
+  nearestShore(x, y) {
+    let best = { x, y }, bd = 1e9;
+    for (let k = 0; k < 24; k++) {
+      const a = k / 24 * Math.PI * 2;
+      for (let r = 1; r < 60; r += 0.5) {
+        const px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+        if (!this.isWater(px, py) || this.depthAt(px, py) < 0.35) {
+          if (r < bd) { bd = r; best = { x: x + Math.cos(a) * (r - 0.6), y: y + Math.sin(a) * (r - 0.6) }; }
+          break;
+        }
+      }
+    }
+    return best;
+  },
+
   // Door step just outside the front, near the left corner.
   doorOf(b) { return this.localToWorld(b, 0.9, this.depthOf(b) + 0.55); },
 

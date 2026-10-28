@@ -84,11 +84,15 @@ const Bugs = {
   },
 
   // Returns true when the click landed on a bug.
+  swattable(b, head = this.head()) { return b.state !== 'leave' && U.dist(b.x, b.y, head.x, head.y) < 95; },
+
   swat(x, y) {
+    const head = this.head();
     for (let i = 0; i < this.list.length; i++) {
       const b = this.list[i];
       if (b.state === 'leave') continue;
       if (U.dist(x, y, b.x, b.y) < 26 * b.k.size + 6) {
+        if (!this.swattable(b, head)) { Hud.toast('Too far away — wait till it comes for you.', UI.muted, 1.2); return true; }
         this.list.splice(i, 1);
         this.splats.push({ x: b.x, y: b.y, t: 0, size: b.k.size });
         this.swatted++; Game.stats.swatted = (Game.stats.swatted || 0) + 1;

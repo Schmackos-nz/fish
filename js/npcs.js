@@ -116,11 +116,12 @@ const Npcs = {
       const close = U.dist(n.x, n.y, Player.x, Player.y) < 18;
       // Evenings they head home to bed; mornings they're back out.
       const night = Game.mode !== 'title' && (Game.env.hour >= 21 || Game.env.hour < 5);
-      if (night && n.home && !n.goingHome && ['wait', 'cast', 'walk', 'chat'].includes(n.state)) {
+      if (night && n.home && !n.goingHome && !n.goingBush && ['wait', 'cast', 'walk', 'chat'].includes(n.state)) {
         n.goingHome = true; n.lure = null; n.fish = null;
         const d = World.doorOf(n.home);
         n.spot = { x: d.x, y: d.y, ang: Math.PI / 2 }; n.state = 'walk'; n.walkT = 0;
       }
+      if (n.state === 'bush') continue; // Couples handles them
       if (n.state === 'home') { if (!night) { n.goingHome = false; n.state = 'cast'; n.casts = 0; n.t = Math.random() * 15; } continue; }
       switch (n.state) {
         case 'brawl': this.brawlTick(n, dt, close); break;
@@ -145,6 +146,7 @@ const Npcs = {
     const d = U.dist(n.x, n.y, s.x, s.y);
     if (d < 0.3) {
       if (n.goingHome) { n.state = 'home'; return; }
+      if (n.goingBush) { n.state = 'bush'; return; }
       n.state = 'cast'; n.t = 1 + Math.random(); n.face = s.ang; n.casts = 3 + ((Math.random() * 4) | 0);
       // Someone's already fishing here? Just like real life, it's on.
       const rival = this.list.find((o) => o !== n && ['wait', 'cast', 'fight'].includes(o.state) && U.dist(o.x, o.y, n.x, n.y) < 3);
@@ -160,6 +162,7 @@ const Npcs = {
     n.face = ang; n.walkT += dt;
     n.stuck = moved ? 0 : (n.stuck || 0) + dt;
     // Wandering anglers don't pathfind; if they wedge against trees, they pick somewhere else.
+    if ((n.stuck > 1.5 || n.walkT > 40) && n.goingBush) { n.x = s.x; n.y = s.y; n.state = 'bush'; return; }
     if ((n.stuck > 1.5 || n.walkT > 40) && n.goingHome) { n.x = s.x; n.y = s.y; n.state = 'home'; return; }
     if (n.stuck > 1.5 || n.walkT > 40) { n.spot = this.nearestSpot(n.x, n.y, n.spot); n.walkT = 0; n.stuck = 0; if (U.dist(n.x, n.y, n.spot.x, n.spot.y) > 30) { n.x = n.spot.x; n.y = n.spot.y; } }
   },
@@ -189,6 +192,7 @@ const Npcs = {
 
   waitBite(n, dt, close) {
     const l = n.lure;
+    if (!l) { n.state = 'cast'; n.t = 0.5; return; }
     // Slow retrieve back toward the bank.
     const d = U.dist(n.x, n.y, l.x, l.y);
     const k = Math.min(1, 0.35 * dt / Math.max(d, 0.01));
@@ -371,7 +375,7 @@ const Npcs = {
 
   render() {
     for (const n of this.list) {
-      const vis = n.state !== 'home' && U.dist(n.x, n.y, Player.x, Player.y) < 45;
+      const vis = n.state !== 'home' && n.state !== 'bush' && U.dist(n.x, n.y, Player.x, Player.y) < 45;
       for (const m of [n.mesh, n.shadow, n.rod, n.line, n.bob, n.fishMesh, n.heldMesh]) m.visible = vis;
       if (!vis) continue;
       const base = Scene3D.standH(n.x, n.y);

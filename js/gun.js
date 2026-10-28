@@ -131,7 +131,7 @@ const Gun = {
     // Never at people. Not even the ones on lilos.
     let a = this.aimPoint();
     const lilo = Floaters.near(a.x, a.y, 3.5);
-    if (lilo || Npcs.near(a.x, a.y, 2.5) || U.dist(a.x, a.y, World.shopkeeper.x, World.shopkeeper.y) < 2.5
+    if (lilo || U.dist(a.x, a.y, World.tim.x, World.tim.y) < 2.5 || Swimmers.near(a.x, a.y, 3.5) || Npcs.near(a.x, a.y, 2.5) || U.dist(a.x, a.y, World.shopkeeper.x, World.shopkeeper.y) < 2.5
       || U.dist(a.x, a.y, World.ranger.x, World.ranger.y) < 2.5 || Wardens.list.some((w) => U.dist(a.x, a.y, w.x, w.y) < 2.5)) {
       Hud.toast('Whoa — there are people there. Not doing that.', '#f2c14e', 1.8);
       if (lilo) Floaters.say(lilo, 'DON\'T SHOOT!!', 2);

@@ -23,6 +23,7 @@ const Markers = {
       else if (b.type === 'house' && b.vacant) out.push({ x: d.x, y: d.y, label: 'For rent · ' + U.fmtMoney(b.rent) + '/day', icon: '🔑', color: '#7FC4D4' });
     }
     out.push({ x: World.bbq.x, y: World.bbq.y + 0.9, label: 'BBQ', icon: '🔥', color: '#F2802A' });
+    out.push({ x: World.tim.x, y: World.tim.y + 0.9, label: 'Tim · Guide', icon: '🧢', color: '#7DC383' });
     return out;
   },
 
@@ -55,7 +56,7 @@ const Markers = {
       const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.6, 1.3, 28, 1, true), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0.12, depthWrite: false, side: THREE.DoubleSide }));
       beam.position.y = 0.65;
       const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.sign(t), transparent: true, depthTest: false }));
-      sprite.scale.set(3.4, 1.28, 1); sprite.position.y = 2.9; sprite.renderOrder = 20;
+      sprite.scale.set(2.6, 0.98, 1); sprite.position.y = 2.7; sprite.renderOrder = 20;
       root.add(ring, disc, beam, sprite);
       root.position.set(t.x, Scene3D.groundH(t.x, t.y), t.y);
       root.renderOrder = 6;
@@ -75,10 +76,11 @@ const Markers = {
       m.ring.material.opacity = here ? 1 : 0.55 + pulse * 0.4;
       m.ring.scale.setScalar(1 + pulse * 0.08 + (here ? 0.12 : 0));
       m.beam.material.opacity = here ? 0.22 : 0.08 + pulse * 0.06;
-      m.sprite.position.y = 2.9 + Math.sin(time * 2 + m.t.y) * 0.08;
-      // Far signs shrink a little so the street isn't cluttered.
-      const s = U.clamp(1.15 - d / 120, 0.7, 1);
-      m.sprite.scale.set(3.4 * s, 1.28 * s, 1);
+      m.sprite.position.y = 2.7 + Math.sin(time * 2 + m.t.y) * 0.08;
+      // At the door the E prompt takes over; far signs shrink so the street isn't cluttered.
+      m.sprite.visible = d > 2.6;
+      const s = U.clamp(1.1 - d / 120, 0.7, 1);
+      m.sprite.scale.set(2.6 * s, 0.98 * s, 1);
     }
   },
 };

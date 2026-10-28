@@ -24,6 +24,7 @@ const Floaters = {
     const rng = U.mulberry32(World.seed + 321);
     // A couple on the town lake, the rest scattered across the other lakes.
     const lakes = World.lakes.filter((l) => l.kind === K.LAKE);
+    const startNice = this.nice();
     for (let i = 0; i < 10; i++) {
       const lake = i < 3 ? World.lakes[0] : lakes[(rng() * lakes.length) | 0];
       for (let t = 0; t < 40; t++) {
@@ -31,6 +32,7 @@ const Floaters = {
         const x = lake.x + Math.cos(a) * r, y = lake.y + Math.sin(a) * r;
         if (World.depthAt(x, y) < 1.2) continue;
         this.add(x, y, rng);
+        if (!startNice) this.list[this.list.length - 1].state = 'gone';
         break;
       }
     }
@@ -40,7 +42,7 @@ const Floaters = {
     const f = {
       x, y, vx: 0, vy: 0, ang: rng() * 6.28, spin: (rng() - 0.5) * 0.1,
       lilo: LILO_COLORS[(rng() * LILO_COLORS.length) | 0], skin: SKINS[(rng() * SKINS.length) | 0],
-      cover: COVERS[(rng() * COVERS.length) | 0], shades: rng() < 0.6, flee: 0, talkT: 5 + rng() * 20, bubble: null, bubbleT: 0, hooked: false,
+      state: 'float', cover: COVERS[(rng() * COVERS.length) | 0], shades: rng() < 0.6, flee: 0, talkT: 5 + rng() * 20, bubble: null, bubbleT: 0, hooked: false,
     };
     const geo = new THREE.PlaneGeometry(1.15, 2.3); geo.rotateX(-Math.PI / 2);
     const tex = new THREE.CanvasTexture(this.paint(f));
@@ -108,9 +110,22 @@ const Floaters = {
     return c;
   },
 
+  nice() { const e = Game.env; return e.weather.id === 'clear' && e.hour >= 8 && e.hour < 19; },
+
+  respawn(f) {
+    const lakes = World.lakes.filter((l) => l.kind === K.LAKE);
+    const lake = Math.random() < 0.4 ? World.lakes[0] : lakes[(Math.random() * lakes.length) | 0];
+    for (let t = 0; t < 30; t++) {
+      const a = Math.random() * 6.28, r = Math.random() * lake.r * 0.75;
+      const x = lake.x + Math.cos(a) * r, y = lake.y + Math.sin(a) * r;
+      if (World.depthAt(x, y) > 1.2) { f.x = x; f.y = y; f.vx = f.vy = 0; f.state = 'float'; return; }
+    }
+  },
+
   near(x, y, r) {
     let best = null, bd = r;
-    for (const f of this.list) { const d = U.dist(x, y, f.x, f.y); if (d < bd) { bd = d; best = f; } }
+    for (const f of this.list) {
+      if (f.state === 'gone') continue; const d = U.dist(x, y, f.x, f.y); if (d < bd) { bd = d; best = f; } }
     return best;
   },
 
@@ -122,6 +137,23 @@ const Floaters = {
       f.bubbleT = Math.max(0, f.bubbleT - dt);
       f.flee = Math.max(0, f.flee - dt);
       if (f.hooked) continue; // being dragged by the line
+      // Sun's out, lilos out. Rain or evening: paddle for shore and pack up.
+      const nice = this.nice();
+      if (f.state === 'gone') { if (nice && Math.random() < dt * 0.04) this.respawn(f); continue; }
+      if (!nice && f.state !== 'leaving') {
+        f.state = 'leaving'; f.shore = World.nearestShore(f.x, f.y);
+        if (U.dist(f.x, f.y, Player.x, Player.y) < 30) this.say(f, e.weather.id === 'rain' ? U.pick(Math.random, ['Ugh, RAIN!', 'My tan!', 'Everybody out!']) : 'Sun\'s going — I\'m off.', 2.6);
+      }
+      if (f.state === 'leaving') {
+        if (nice) f.state = 'float';
+        else {
+          const a = Math.atan2(f.shore.y - f.y, f.shore.x - f.x);
+          f.x += Math.cos(a) * 1.1 * dt; f.y += Math.sin(a) * 1.1 * dt;
+          f.ang += U.angDiff(f.ang, a + Math.PI / 2) * Math.min(1, dt * 2);
+          if (U.dist(f.x, f.y, f.shore.x, f.shore.y) < 0.8) f.state = 'gone';
+          continue;
+        }
+      }
       const [fx, fy] = World.flowAt(f.x, f.y);
       let ax = e.wind.x * 0.015 + fx * 0.25 + (Math.random() - 0.5) * 0.05;
       let ay = e.wind.y * 0.015 + fy * 0.25 + (Math.random() - 0.5) * 0.05;
@@ -165,7 +197,7 @@ const Floaters = {
 
   render() {
     for (const f of this.list) {
-      const vis = U.dist(f.x, f.y, Player.x, Player.y) < 50;
+      const vis = f.state !== 'gone' && !Interior.active && U.dist(f.x, f.y, Player.x, Player.y) < 50;
       f.mesh.visible = vis;
       if (!vis) continue;
       f.mesh.position.set(f.x, 0.1 + Math.sin(Game.time * 1.6 + f.x) * 0.025, f.y);
@@ -176,7 +208,7 @@ const Floaters = {
   drawBubbles(hud) {
     const g = hud.g;
     for (const f of this.list) {
-      if (f.bubbleT <= 0 || U.dist(f.x, f.y, Player.x, Player.y) > 30) continue;
+      if (f.state === 'gone' || f.bubbleT <= 0 || U.dist(f.x, f.y, Player.x, Player.y) > 30) continue;
       const [sx, sy, ok] = Scene3D.project(f.x, f.y, 0.6);
       if (!ok) continue;
       g.font = '600 13px ' + UI.font;

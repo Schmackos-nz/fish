@@ -140,6 +140,9 @@ function buildWorld(seed, savedPos) {
   Wardens.init();
   Interior.init();
   Markers.init();
+  Swimmers.init();
+  Couples.init();
+  Tim.init(); Tim.greeted = false;
   Weed.init();
   Travel.list = null;
   Floaters.init();
@@ -180,7 +183,7 @@ function showTitle() {
   $('title').classList.remove('hidden');
   $('pause').classList.add('hidden');
   Menus.close(); Hud.bigMap = false;
-  Actors.group.visible = false; Gun.mesh.visible = false;
+  Actors.group.visible = false; Gun.mesh.visible = false; if (Markers.group) Markers.group.visible = false;
   Hud.g.setTransform(1, 0, 0, 1, 0, 0); Hud.g.clearRect(0, 0, Hud.cv.width, Hud.cv.height);
   $('toast').classList.remove('show');
   refreshTitle();
@@ -190,11 +193,11 @@ function enterPlay() {
   Sfx.init(); Settings.apply();
   Game.mode = 'play';
   $('title').classList.add('hidden');
-  Actors.group.visible = true;
+  Actors.group.visible = true; Markers.group.visible = true;
   Scene3D.camDist = Settings.zoom;
   Scene3D.target.set(Player.x, Scene3D.standH(Player.x, Player.y), Player.y);
   Game.save();
-  if (!Game.stats.caught) Hud.toast('Walk to the water with WASD, then hold the left mouse button to cast', UI.ink, 4.5);
+  if (!Game.stats.caught) Hud.toast('Say g\'day to Tim by the dock — he\'ll show you the ropes', UI.ink, 4.5);
 }
 
 function newValley() {
@@ -303,6 +306,7 @@ let last = performance.now(), saveT = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
+  try {
   if (Game.mode === 'title') titleFrame(dt);
   else if (Game.mode === 'jail') {
     Scene3D.render(Game.time);
@@ -333,6 +337,9 @@ function frame(now) {
       Animals.update(dt);
       Interior.update(dt);
       Life.update(dt);
+      Swimmers.update(dt);
+      Couples.update(dt);
+      Tim.update(dt);
     }
     Hud.update(dt);
     // Frame the action: drift the camera toward the lure or the hooked fish.
@@ -358,11 +365,15 @@ function frame(now) {
     Animals.render();
     Weed.render();
     Markers.render();
+    Swimmers.render();
+    Couples.render(dt);
+    Tim.render();
     Scene3D.render(Game.time);
     Hud.draw();
     saveT += dt;
     if (saveT > 20) { saveT = 0; Game.save(); }
   }
+  } catch (err) { console.error(err); } // keep the loop alive whatever happens
   Input.endFrame();
   requestAnimationFrame(frame);
 }

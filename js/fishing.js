@@ -133,6 +133,7 @@ const Fishing = {
       const fl = Floaters.near(l.x, l.y, 1.1);
       if (fl) { Sfx.plop(); this.setSnag('floater'); this.snag.floater = fl; Floaters.onHooked(fl); return; }
       l.inWater = true;
+      Swimmers.onLureLanded(l.x, l.y);
       const dep = World.depthAt(l.x, l.y);
       l.z = l.id === 'worm' ? Math.min(1.4, dep * 0.8) : 0;
       const L = LURE_BY_ID[l.id];

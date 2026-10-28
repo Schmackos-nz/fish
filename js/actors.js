@@ -168,8 +168,8 @@ const Actors = {
     this.player.scale.x = dir === 'side' && Math.cos(a) < 0 ? -1 : 1;
     this.player.position.set(p.x, base + p.z + (p.moving && !p.rolling ? Math.abs(Math.sin(p.walkT * 8 * Math.PI / 2)) * 0.04 : 0), p.y);
     // Crouch squashes, the roll tumbles head over heels.
-    this.player.scale.y = p.crouch ? 0.72 : 1;
-    this.player.rotation.z = p.rolling ? (1 - p.rollT / ROLL_TIME) * Math.PI * 2 * (Math.cos(p.rollDir) >= 0 ? -1 : 1) : 0;
+    this.player.scale.y = p.rolling ? 0.6 : p.crouch ? 0.72 : 1;
+    this.player.rotation.z = p.rolling ? (Math.cos(p.rollDir) >= 0 ? -0.35 : 0.35) : 0; // leaning back into the slide
     this.handWorld = Folk.handWorld(p.x, p.y, this.player.position.y, dir, this.player.scale.x, this.player.scale.y);
     this.ghost.material.map = this.player.material.map;
     this.ghost.position.copy(this.player.position); this.ghost.scale.copy(this.player.scale); this.ghost.rotation.z = this.player.rotation.z;

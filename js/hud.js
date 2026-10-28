@@ -129,6 +129,9 @@ const Hud = {
     this.drawWorldLabels();
     Npcs.drawBubbles(this);
     Floaters.drawBubbles(this);
+    Swimmers.drawBubbles(this);
+    Couples.drawCensor(this);
+    Tim.drawBubble(this);
     Animals.drawLabels(this);
     Wardens.drawLabels(this);
     this.drawCursorInfo();
@@ -186,10 +189,10 @@ const Hud = {
     const k = World.shopkeeper;
     if (Wardens.anyChasing()) r(['Shift'], 'Warden on your tail — run! (Q to roll)', { hot: true, flash });
     else if (Permits.fishingIllegally()) r(['!'], 'No permit for this water — wardens patrol', { hot: true });
-    if (Bugs.list.some((b) => b.state !== 'leave')) r(['Click'], 'Swat the bugs', { hot: true, flash: Bugs.list.some((b) => b.state === 'land') && flash });
+    if (Bugs.list.some((b) => Bugs.swattable(b))) r(['Click'], 'Swat the bug on you', { hot: true, flash: Bugs.list.some((b) => b.state === 'land') && flash });
     if (st === 'idle') {
       r(['WASD'], 'Move · Shift run · C crouch' + (Player.crouch ? ' (on)' : ''), { held: Player.crouch });
-      r(['Space'], 'Jump    Q  Dodge roll');
+      r(['Space'], 'Jump    Shift+C  Slide');
       const tool = Tools.current;
       if (tool === 'rod') { r(['Hold'], 'Cast — release at the peak', { hot: World.isWater(Input.mouse.wx, Input.mouse.wy) }); r(['Tab'], 'Next lure'); }
       else if (tool === 'gun') { r(['Right'], 'Hold to look down the scope', { held: Gun.scoped, hot: !Gun.scoped }); r(['Click'], (Gun.scoped ? 'Fire' : 'Fire from the hip (wild)') + ' · ' + (Game.ammo || 0) + ' rounds', { hot: Gun.scoped }); }

@@ -25,7 +25,7 @@ const Share = {
     const withBlob = (fn) => (this.blob ? fn(this.blob) : c.toBlob((b) => { this.blob = b; fn(b); }, 'image/png'));
     el.querySelector('#shShare').onclick = () => withBlob(async (b) => {
       const file = new File([b], this.fileName(), { type: 'image/png' });
-      const data = { files: [file], title: 'Reelwild catch', text: this.caption() };
+      const data = { files: [file], title: 'Outdoors with Tim', text: this.caption() };
       if (navigator.canShare && navigator.canShare(data)) {
         try { await navigator.share(data); msg('Shared!'); } catch (e) { if (e.name !== 'AbortError') msg('Sharing failed — try Copy or Download.'); }
       } else { this.download(b); msg('This browser can\'t share files directly, so the picture was downloaded instead.'); }
@@ -39,9 +39,9 @@ const Share = {
 
   caption() {
     const i = this.info;
-    return `I just landed a ${i.prized ? 'prized ' : ''}${i.sp.name} — ${U.fmtKg(i.kg)}, ${i.cm} cm — at ${i.place} in Reelwild! 🎣`;
+    return `I just landed a ${i.prized ? 'prized ' : ''}${i.sp.name} — ${U.fmtKg(i.kg)}, ${i.cm} cm — at ${i.place} in Outdoors with Tim! 🎣`;
   },
-  fileName() { return 'reelwild-' + this.info.sp.id + '-' + Math.round(this.info.kg * 100) / 100 + 'kg.png'; },
+  fileName() { return 'outdoors-with-tim-' + this.info.sp.id + '-' + Math.round(this.info.kg * 100) / 100 + 'kg.png'; },
   download(b) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(b); a.download = this.fileName();
@@ -95,9 +95,10 @@ const Share = {
     this.angler(g, ax, ay, S);
     const len = U.clamp(140 + i.cm * 3.2, 200, 560);
     const fy = ay + 13.6 * S;
+    this.grip(g, ax, ay, S, W / 2, fy, len, 'arms'); // arms reach behind the fish
     Fish.drawPortrait(g, i.sp, W / 2, fy, len);
     if (i.prized) this.sheen(g, W / 2, fy, len, rng);
-    this.grip(g, ax, ay, S, W / 2, fy, len); // arms out, hands over the fish near head and tail
+    this.grip(g, ax, ay, S, W / 2, fy, len, 'hands'); // mittens grip the fish from the front
 
     // Captions
     g.textAlign = 'left';
@@ -115,7 +116,7 @@ const Share = {
     const where = i.place + '  ·  Day ' + i.day + ', ' + TIME_NAMES[i.phase].toLowerCase();
     g.lineWidth = 4; g.strokeText(where, 30, H - 22); g.fillText(where, 30, H - 22);
     g.textAlign = 'right'; g.font = '700 26px ' + UI.display; g.fillStyle = '#f2c14e';
-    g.strokeText('REELWILD', W - 26, H - 22); g.fillText('REELWILD', W - 26, H - 22);
+    g.strokeText('OUTDOORS WITH TIM', W - 26, H - 22); g.fillText('OUTDOORS WITH TIM', W - 26, H - 22);
     return c;
   },
 
@@ -145,15 +146,18 @@ const Share = {
     g.restore();
   },
 
-  grip(g, x, y, S, cx, fy, len) {
+  grip(g, x, y, S, cx, fy, len, part) {
     for (const side of [-1, 1]) {
       const sx = x + (side < 0 ? 4.5 : 11.5) * S, sy = y + 12.3 * S;
       const hx = cx + side * len * 0.3, hy = fy - S * 0.5;
-      g.lineCap = 'round';
-      g.strokeStyle = 'rgba(20,14,10,0.85)'; g.lineWidth = S * 2.3;
-      g.beginPath(); g.moveTo(sx, sy); g.lineTo(hx, hy); g.stroke();
-      g.strokeStyle = PLAYER_PAL.shirt; g.lineWidth = S * 1.6;
-      g.beginPath(); g.moveTo(sx, sy); g.lineTo(hx, hy); g.stroke();
+      if (part === 'arms') {
+        g.lineCap = 'round';
+        g.strokeStyle = 'rgba(20,14,10,0.85)'; g.lineWidth = S * 2.3;
+        g.beginPath(); g.moveTo(sx, sy); g.lineTo(hx, hy); g.stroke();
+        g.strokeStyle = PLAYER_PAL.shirt; g.lineWidth = S * 1.6;
+        g.beginPath(); g.moveTo(sx, sy); g.lineTo(hx, hy); g.stroke();
+        continue;
+      }
       g.fillStyle = PLAYER_PAL.shirt; g.strokeStyle = 'rgba(20,14,10,0.85)'; g.lineWidth = S * 0.45;
       g.beginPath(); g.arc(hx, hy, S * 1.25, 0, Math.PI * 2); g.fill(); g.stroke();
     }

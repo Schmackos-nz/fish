@@ -158,7 +158,7 @@ const Menus = {
       <h3>Creel</h3><div class="row"><div>Bigger creel (+5 fish)</div>
         <button id="creelBtn" ${Game.money < 150 * Game.creelMax / 5 ? 'disabled' : ''}>${U.fmtMoney(150 * Game.creelMax / 5)}</button></div>`;
     el.querySelector('#sClose').onclick = () => this.close();
-    el.querySelector('#sellBtn').onclick = () => { Game.money += creelVal; Game.creel = []; Sfx.coin(); this.renderShop(); Game.save(); };
+    el.querySelector('#sellBtn').onclick = () => { Game.money += creelVal; Game.creel = []; Game.stats.sold = (Game.stats.sold || 0) + 1; Sfx.coin(); this.renderShop(); Game.save(); };
     el.querySelector('#sprayBtn').onclick = () => { Game.money -= 8; Game.spray = (Game.spray || 0) + 1; Sfx.coin(); this.renderShop(); Game.save(); };
     el.querySelector('#ammoBtn').onclick = () => { Game.money -= 12; Game.ammo = (Game.ammo || 0) + 10; Sfx.coin(); this.renderShop(); Game.save(); };
     el.querySelector('#creelBtn').onclick = () => { Game.money -= 150 * Game.creelMax / 5; Game.creelMax += 5; Sfx.coin(); this.renderShop(); Game.save(); };
