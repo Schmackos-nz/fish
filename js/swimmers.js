@@ -27,9 +27,9 @@ const Swimmers = {
         const look = (i * 2) % CAP_COLORS.length;
         const nice0 = Swimmers.nice();
         const s = { state: nice0 ? 'swim' : 'gone', x, y, lake, look, face: 1, tx: x, ty: y, speed: 0.7 + rng() * 0.4, flee: 0, stroke: rng() * 6, talkT: 8 + rng() * 25, bubble: null, bubbleT: 0 };
-        s.mesh = Actors.billboard(document.createElement('canvas'), 0.9, 0.68);
-        s.mesh.material.map = this.frames[look][0];
-        s.mesh.material.alphaTest = 0.3;
+        const skin = SKINS[i % SKINS.length];
+        s.mesh = Models.person({ hat: CAP_COLORS[look], hatStyle: 'swimcap', shirt: skin, pants: '#2A4A8A', skin, mitt: skin });
+        s.heading = 0;
         this.group.add(s.mesh);
         this.list.push(s);
         break;
@@ -115,7 +115,8 @@ const Swimmers = {
         }
       }
       let a = Math.atan2(s.ty - s.y, s.tx - s.x);
-      if (s.flee > 0) a = Math.atan2(s.y - Player.y, s.x - Player.x);
+      s.heading = a;
+      if (s.flee > 0) { a = Math.atan2(s.y - Player.y, s.x - Player.x); s.heading = a; }
       const sp = s.speed * (s.flee > 0 ? 2.2 : s.state === 'leaving' ? 1.8 : 1) * dt;
       const nx = s.x + Math.cos(a) * sp, ny = s.y + Math.sin(a) * sp;
       if (World.depthAt(nx, ny) > (s.state === 'leaving' ? 0.05 : 0.8)) { s.x = nx; s.y = ny; } else if (s.state === 'leaving') s.state = 'gone'; else { s.tx = s.x; s.ty = s.y; }
@@ -132,9 +133,14 @@ const Swimmers = {
     for (const s of this.list) {
       s.mesh.visible = !s.hidden && !Interior.active && U.dist(s.x, s.y, Player.x, Player.y) < 55;
       if (!s.mesh.visible) continue;
-      s.mesh.material.map = this.frames[s.look][Math.floor(s.stroke) % 2];
-      s.mesh.scale.x = s.face;
-      s.mesh.position.set(s.x, -0.08 + Math.sin(s.stroke * 1.3) * 0.04, s.y);
+      // Front crawl: lying forward in the water, head up, arms windmilling.
+      const rig = s.mesh.userData.rig;
+      Models.pose(rig, { t: Game.time });
+      rig.yaw.rotation.y = -s.heading;
+      rig.upper.rotation.z = -1.15;
+      rig.armR.rotation.set(0, 0, s.stroke * 2.4); rig.armL.rotation.set(0, 0, s.stroke * 2.4 + Math.PI);
+      rig.legL.rotation.z = Math.sin(s.stroke * 9) * 0.3; rig.legR.rotation.z = -rig.legL.rotation.z;
+      s.mesh.position.set(s.x, -0.62 + Math.sin(s.stroke * 1.3) * 0.04, s.y);
     }
   },
 

@@ -20,6 +20,7 @@ const Markers = {
       else if (b.type === 'ranger') out.push({ x: d.x, y: d.y, label: 'Ranger · Permits', icon: '🪪', color: '#E3A945' });
       else if (b.type === 'store') out.push({ x: d.x, y: d.y, label: 'General Store', icon: '🛒', color: '#E3A945' });
       else if (b.type === 'bikes') out.push({ x: d.x, y: d.y, label: 'Dirt Bikes', icon: '🏍️', color: '#E3A945' });
+      else if (b.type === 'gas') { const p = World.pumps[0]; out.push({ x: p.x + 1.1, y: p.y + 1.2, label: 'Gas', icon: '⛽', color: '#E3A945' }); }
       else if (b.type === 'house' && Game.home && Game.home.id === b.id) out.push({ x: d.x, y: d.y, label: 'Home', icon: '🏠', color: '#7DC383' });
       else if (b.type === 'house' && b.vacant) out.push({ x: d.x, y: d.y, label: 'For rent · ' + U.fmtMoney(b.rent) + '/day', icon: '🔑', color: '#7FC4D4' });
     }
@@ -67,6 +68,8 @@ const Markers = {
   },
 
   render() {
+    const cp = Scene3D.canopy;
+    if (cp) { const near = U.dist(cp.x, cp.y, Player.x, Player.y) < 4.5, op = near ? 0.18 : 1; for (const m of [cp.roof, cp.trim]) { m.material.opacity = U.lerp(m.material.opacity, op, 0.15); m.material.depthWrite = !near; for (const c of m.children) c.visible = !near; } }
     const time = Game.time, inside = !!Interior.active;
     for (const m of this.list) {
       const d = U.dist(m.t.x, m.t.y, Player.x, Player.y);

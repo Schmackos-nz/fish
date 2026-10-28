@@ -19,7 +19,7 @@ const Bugs = {
     const e = Game.env;
     let r = [1 / 7, 1 / 20, 1 / 7, 1 / 12][e.phase];
     if (World.depthAt(Player.x, Player.y) > 0 || World.shore[World.idx(Player.x | 0, Player.y | 0)] <= 3) r *= 1.6;
-    if (e.weather.id === 'rain') r *= 0.4;
+    if (e.weather.id === 'rain') return 0; // they shelter from the rain
     r *= U.clamp(1.4 - Math.hypot(e.wind.x, e.wind.y) * 0.3, 0.4, 1.4);
     return r;
   },
@@ -38,6 +38,7 @@ const Bugs = {
   update(dt) {
     this.itch = Math.max(0, this.itch - dt * 0.03);
     this.shake = Math.max(0, this.shake - dt * 3);
+    if (Game.env.weather.id === 'rain') for (const b of this.list) if (b.state !== 'leave') { b.state = 'leave'; b.t = 0; }
     this.spawnT -= dt * this.rate() * 4 * (Tools.repelT > 0 || Interior.active ? 0 : 1);
     if (Interior.active) this.list = [];
     if (this.spawnT <= 0) { this.spawnT = 4; if (this.list.length < 4) this.spawn(); }

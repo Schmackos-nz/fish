@@ -107,6 +107,10 @@ const Models = {
       const h = P(G.helmet, pal.hat, 0.03); h.position.y = 0.02; head.add(h);
       const v = P(G.helmVisor, pal.visor || '#222', 0.05); v.position.set(0.33, 0.04, 0); head.add(v);
       const pk = P(G.visor, U.shade(pal.hat, -0.2), 0.08); pk.position.set(0.32, 0.2, 0); head.add(pk);
+    } else if (s === 'swimcap') {
+      const c = P(G.cap, pal.hat, 0.03); c.position.y = 0.04; head.add(c);
+      for (const z of [-0.085, 0.085]) { const r = P(G.ring, '#2A3A4A', 0); r.scale.setScalar(1.1); r.rotation.y = Math.PI / 2; r.position.set(0.29, 0.035, z); head.add(r); }
+      const strap = P(G.band, '#2A3A4A', 0); strap.scale.set(1, 0.25, 1); strap.position.y = 0.035; head.add(strap);
     } else if (s === 'none') {
       for (const [x, y, z] of [[-0.05, 0.25, -0.15], [-0.05, 0.25, 0.15], [-0.12, 0.3, 0], [0.04, 0.3, -0.06], [0.04, 0.3, 0.07], [-0.2, 0.12, -0.2], [-0.2, 0.12, 0.2]]) {
         const p = P(G.puff, pal.hair, 0.06); p.position.set(x, y, z); head.add(p);

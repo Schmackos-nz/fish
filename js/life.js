@@ -123,7 +123,44 @@ const Life = {
     Game.save();
   },
 
+  // Furniture in someone else's house does different things.
+  foreignHouse() { const r = Interior.active; return r && r.b.type === 'house' && !(Game.home && Game.home.id === r.b.id) ? r.b : null; },
+  furnLabel(f) {
+    if (!this.foreignHouse()) return f.label;
+    return { bed: 'Their bed', stove: 'Cook on their stove', chest: 'Rummage through their chest' }[f.kind] || f.label;
+  },
+
+  enterHouse(b) {
+    Interior.enter(b);
+    const owner = Npcs.list.find((n) => n.home === b);
+    if (owner && owner.state === 'home') {
+      Hud.toast(owner.name + ': "OI! What are you doing in my house?!"', UI.bad, 2.6);
+      Sfx.fail(); Wanted.crime(1);
+      setTimeout(() => { if (Interior.active && Interior.active.b === b) Interior.exit(); }, 1400);
+    } else Hud.toast('Nobody\'s home…', UI.muted, 1.6);
+  },
+
+  rummage(b) {
+    if (b.robbedDay === Game.env.day) { Hud.toast('Already cleaned out. Nothing left but socks.', UI.muted, 1.8); return; }
+    b.robbedDay = Game.env.day;
+    const r = Math.random();
+    let msg;
+    if (r < 0.4) { const c = 8 + Math.floor(Math.random() * 33); Game.money += c; msg = 'Found ' + U.fmtMoney(c) + ' in a sock.'; }
+    else if (r < 0.7) { const f = U.pick(Math.random, FOODS.filter((x) => !x.ingredient)); Game.pantry.push({ name: f.name, energy: f.energy }); msg = 'Found ' + (/^[aeiou]/i.test(f.name) ? 'an ' : 'a ') + f.name.toLowerCase() + '.'; }
+    else if (r < 0.9) { const L2 = U.pick(Math.random, LURES); Game.lures[L2.id] = (Game.lures[L2.id] || 0) + 1; msg = 'Found ' + (/^[aeiou]/i.test(L2.name) ? 'an ' : 'a ') + L2.name + '.'; }
+    else { Game.ammo = (Game.ammo || 0) + 5; msg = 'Found 5 rifle rounds. Yikes.'; }
+    Sfx.coin(); Hud.toast(msg + ' (This is stealing, you know.)', UI.accent, 2.4);
+    Game.save();
+  },
+
   useFurniture(kind) {
+    const fb = this.foreignHouse();
+    if (fb) {
+      if (kind === 'bed') Hud.toast('Better not — this isn\'t your bed.', UI.muted, 1.6);
+      else if (kind === 'stove') this.openCook('their stove');
+      else if (kind === 'chest') this.rummage(fb);
+      return;
+    }
     if (kind === 'bed') this.sleep();
     else if (kind === 'stove') this.openCook('your stove');
     else if (kind === 'chest') this.openStorage();
@@ -282,7 +319,11 @@ const Interact = {
   best() {
     const P = Player, cands = [];
     const add = (x, y, r, label, run) => { const d = U.dist(P.x, P.y, x, y); if (d < r) cands.push({ d, x, y, label, run }); };
-    if (Bikes.riding) return { d: 0, x: P.x, y: P.y, label: 'Get off the bike', run: () => Bikes.dismount() };
+    if (Bikes.riding) {
+      const pump = Bikes.nearPump(P.x, P.y);
+      if (pump && Game.fuel < 99) return { d: 0, x: pump.x, y: pump.y, label: 'Fill up — ' + U.fmtMoney(Math.ceil((100 - Game.fuel) * 0.2)), run: () => Bikes.fillUp() };
+      return { d: 0, x: P.x, y: P.y, label: 'Get off the bike', run: () => Bikes.dismount() };
+    }
     if (Interior.active) {
       const b = Interior.active.b;
       if (b.type === 'shop') add(World.shopkeeper.x, World.shopkeeper.y, 2.8, 'Hettie\'s Tackle', () => Menus.openShop());
@@ -290,17 +331,24 @@ const Interact = {
       if (b.type === 'store') add(World.clerk.x, World.clerk.y, 2.8, 'General Store', () => Life.openStore());
       if (b.type === 'bikes') add(World.revs.x, World.revs.y, 2.8, 'Revs — bikes & fuel', () => Bikes.openShop());
       const f = Interior.near();
-      if (f) cands.push({ d: 0.5, x: f.x + f.w / 2, y: f.y + f.h / 2, label: f.label, run: () => Life.useFurniture(f.kind) });
+      if (f) cands.push({ d: 0.5, x: f.x + f.w / 2, y: f.y + f.h / 2, label: Life.furnLabel(f), run: () => Life.useFurniture(f.kind) });
     } else {
       for (const b of World.buildings) {
         const dr = World.doorOf(b);
-        if (b.type !== 'house') add(dr.x, dr.y, 1.6, 'Enter ' + b.name, () => Interior.enter(b));
+        if (b.type === 'gas') add(dr.x, dr.y, 1.6, 'Gas Station — pay at the pump', () => Hud.toast('Pay at the pump across the forecourt.', UI.muted, 1.6));
+        else if (b.type !== 'house') add(dr.x, dr.y, 1.6, 'Enter ' + b.name, () => Interior.enter(b));
         else if (Game.home && Game.home.id === b.id) add(dr.x, dr.y, 1.6, 'Enter your cottage', () => Interior.enter(b));
+        else if (b.unlocked) add(dr.x, dr.y, 1.6, 'Enter ' + b.name + ' (unlocked)', () => Life.enterHouse(b));
         else if (b.vacant) add(dr.x, dr.y, 1.6, 'Cottage for rent — ' + U.fmtMoney(b.rent) + '/day', () => Life.openRent(b));
         else add(dr.x, dr.y, 1.6, b.name, () => Hud.toast(b.name + ' — the door\'s locked.', UI.muted, 1.6));
       }
       if (Bikes.near()) add(Game.bike.x, Game.bike.y, 2, 'Ride your ' + BIKE_BY_ID[Game.bike.id].name, () => Bikes.mount());
       add(World.bbq.x, World.bbq.y, 2, 'BBQ — cook your catch', () => Life.openCook('the BBQ'));
+      for (const p of World.pumps || []) {
+        // At the pump with your bike, filling up beats every other prompt.
+        if (Game.bike && U.dist(Game.bike.x, Game.bike.y, p.x, p.y) < 4.5 && U.dist(P.x, P.y, p.x, p.y) < 2.2 && Game.fuel < 99) cands.push({ d: -1, x: p.x, y: p.y, label: 'Fill up your bike — ' + U.fmtMoney(Math.ceil((100 - Game.fuel) * 0.2)), run: () => Bikes.fillUp() });
+        else add(p.x, p.y, 2.2, 'Gas pump', () => Hud.toast(Game.bike ? 'Bring your bike over to the pump.' : 'You\'ll need a bike first — Dirt Cheap Bikes is up the street.', UI.muted, 2));
+      }
       add(World.tim.x, World.tim.y, 2.6, 'Talk to Tim — tips & goals', () => Tim.open());
       add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
       Weed.interactions(add);

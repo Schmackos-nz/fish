@@ -357,6 +357,7 @@ const Scene3D = {
       shop: { wall: 0x8a5a34, roof: 0x3f6e7a, sign: ['TACKLE', '#e9d9a8', '#3a2614'] },
       ranger: { wall: 0x7a6a48, roof: 0x3f6a3a, sign: ['RANGER', '#2f5a2c', '#f2e6c0'] },
       store: { wall: 0xe0d6c0, roof: 0xb83a32, sign: ['STORE', '#b83a32', '#fff4e0'] },
+      gas: { wall: 0xF4F0E6, roof: 0xD23A3A, sign: ['GAS', '#D23A3A', '#FFFFFF'] },
       bikes: { wall: 0x4a4a52, roof: 0x2a2a2e, sign: ['BIKES', '#1a1a1a', '#F2C14E'] },
     };
     const HOUSE_WALLS = [0xe2d3ac, 0xa9c4d2, 0xd7b0a8, 0xbfd0a0, 0xe8dcc8, 0xc8b8d8];
@@ -414,6 +415,22 @@ const Scene3D = {
 
   // Public BBQ by the dock and Dusty's tent in the woods.
   buildCampProps() {
+    // Gas pumps under a canopy.
+    for (const p of World.pumps || []) {
+      const g = new THREE.Group(), h = this.groundH(p.x, p.y);
+      const body = new THREE.Mesh(new THREE.BoxGeometry(0.42, 1.15, 0.32), new THREE.MeshLambertMaterial({ color: 0xD23A3A })); body.position.y = 0.58; g.add(body);
+      const face = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.26, 0.02), new THREE.MeshLambertMaterial({ color: 0xF4F0E6 })); face.position.set(0, 0.85, 0.17); g.add(face);
+      const nozzle = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.08), new THREE.MeshLambertMaterial({ color: 0x2a2a2e })); nozzle.position.set(0.25, 0.65, 0.05); g.add(nozzle);
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.1, 0.6), new THREE.MeshLambertMaterial({ color: 0xA9A9A2 })); base.position.y = 0.05; g.add(base);
+      g.position.set(p.x, h, p.y); this.world.add(g);
+    }
+    if (World.pumps && World.pumps.length) {
+      const [a, b] = World.pumps, mx = a.x, my = (a.y + b.y) / 2, h = this.groundH(mx, my);
+      const roof = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.16, 4.6), new THREE.MeshLambertMaterial({ color: 0xF4F0E6, transparent: true })); roof.position.set(mx, h + 2.5, my); this.world.add(roof);
+      const trim = new THREE.Mesh(new THREE.BoxGeometry(3.45, 0.12, 4.65), new THREE.MeshLambertMaterial({ color: 0xD23A3A, transparent: true })); trim.position.set(mx, h + 2.36, my); this.world.add(trim);
+      this.canopy = { roof, trim, x: mx, y: my };
+      for (const dz of [-2, 2]) { const post = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.4, 0.14), new THREE.MeshLambertMaterial({ color: 0xD9D6CC })); post.position.set(mx + 1.4, h + 1.2, my + dz); this.world.add(post); }
+    }
     const dark = new THREE.MeshLambertMaterial({ color: 0x2a2a2e });
     const q = World.bbq, bbq = new THREE.Group();
     const grill = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.28, 0.3, 14), dark); grill.position.y = 0.75; bbq.add(grill);

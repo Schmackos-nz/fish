@@ -44,18 +44,35 @@ const Floaters = {
       lilo: LILO_COLORS[(rng() * LILO_COLORS.length) | 0], skin: SKINS[(rng() * SKINS.length) | 0],
       state: 'float', cover: COVERS[(rng() * COVERS.length) | 0], shades: rng() < 0.6, flee: 0, talkT: 5 + rng() * 20, bubble: null, bubbleT: 0, hooked: false,
     };
-    const geo = new THREE.PlaneGeometry(1.15, 2.3); geo.rotateX(-Math.PI / 2);
-    const tex = new THREE.CanvasTexture(this.paint(f));
-    tex.anisotropy = 4;
-    const lilo = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.3 }));
-    lilo.renderOrder = 3;
-    // Tilted a little toward the camera so the sunbather reads from the angled view.
     f.mesh = new THREE.Group();
-    f.mesh.rotation.x = 0.28;
-    f.mesh.add(lilo);
-    f.lilo3 = lilo;
+    f.lilo3 = this.build3D(f);
+    f.mesh.add(f.lilo3);
     this.group.add(f.mesh);
     this.list.push(f);
+  },
+
+  // A 3D inflatable lilo with a sunbather lying on their back, suitably covered.
+  build3D(f) {
+    const g = new THREE.Group(), P = (geo, c, o) => Models.part(geo, c, o);
+    const [main, rib] = f.lilo;
+    const pad = P(new THREE.BoxGeometry(0.95, 0.16, 2.1), main, 0.03); pad.position.y = 0.08; g.add(pad);
+    for (let k = 0; k < 6; k++) { const r = P(new THREE.CylinderGeometry(0.08, 0.08, 0.93, 8), rib, 0); r.rotation.z = Math.PI / 2; r.position.set(0, 0.15, -0.75 + k * 0.32); g.add(r); }
+    const pillow = P(new THREE.CylinderGeometry(0.13, 0.13, 0.9, 10), U.shade(main, 0.3), 0.05); pillow.rotation.z = Math.PI / 2; pillow.position.set(0, 0.2, -0.92); g.add(pillow);
+    // The sunbather: lying face-up, head on the pillow, arms flopped out.
+    const p = Models.person({ hatStyle: 'hair', hair: '#5A3A1E', shirt: f.skin, pants: '#2A4A8A', skin: f.skin, mitt: f.skin });
+    const rig = p.userData.rig;
+    rig.yaw.rotation.y = -Math.PI / 2; rig.lean.rotation.x = -Math.PI / 2;
+    rig.armR.rotation.set(-1.25, 0, 0); rig.armL.rotation.set(1.25, 0, 0);
+    p.position.set(0, 0.42, 0.5);
+    if (f.shades) for (const z of [-0.085, 0.085]) { const s = P(new THREE.BoxGeometry(0.04, 0.09, 0.13), '#151515', 0); s.position.set(0.3, 0.035, z); rig.head.add(s); }
+    g.add(p);
+    // Strategic coverage over the hips.
+    const cover = new THREE.Group(); cover.position.set(0, 0.62, 0.15); g.add(cover);
+    if (f.cover === 'towel') { const t = P(new THREE.BoxGeometry(0.7, 0.05, 0.62), '#F4F4F4', 0.05); cover.add(t); for (const z of [-0.12, 0.12]) { const st = P(new THREE.BoxGeometry(0.71, 0.055, 0.08), z < 0 ? '#D23A3A' : '#3A6AD2', 0); st.position.z = z; cover.add(st); } }
+    else if (f.cover === 'paper') { const t = P(new THREE.BoxGeometry(0.62, 0.03, 0.72), '#ECE6D4', 0.05); t.rotation.z = 0.08; cover.add(t); }
+    else if (f.cover === 'duck') { const d = P(new THREE.SphereGeometry(0.26, 12, 10), '#F2D01A', 0.05); d.scale.set(1, 0.8, 1.15); cover.add(d); const h = P(new THREE.SphereGeometry(0.14, 10, 8), '#F2D01A', 0.06); h.position.set(0, 0.2, -0.22); cover.add(h); const b = P(new THREE.ConeGeometry(0.06, 0.14, 6), '#F2801A', 0.1); b.rotation.x = -Math.PI / 2; b.position.set(0, 0.2, -0.38); cover.add(b); }
+    else { const h = P(new THREE.CylinderGeometry(0.42, 0.42, 0.03, 18), '#D9C27A', 0.04); cover.add(h); const c = P(new THREE.SphereGeometry(0.18, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), '#C9A85A', 0.05); cover.add(c); }
+    return g;
   },
 
   // Top-down cut-out style (same look as the other characters): lilo, pillow, a round sunbather on
@@ -200,7 +217,7 @@ const Floaters = {
       const vis = f.state !== 'gone' && !Interior.active && U.dist(f.x, f.y, Player.x, Player.y) < 50;
       f.mesh.visible = vis;
       if (!vis) continue;
-      f.mesh.position.set(f.x, 0.1 + Math.sin(Game.time * 1.6 + f.x) * 0.025, f.y);
+      f.mesh.position.set(f.x, -0.02 + Math.sin(Game.time * 1.6 + f.x) * 0.025, f.y);
       f.lilo3.rotation.y = -f.ang;
     }
   },

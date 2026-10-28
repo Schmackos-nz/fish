@@ -51,7 +51,7 @@ const Bikes = {
     this.paths = paths;
     this.riders = BIKER_PALS.map((pal, k) => {
       const i = paths.length ? paths[(Math.random() * paths.length) | 0] : World.idx(World.town.x, World.town.y + 10);
-      const r = { x: i % World.W + 0.5, y: ((i / World.W) | 0) + 0.5, ang: Math.random() * 6.28, speed: 8 + Math.random() * 3, target: null, wheelie: 0, bubbleT: 0, bubble: null, pal };
+      const r = { state: 'ride', fuel: 40 + Math.random() * 60, px: 0, py: 0, walkT: 0, x: i % World.W + 0.5, y: ((i / World.W) | 0) + 0.5, ang: Math.random() * 6.28, speed: 8 + Math.random() * 3, target: null, wheelie: 0, bubbleT: 0, bubble: null, pal };
       r.bike = this.model(BIKES[k % BIKES.length].color);
       r.mesh = Models.person(pal);
       this.group.add(r.bike, r.mesh);
@@ -66,6 +66,22 @@ const Bikes = {
     this.mine = Game.bike ? this.model(BIKE_BY_ID[Game.bike.id].color) : null;
     if (this.mine) this.group.add(this.mine);
   },
+
+  nearPump(x, y, r = 2.4) { return (World.pumps || []).find((p) => U.dist(p.x, p.y, x, y) < r); },
+
+  fillUp() {
+    const need = 100 - Game.fuel, cost = Math.ceil(need * 0.2);
+    if (need < 1) { Hud.toast('Tank\'s already full.', UI.muted, 1.2); return; }
+    const afford = Math.min(cost, Game.money);
+    if (afford <= 0) { Hud.toast('No money for fuel.', UI.bad, 1.4); return; }
+    Game.money -= afford; Game.fuel = Math.min(100, Game.fuel + afford / 0.2);
+    Sfx.burst(1.2, 900, 0.15, 'lowpass'); Sfx.coin();
+    Hud.toast('Filled up — ' + U.fmtMoney(afford) + (afford < cost ? ' (all you had)' : ''), UI.good, 1.8);
+    Game.save();
+  },
+
+  // Where a rider is: on the bike, or on foot beside it while parked.
+  riderPos(r) { return r.state === 'refuel' || r.state === 'break' ? { x: r.px, y: r.py } : { x: r.x, y: r.y }; },
 
   blocked(x, y) { return World.blocked(x, y) || World.depthAt(x, y) > 0.45; },
 
@@ -96,7 +112,7 @@ const Bikes = {
   ride(dt, ix, iy) {
     const b = BIKE_BY_ID[Game.bike.id];
     const fuel = Game.fuel > 0;
-    if (!fuel && !this.warnedFuel) { this.warnedFuel = true; Hud.toast('Out of fuel! Revs at Dirt Cheap Bikes sells more.', UI.bad, 3); }
+    if (!fuel && !this.warnedFuel) { this.warnedFuel = true; Hud.toast('Out of fuel! Push it to the gas station at the bottom of the main street.', UI.bad, 3); }
     if (fuel) this.warnedFuel = false;
     const len = Math.hypot(ix, iy) || 1;
     const top = b.top * (fuel ? 1 : 0.2) * (World.isWater(Player.x, Player.y) ? 0.45 : 1);
@@ -133,7 +149,17 @@ const Bikes = {
     for (const r of this.riders) {
       if (r.ko > 0) { r.ko -= dt; continue; } // knocked off their bike
       r.bubbleT = Math.max(0, r.bubbleT - dt);
-      if (!r.target || U.dist(r.x, r.y, r.target.x, r.target.y) < 2) r.target = this.pickTarget(r);
+      if (this.parkedTick(r, dt)) continue;
+      // Fuel: head for the pumps when low.
+      r.fuel -= r.speed * dt * 0.02;
+      const pump = (World.pumps || [])[0];
+      if (r.state === 'ride' && r.fuel < 20 && pump) { r.state = 'toGas'; r.gasT = 0; }
+      if (r.state === 'toGas') {
+        r.gasT += dt;
+        r.target = { x: pump.x + 1.3, y: pump.y + 0.6 };
+        if (U.dist(r.x, r.y, r.target.x, r.target.y) < 2 || r.gasT > 60) { this.park(r, 'refuel', 10, ['Running on fumes!', 'Fill \'er up!']); continue; }
+      } else if (Math.random() < dt / 90) { this.park(r, 'break', 12 + Math.random() * 15, ['Smoko!', 'Gotta stretch the legs.', 'Nice spot for a break.']); continue; }
+      if (r.state !== 'toGas' && (!r.target || U.dist(r.x, r.y, r.target.x, r.target.y) < 2)) r.target = this.pickTarget(r);
       const want = Math.atan2(r.target.y - r.y, r.target.x - r.x);
       r.ang += U.clamp(U.angDiff(r.ang, want), -2.5 * dt, 2.5 * dt);
       const nx = r.x + Math.cos(r.ang) * r.speed * dt, ny = r.y + Math.sin(r.ang) * r.speed * dt;
@@ -144,7 +170,7 @@ const Bikes = {
       const pd = U.dist(r.x, r.y, Player.x, Player.y);
       if (pd < 25 && Math.random() < dt * 0.05) { r.bubble = U.pick(Math.random, BIKER_SAY); r.bubbleT = 1.8; }
       // Clipping the angler.
-      if (pd < 1.1 && !this.riding && !Player.evasive && !Interior.active && !r.hitCool) {
+      if (pd < 1.1 && !this.riding && !Player.evasive && !Interior.active && !r.hitCool && r.state !== 'refuel' && r.state !== 'break') {
         r.hitCool = 3;
         const a = Math.atan2(Player.y - r.y, Player.x - r.x);
         for (let s = 0; s < 8; s++) { const x = Player.x + Math.cos(a) * 0.25, y = Player.y + Math.sin(a) * 0.25; if (World.blocked(x, y)) break; Player.x = x; Player.y = y; }
@@ -159,6 +185,32 @@ const Bikes = {
         n.bikeYell = Game.time + 20; Npcs.say(n, U.pick(Math.random, ['SLOW DOWN!', 'You\'re scaring the fish!', 'Bloody bikers…']), 2.4);
       }
     }
+  },
+
+  park(r, state, time, lines) {
+    r.state = state; r.stateT = time; r.filled = false; r.foot = null; r.wheelie = 0;
+    r.px = r.x + Math.cos(r.ang + Math.PI / 2) * 0.9; r.py = r.y + Math.sin(r.ang + Math.PI / 2) * 0.9;
+    if (World.blocked(r.px, r.py)) { r.px = r.x - Math.cos(r.ang + Math.PI / 2) * 0.9; r.py = r.y - Math.sin(r.ang + Math.PI / 2) * 0.9; }
+    if (U.dist(r.x, r.y, Player.x, Player.y) < 30) { r.bubble = U.pick(Math.random, lines); r.bubbleT = 2.4; }
+  },
+
+  // Off the bike: mill about nearby, gas up if that's why we stopped, then ride on.
+  parkedTick(r, dt) {
+    if (r.state !== 'refuel' && r.state !== 'break') return false;
+    r.stateT -= dt;
+    if (!r.foot || U.dist(r.px, r.py, r.foot.x, r.foot.y) < 0.3) {
+      if (Math.random() < 0.5) r.foot = { x: r.px, y: r.py, wait: true };
+      else for (let t = 0; t < 8; t++) { const a = Math.random() * 6.28, d = 0.8 + Math.random() * 2.2, x = r.x + Math.cos(a) * d, y = r.y + Math.sin(a) * d; if (!World.blocked(x, y)) { r.foot = { x, y }; break; } }
+      r.footT = 1.5 + Math.random() * 2;
+    }
+    r.footT -= dt;
+    if (r.foot && !r.foot.wait) {
+      const a = Math.atan2(r.foot.y - r.py, r.foot.x - r.px);
+      r.px += Math.cos(a) * 1.1 * dt; r.py += Math.sin(a) * 1.1 * dt; r.walkFace = a; r.walkT += dt; r.onFootMoving = true;
+    } else { r.onFootMoving = false; if (r.footT <= 0) r.foot = null; }
+    if (r.state === 'refuel' && r.stateT < 4 && !r.filled) { r.filled = true; r.fuel = 100; if (U.dist(r.x, r.y, Player.x, Player.y) < 30) { r.bubble = 'Ka-ching. Full tank.'; r.bubbleT = 2; } }
+    if (r.stateT <= 0) { r.state = 'ride'; r.target = this.pickTarget(r); }
+    return true;
   },
 
   pickTarget(r) {
@@ -183,11 +235,17 @@ const Bikes = {
         const h = base(r.x, r.y), pitch = r.wheelie > 0 ? Math.min(0.5, r.wheelie) : 0;
         r.bike.position.set(r.x, h, r.y); r.bike.rotation.set(0, -r.ang, pitch);
         const dir = Math.abs(Math.cos(r.ang)) > Math.abs(Math.sin(r.ang)) ? 'side' : Math.sin(r.ang) > 0 ? 'down' : 'up';
-        r.mesh.position.set(r.x - Math.cos(r.ang) * 0.25, h + 0.52 + pitch * 0.3, r.y - Math.sin(r.ang) * 0.25);
-        r.mesh.userData.rig.yaw.rotation.y = -r.ang;
-        Models.pose(r.mesh.userData.rig, { pose: 'ride', t: Game.time });
+        if (r.state === 'refuel' || r.state === 'break') {
+          r.mesh.position.set(r.px, base(r.px, r.py), r.py);
+          if (r.walkFace !== undefined) r.mesh.userData.rig.yaw.rotation.y = -r.walkFace;
+          Models.pose(r.mesh.userData.rig, { moving: r.onFootMoving, phase: r.walkT, t: Game.time });
+        } else {
+          r.mesh.position.set(r.x - Math.cos(r.ang) * 0.25, h + 0.52 + pitch * 0.3, r.y - Math.sin(r.ang) * 0.25);
+          r.mesh.userData.rig.yaw.rotation.y = -r.ang;
+          Models.pose(r.mesh.userData.rig, { pose: 'ride', t: Game.time });
+        }
       }
-      const lv = (d < 28 ? (1 - d / 28) ** 2 : 0) * (Interior.active ? 0 : 0.7); // locals fade fast with distance
+      const lv = (d < 28 ? (1 - d / 28) ** 2 : 0) * (Interior.active || r.state === 'refuel' || r.state === 'break' ? 0 : 0.7); // locals fade fast with distance
       if (lv > loud) { loud = lv; rpm = 70 + r.speed * 10 + (r.wheelie > 0 ? 30 : 0); }
     }
     // Your bike: parked where you left it, or under you.
@@ -217,15 +275,13 @@ const Bikes = {
   // ---------- the dealership ----------
   openShop() {
     const own = Game.bike ? BIKE_BY_ID[Game.bike.id] : null, trade = own ? Math.round(own.price / 2) : 0;
-    const fillCost = Math.ceil((100 - Game.fuel) * 0.15);
     Life.panel(`<h2>Dirt Cheap Bikes</h2><div class="desc">"Mate. MATE. Have you seen the Moto 450? Fish are slow. Be fast." — Revs · You have <b style="color:var(--accent)">${U.fmtMoney(Game.money)}</b></div>
       <h3>Bikes</h3>${BIKES.map((b) => {
         const net = b.price - trade, mine = own && own.id === b.id;
         return `<div class="row"><div><b>${b.name}</b> <span class="desc">· top speed ${b.top} m/s</span><div class="desc">${b.desc}</div></div>
           ${mine ? '<span class="owned">✓ Yours</span>' : `<button class="primary" data-bike="${b.id}" ${Game.money < net ? 'disabled' : ''}>${own ? 'Trade up ' + U.fmtMoney(net) : 'Buy ' + U.fmtMoney(b.price)}</button>`}</div>`;
       }).join('')}
-      <h3>Fuel</h3><div class="row"><div><b>Tank ${Math.round(Game.fuel)}%</b><div class="desc">Riding burns fuel; run dry and you'll be pushing.</div></div>
-        <button data-fuel ${Game.fuel >= 99.5 || Game.money < fillCost ? 'disabled' : ''}>Fill up ${U.fmtMoney(fillCost)}</button></div>
+      <h3>Fuel</h3><div class="desc">Tank ${Math.round(Game.fuel)}% — fill up at the gas station at the bottom of the main street.</div>
       ${own ? '' : '<div class="desc" style="margin-top:12px">Your bike gets parked out front. Press E beside it to ride.</div>'}`, (el) => {
       el.querySelectorAll('[data-bike]').forEach((btn) => { btn.onclick = () => {
         const b = BIKE_BY_ID[btn.dataset.bike];
@@ -237,8 +293,6 @@ const Bikes = {
         Hud.toast('The ' + b.name + ' is parked out front. Ride safe!', UI.good, 2.6);
         Game.save(); this.openShop();
       }; });
-      const f = el.querySelector('[data-fuel]');
-      if (f) f.onclick = () => { Game.money -= fillCost; Game.fuel = 100; Sfx.coin(); Game.save(); this.openShop(); };
     });
   },
 };

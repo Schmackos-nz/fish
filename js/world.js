@@ -269,14 +269,14 @@ const World = {
     while (this.inB(sx, sy) && this.tile[this.idx(sx, sy)] === T.WATER) sy++;
     const cx = sx, cy = sy + 7;
     // Township clearing: a main street running south from the dock, shops either side.
-    for (let y = cy - 7; y <= cy + 13; y++) for (let x = cx - 10; x <= cx + 10; x++) {
+    for (let y = cy - 7; y <= cy + 20; y++) for (let x = cx - 10; x <= cx + 10; x++) {
       if (!this.inB(x, y)) continue;
       const i = this.idx(x, y);
       if (this.tile[i] === T.WATER) continue;
       this.obj[i] = Math.abs(x - cx) > 8 && U.hash2(x, y, 9) < 0.3 ? O.FLOWERS : O.NONE;
       this.tile[i] = T.GRASS;
     }
-    for (let y = sy - 1; y <= cy + 13; y++) for (let x = cx - 1; x <= cx; x++) {
+    for (let y = sy - 1; y <= cy + 19; y++) for (let x = cx - 1; x <= cx; x++) {
       if (!this.inB(x, y)) continue;
       const i = this.idx(x, y);
       if (this.tile[i] !== T.WATER) { this.tile[i] = T.PATH; this.obj[i] = O.NONE; }
@@ -293,7 +293,18 @@ const World = {
     const ranger = { x: cx - 7, y: cy - 4, w: 4, h: 5, face: 'east', type: 'ranger', name: 'Ranger Station' };
     const store = { x: cx - 7, y: cy + 4, w: 4, h: 7, face: 'east', type: 'store', name: 'General Store' };
     const bikes = { x: cx + 2, y: cy + 5, w: 5, h: 6, face: 'west', type: 'bikes', name: 'Dirt Cheap Bikes' };
-    for (const b of [shop, ranger, store, bikes]) {
+    const gas = { x: cx + 2, y: cy + 14, w: 4, h: 4, face: 'west', type: 'gas', name: 'Gas Station' };
+    // Two pumps on a little forecourt across the street from the kiosk.
+    this.pumps = [{ x: cx - 3, y: cy + 15 }, { x: cx - 3, y: cy + 17.5 }];
+    // The bottom of the main street is always dry land (fill in any pond that strayed into it).
+    for (let y = cy + 12; y <= cy + 20; y++) for (let x = cx - 6; x <= cx + 7; x++) {
+      if (!this.inB(x, y)) continue;
+      const i = this.idx(x, y);
+      if (this.tile[i] === T.WATER) { this.tile[i] = T.GRASS; this.kind[i] = K.NONE; this.depth[i] = 0; this.flowX[i] = this.flowY[i] = 0; }
+      if ((x >= cx - 5 && x <= cx - 2 && y >= cy + 13 && y <= cy + 19) || ((x === cx - 1 || x === cx) && y <= cy + 19)) this.tile[i] = T.PATH;
+      if (this.tile[i] !== T.FLOOR) this.obj[i] = O.NONE;
+    }
+    for (const b of [shop, ranger, store, bikes, gas]) {
       this.buildings.push(b);
       for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) { this.tile[this.idx(x, y)] = T.FLOOR; this.obj[this.idx(x, y)] = O.NONE; }
     }
@@ -307,10 +318,10 @@ const World = {
     this.placeHouses(rng);
 
     // Footpaths from town to each lake and out to the rivers.
-    for (const l of this.lakes) if (l !== lake && l.kind === K.LAKE) this.carvePath(cx, cy + 13, l.x, l.y);
+    for (const l of this.lakes) if (l !== lake && l.kind === K.LAKE) this.carvePath(cx, cy + 19, l.x, l.y);
     for (let i = 0; i < 3; i++) {
       const ang = rng() * Math.PI * 2;
-      this.carvePath(cx, cy + 13, cx + Math.cos(ang) * 110, cy + Math.sin(ang) * 110);
+      this.carvePath(cx, cy + 19, cx + Math.cos(ang) * 110, cy + Math.sin(ang) * 110);
     }
   },
 
@@ -341,7 +352,7 @@ const World = {
       this.buildings.push(b); this.houses.push(b);
     }
     const vacant = Math.min(4, this.houses.length);
-    this.houses.forEach((b, i) => { b.vacant = i >= this.houses.length - vacant; if (b.vacant) b.name = 'Cottage for rent'; });
+    this.houses.forEach((b, i) => { b.vacant = i >= this.houses.length - vacant; if (b.vacant) b.name = 'Cottage for rent'; else b.unlocked = rng() < 0.45; });
   },
 
   // A shady character's camp in the woods, not too far from town.
