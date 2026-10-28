@@ -167,6 +167,24 @@ const $ = (id) => document.getElementById(id);
 const TITLE_ENV = { phase: 2, daylight: 0.78, hour: 18.4, weather: WEATHERS[0], wind: { x: 0.3, y: 0.1 } };
 let titleT = 0, hasSave = false, newArmed = 0;
 
+// Tim proudly holding up his catch, for the front page.
+function drawTitleTim() {
+  const c = document.getElementById('titleTim');
+  if (!c) return;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, c.width, c.height);
+  // Rod from his hand up and over, line down to a big trout.
+  const hx = 40 * 4.6 + 12, hy = 58 * 4.6 + 20;
+  g.lineCap = 'round';
+  g.strokeStyle = '#1a1410'; g.lineWidth = 9; g.beginPath(); g.moveTo(hx, hy); g.quadraticCurveTo(hx + 70, hy - 210, hx + 96, hy - 250); g.stroke();
+  g.strokeStyle = '#C9A86A'; g.lineWidth = 5; g.beginPath(); g.moveTo(hx, hy); g.quadraticCurveTo(hx + 70, hy - 210, hx + 96, hy - 250); g.stroke();
+  g.strokeStyle = '#EEE7D7'; g.lineWidth = 2; g.beginPath(); g.moveTo(hx + 96, hy - 250); g.lineTo(hx + 92, hy - 150); g.stroke();
+  Fish.drawPortrait(g, SPECIES_BY_ID.rainbow, hx + 92, hy - 110, 130, false, Math.PI / 2 - 0.2);
+  g.save(); g.translate(12, 20); g.scale(4.6, 4.6);
+  Folk.draw(g, TIM_PAL, 'down', 0, 'grip');
+  g.restore();
+}
+
 function refreshTitle() {
   try { hasSave = !!localStorage.getItem(SAVE_KEY); } catch (e) { hasSave = false; }
   $('startBtn').querySelector('span').textContent = hasSave ? 'Continue' : 'Start fishing';
@@ -295,9 +313,9 @@ function titleFrame(dt) {
   const modalOpen = !$('help').classList.contains('hidden') || !$('settings').classList.contains('hidden');
   if (Input.pressed('Enter') && !modalOpen) $('startBtn').click();
   if (Input.pressed('Escape')) closeModals();
-  const t = World.town;
-  Scene3D.camDist = 22;
-  Scene3D.updateCamera(dt, { x: t.x + 6 + Math.sin(titleT * 0.05) * 14, y: t.y - 9 + Math.cos(titleT * 0.04) * 3 });
+  const c = World.lakes[0];
+  Scene3D.camDist = 34;
+  Scene3D.updateCamera(dt, { x: c.x + Math.sin(titleT * 0.04) * c.r * 0.6, y: c.y + c.r * 0.15 + Math.cos(titleT * 0.03) * 4 });
   Scene3D.updateEnv(TITLE_ENV, dt);
   Npcs.update(dt); Floaters.update(dt);
   Npcs.render(); Floaters.render();
@@ -394,6 +412,7 @@ window.addEventListener('load', () => {
   const saved = Game.load();
   if (!saved) Game.newGame((Math.random() * 1e9) | 0);
   buildWorld(Game.seed, saved ? { x: saved.px, y: saved.py } : null);
+  drawTitleTim();
   showTitle();
   requestAnimationFrame(frame);
 });

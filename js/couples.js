@@ -15,7 +15,12 @@ const Couples = {
     this.group = new THREE.Group();
     Scene3D.scene.add(this.group);
     this.active = null; this.cool = 60 + Math.random() * 60;
-    this.bushMesh = Actors.billboard(Art.sprites.bush, 1.2, 0.9);
+    this.bushMesh = new THREE.Group();
+    for (const [r, x, y, z, c] of [[0.42, 0, 0.33, 0, 0x46993F], [0.3, 0.33, 0.25, 0.12, 0x52A548], [0.3, -0.32, 0.25, -0.06, 0x40903A]]) {
+      const b = new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), new THREE.MeshLambertMaterial({ color: c }));
+      b.position.set(x, y, z); this.bushMesh.add(b);
+    }
+    Toon.apply(this.bushMesh);
     this.bushMesh.visible = false;
     this.group.add(this.bushMesh);
     const hc = document.createElement('canvas'); hc.width = 32; hc.height = 32;

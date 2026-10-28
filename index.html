@@ -6,7 +6,7 @@
 <title>Outdoors with Tim</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700&family=Lilita+One&display=swap" rel="stylesheet">
 <style>
   :root {
     --font: "Inter", "Segoe UI", system-ui, sans-serif;
@@ -82,21 +82,45 @@
     font: 600 14px var(--font); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .25s, transform .25s; z-index: 3; }
   #toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-  /* ---------- title screen ---------- */
-  #title { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; justify-content: center;
-    padding: 0 7vw; background:
-      linear-gradient(90deg, rgba(6, 10, 12, 0.92) 0%, rgba(6, 10, 12, 0.72) 34%, rgba(6, 10, 12, 0.08) 70%),
-      linear-gradient(0deg, rgba(6, 10, 12, 0.6) 0%, transparent 30%); }
-  #title .eyebrow { font: 600 12px var(--font); letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
-  #title h1 { margin: 0; max-width: 640px; font: 700 clamp(56px, 7.5vw, 104px)/0.95 var(--display); letter-spacing: -2px; color: var(--ink); }
-  #title h1 em { font-style: italic; color: var(--accent); }
-  #title .tagline { max-width: 430px; margin: 22px 0 34px; color: #BFC3BD; font-size: 16px; line-height: 1.6; }
-  .menu { display: flex; flex-direction: column; gap: 10px; width: 300px; }
-  .menu button { text-align: left; padding: 14px 18px; font-size: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
-  .menu button small { font-size: 12px; font-weight: 500; opacity: .7; }
-  .menu .sep { height: 6px; }
-  #saveInfo { color: var(--muted); font-size: 12.5px; margin: 2px 0 6px 2px; }
-  #title footer { position: absolute; left: 7vw; right: 7vw; bottom: 28px; display: flex; justify-content: space-between; color: var(--dim); font-size: 12px; }
+  /* ---------- title screen: cartoon game front page ---------- */
+  #title { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 35%, rgba(6,14,20,0.55) 100%); overflow: hidden; }
+  .title-wrap { display: flex; align-items: center; gap: 3vw; margin-top: -2vh; }
+  #titleTim { width: clamp(220px, 24vw, 340px); height: auto; filter: drop-shadow(0 14px 0 rgba(20,14,10,0.35));
+    animation: timBob 2.6s ease-in-out infinite; transform-origin: 50% 100%; }
+  @keyframes timBob { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-10px) rotate(1.5deg); } }
+  .title-main { display: flex; flex-direction: column; align-items: center; }
+  .logo { position: relative; padding: 18px 42px 30px; margin-bottom: 26px; transform: rotate(-2deg);
+    background: repeating-linear-gradient(0deg, #C98A4A 0 22px, #B97A3C 22px 24px), #C98A4A;
+    border: 6px solid #1a1410; border-radius: 22px; box-shadow: 0 10px 0 #1a1410, inset 0 4px 0 rgba(255,255,255,0.25);
+    animation: logoIn .6s cubic-bezier(.2, 1.6, .4, 1) both; }
+  .logo::before, .logo::after { content: ""; position: absolute; top: -40px; width: 10px; height: 44px; background: #5a3a1e; border: 4px solid #1a1410; border-bottom: 0; }
+  .logo::before { left: 70px; } .logo::after { right: 70px; }
+  @keyframes logoIn { from { transform: rotate(-2deg) scale(0.6); opacity: 0; } }
+  .logo .l1 { display: block; font: 400 clamp(60px, 8.2vw, 124px)/0.95 "Lilita One", sans-serif; color: #FFE27A; letter-spacing: 2px;
+    text-shadow: -4px -4px 0 #1a1410, 4px -4px 0 #1a1410, -4px 4px 0 #1a1410, 4px 4px 0 #1a1410, 0 -5px 0 #1a1410, 0 5px 0 #1a1410, -5px 0 0 #1a1410, 5px 0 0 #1a1410, 0 11px 0 #1a1410; }
+  .logo .l2 { position: absolute; right: -36px; bottom: -26px; padding: 4px 22px 8px; transform: rotate(-6deg);
+    font: 400 clamp(28px, 3.2vw, 46px)/1 "Lilita One", sans-serif; color: #fff; background: #4FA048;
+    border: 5px solid #1a1410; border-radius: 14px; box-shadow: 0 6px 0 #1a1410;
+    text-shadow: -2px -2px 0 #1a1410, 2px -2px 0 #1a1410, -2px 2px 0 #1a1410, 2px 2px 0 #1a1410, 0 4px 0 #1a1410; }
+  .menu { display: flex; flex-direction: column; gap: 12px; width: 330px; }
+  .menu button { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 12px 20px;
+    font: 400 24px "Lilita One", sans-serif; letter-spacing: 0.5px; color: #1a1410; background: #FFFFFF;
+    border: 4px solid #1a1410; border-radius: 18px; box-shadow: 0 6px 0 #1a1410; transition: transform .08s, box-shadow .08s, background .12s; }
+  .menu button:hover:not(:disabled) { background: #FFF6D6; transform: translateY(-2px); box-shadow: 0 8px 0 #1a1410; border-color: #1a1410; }
+  .menu button:active:not(:disabled) { transform: translateY(4px); box-shadow: 0 2px 0 #1a1410; }
+  .menu button.primary { background: #FFD447; font-size: 30px; padding: 14px 20px; }
+  .menu button.primary:hover:not(:disabled) { background: #FFE27A; }
+  .menu button.danger { background: #FF8A7A; color: #1a1410; }
+  .menu button small { font: 600 11px var(--font); padding: 2px 7px; border: 2px solid #1a1410; border-radius: 6px; background: rgba(255,255,255,0.6); }
+  .menu .row2 { display: flex; gap: 12px; }
+  .menu .row2 button { flex: 1; font-size: 20px; background: #CDEBF5; }
+  .menu .row2 button:hover:not(:disabled) { background: #E2F4FA; }
+  #saveInfo { align-self: center; margin: -2px 0 2px; padding: 5px 14px; border-radius: 999px; background: rgba(26,20,16,0.82);
+    color: #FFE27A; font: 600 12.5px var(--font); }
+  #title footer { position: absolute; left: 24px; right: 24px; bottom: 18px; display: flex; justify-content: space-between; pointer-events: none; }
+  #title footer span { padding: 5px 12px; border-radius: 999px; background: rgba(26,20,16,0.7); color: #EEE7D7; font: 600 12px var(--font); }
+  @media (max-width: 820px) { .title-wrap { flex-direction: column; gap: 6px; } #titleTim { width: 160px; } .logo .l2 { right: -10px; } }
 
   /* ---------- modals (help, settings, pause) ---------- */
   .modal { position: absolute; inset: 0; z-index: 7; display: flex; align-items: center; justify-content: center;
@@ -150,18 +174,19 @@
 <div id="toast"></div>
 
 <div id="title">
-  <div class="eyebrow">An open-valley fishing game</div>
-  <h1>Outdoors <em>with Tim</em></h1>
-  <p class="tagline">Tim's been fishing this valley forever. Wander its lakes, rivers and mountain streams. Read the water, work every cast, and fight whatever bites — under the watchful eye of the locals.</p>
-  <div class="menu">
-    <button id="startBtn" class="primary"><span>Start fishing</span><small>Enter</small></button>
-    <div id="saveInfo" class="hidden"></div>
-    <button id="newBtn"><span>New valley</span></button>
-    <div class="sep"></div>
-    <button id="helpBtn"><span>How to play</span></button>
-    <button id="settingsBtn"><span>Settings</span></button>
+  <div class="title-wrap">
+    <canvas id="titleTim" width="320" height="400"></canvas>
+    <div class="title-main">
+      <div class="logo"><span class="l1">OUTDOORS</span><span class="l2">with TIM</span></div>
+      <div class="menu">
+        <button id="startBtn" class="primary"><span>Start fishing</span><small>ENTER</small></button>
+        <div id="saveInfo" class="hidden"></div>
+        <button id="newBtn"><span>New valley</span></button>
+        <div class="row2"><button id="helpBtn"><span>How to play</span></button><button id="settingsBtn"><span>Settings</span></button></div>
+      </div>
+    </div>
   </div>
-  <footer><span>Outdoors with Tim · v1.0</span><span>Best with a mouse and keyboard</span></footer>
+  <footer><span>v1.0</span><span>🎣 Best with a mouse &amp; keyboard</span></footer>
 </div>
 
 <div id="help" class="modal hidden"><div class="sheet">
@@ -259,37 +284,37 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=32"></script>
-<script src="js/data.js?v=32"></script>
-<script src="js/audio.js?v=32"></script>
-<script src="js/world.js?v=32"></script>
-<script src="js/scene-sprites.js?v=32"></script>
-<script src="js/toon.js?v=32"></script>
-<script src="js/scene.js?v=32"></script>
-<script src="js/folk.js?v=32"></script>
-<script src="js/actors.js?v=32"></script>
-<script src="js/fish.js?v=32"></script>
-<script src="js/fishing.js?v=32"></script>
-<script src="js/fight.js?v=32"></script>
-<script src="js/player.js?v=32"></script>
-<script src="js/npcs.js?v=32"></script>
-<script src="js/gun.js?v=32"></script>
-<script src="js/bugs.js?v=32"></script>
-<script src="js/floaters.js?v=32"></script>
-<script src="js/animals.js?v=32"></script>
-<script src="js/wardens.js?v=32"></script>
-<script src="js/interiors.js?v=32"></script>
-<script src="js/life.js?v=32"></script>
-<script src="js/weed.js?v=32"></script>
-<script src="js/markers.js?v=32"></script>
-<script src="js/swimmers.js?v=32"></script>
-<script src="js/couples.js?v=32"></script>
-<script src="js/tim.js?v=32"></script>
-<script src="js/bikes.js?v=32"></script>
-<script src="js/tools.js?v=32"></script>
-<script src="js/hud.js?v=32"></script>
-<script src="js/share.js?v=32"></script>
-<script src="js/menus.js?v=32"></script>
-<script src="js/main.js?v=32"></script>
+<script src="js/util.js?v=36"></script>
+<script src="js/data.js?v=36"></script>
+<script src="js/audio.js?v=36"></script>
+<script src="js/world.js?v=36"></script>
+<script src="js/scene-sprites.js?v=36"></script>
+<script src="js/toon.js?v=36"></script>
+<script src="js/scene.js?v=36"></script>
+<script src="js/folk.js?v=36"></script>
+<script src="js/actors.js?v=36"></script>
+<script src="js/fish.js?v=36"></script>
+<script src="js/fishing.js?v=36"></script>
+<script src="js/fight.js?v=36"></script>
+<script src="js/player.js?v=36"></script>
+<script src="js/npcs.js?v=36"></script>
+<script src="js/gun.js?v=36"></script>
+<script src="js/bugs.js?v=36"></script>
+<script src="js/floaters.js?v=36"></script>
+<script src="js/animals.js?v=36"></script>
+<script src="js/wardens.js?v=36"></script>
+<script src="js/interiors.js?v=36"></script>
+<script src="js/life.js?v=36"></script>
+<script src="js/weed.js?v=36"></script>
+<script src="js/markers.js?v=36"></script>
+<script src="js/swimmers.js?v=36"></script>
+<script src="js/couples.js?v=36"></script>
+<script src="js/tim.js?v=36"></script>
+<script src="js/bikes.js?v=36"></script>
+<script src="js/tools.js?v=36"></script>
+<script src="js/hud.js?v=36"></script>
+<script src="js/share.js?v=36"></script>
+<script src="js/menus.js?v=36"></script>
+<script src="js/main.js?v=36"></script>
 </body>
 </html>

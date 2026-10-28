@@ -175,18 +175,11 @@ const Scene3D = {
   buildProps() {
     const S = Art.sprites;
     const kinds = [
-      { spr: S.pine[0], test: (o, x, y) => o === O.PINE && U.hash2(x, y, 5) < 0.5 },
-      { spr: S.pine[1], test: (o, x, y) => o === O.PINE && U.hash2(x, y, 5) >= 0.5 },
-      { spr: S.oak[0], test: (o, x, y) => o === O.OAK && U.hash2(x, y, 5) < 0.5 },
-      { spr: S.oak[1], test: (o, x, y) => o === O.OAK && U.hash2(x, y, 5) >= 0.5 },
-      { spr: S.bush, test: (o) => o === O.BUSH },
-      { spr: S.boulder, test: (o) => o === O.BOULDER },
-      { spr: S.log, test: (o) => o === O.LOG },
       { spr: S.reeds, test: (o) => o === O.REEDS, water: true },
     ];
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), p = new THREE.Vector3();
     const lean = new THREE.Euler(-BILLBOARD_LEAN, 0, 0);
-    const shadows = [];
+    const shadows = this.buildFoliage3D();
     for (const k of kinds) {
       const cells = [];
       for (let y = 0; y < World.H; y++) for (let x = 0; x < World.W; x++) {
@@ -230,6 +223,91 @@ const Scene3D = {
       sm.setMatrixAt(i, m.compose(p.set(x, this.groundH(x, y) + 0.02, y), q.identity(), sc.set(r, 1, r * 0.7)));
     });
     this.world.add(sm);
+  },
+
+  // Real 3D trees, bushes, rocks and logs: low-poly parts, cel-shaded, each with an ink outline hull.
+  // One InstancedMesh per part, so a whole forest is a handful of draw calls.
+  buildFoliage3D() {
+    const toon = (color) => new THREE.MeshToonMaterial({ color, gradientMap: Toon.gradient() });
+    const ink = new THREE.MeshBasicMaterial({ color: 0x1a1410, side: THREE.BackSide });
+    // Push every vertex out along its normal: the outline hull.
+    const inflate = (geo, d) => {
+      const g = geo.clone(), pos = g.attributes.position, nrm = g.attributes.normal;
+      for (let i = 0; i < pos.count; i++) pos.setXYZ(i, pos.getX(i) + nrm.getX(i) * d, pos.getY(i) + nrm.getY(i) * d, pos.getZ(i) + nrm.getZ(i) * d);
+      return g;
+    };
+    const part = (geo, color, x = 0, y = 0, z = 0, outline = 0.035) => { geo.translate(x, y, z); return { geo, color, outline }; };
+    const cone = (r, h, seg = 7) => new THREE.ConeGeometry(r, h, seg);
+    const ball = (r, d = 0) => new THREE.IcosahedronGeometry(r, d);
+    const trunk = (r0, r1, h) => part(new THREE.CylinderGeometry(r0, r1, h, 7), 0x7A4E2A, 0, h / 2, 0, 0.025);
+    const KINDS = {
+      [O.PINE]: { r: 0.55, parts: [trunk(0.07, 0.11, 0.7),
+        part(cone(0.66, 0.95), 0x2F8A4A, 0, 0.92), part(cone(0.52, 0.85), 0x3A9A52, 0, 1.42), part(cone(0.36, 0.72), 0x48AA5C, 0, 1.9)] },
+      [O.OAK]: { r: 0.7, parts: [trunk(0.09, 0.14, 0.9),
+        part(ball(0.6, 1), 0x4FA644, 0, 1.3), part(ball(0.42), 0x5AB34C, 0.42, 1.1, 0.1), part(ball(0.4), 0x48A040, -0.4, 1.12, -0.06),
+        part(ball(0.38), 0x66BE52, 0.06, 1.72, 0.04)] },
+      [O.BUSH]: { r: 0.45, parts: [part(ball(0.34, 1), 0x46993F, 0, 0.27), part(ball(0.25), 0x52A548, 0.27, 0.21, 0.1), part(ball(0.24), 0x40903A, -0.26, 0.2, -0.05),
+        part(ball(0.06, 0), 0xD9363A, 0.12, 0.48, 0.24, 0.02), part(ball(0.06, 0), 0xD9363A, -0.2, 0.36, 0.22, 0.02), part(ball(0.06, 0), 0xD9363A, 0.32, 0.3, 0.28, 0.02)] },
+      [O.BOULDER]: { r: 0.45, parts: [part(new THREE.DodecahedronGeometry(0.42, 0).scale(1, 0.62, 0.85), 0xA3A39C, 0, 0.2), part(new THREE.DodecahedronGeometry(0.22, 0), 0x95958E, 0.3, 0.1, 0.18)] },
+      [O.LOG]: { r: 0.5, parts: [part(new THREE.CylinderGeometry(0.15, 0.15, 1.05, 9).rotateZ(Math.PI / 2), 0x8A5A30, 0, 0.15),
+        part(new THREE.CylinderGeometry(0.13, 0.13, 0.02, 9).rotateZ(Math.PI / 2), 0xD9B47A, 0.53, 0.15, 0, 0)] },
+    };
+    const cells = {};
+    for (let y = 0; y < World.H; y++) for (let x = 0; x < World.W; x++) {
+      const o = World.obj[World.idx(x, y)];
+      if (KINDS[o]) (cells[o] = cells[o] || []).push([x, y]);
+    }
+    const m = new THREE.Matrix4(), q = new THREE.Quaternion(), sc = new THREE.Vector3(), p = new THREE.Vector3(), col = new THREE.Color();
+    const shadows = [];
+    this.fol = { groups: [], cx: -1e9, cy: -1e9 };
+    for (const o in cells) {
+      const K = KINDS[o], list = cells[o];
+      const mats = list.map(([x, y]) => {
+        const s = 0.85 + U.hash2(x, y, 13) * 0.35;
+        const px = x + 0.5 + (U.hash2(x, y, 11) - 0.5) * 0.35, py = y + 0.55 + (U.hash2(x, y, 12) - 0.5) * 0.3;
+        shadows.push([px, py, K.r * s]);
+        p.set(px, this.groundH(px, py) - 0.03, py);
+        q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), U.hash2(x, y, 14) * Math.PI * 2);
+        sc.set(s, s * (0.9 + U.hash2(x, y, 15) * 0.25), s);
+        return m.compose(p, q, sc).clone();
+      });
+      const cap = Math.min(list.length, 5000), meshes = [];
+      for (const pt of K.parts) {
+        const mesh = new THREE.InstancedMesh(pt.geo, toon(pt.color), cap);
+        // Sized up front: three sizes a lazily-made colour buffer by the current count, which starts at 0.
+        mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3).fill(1), 3);
+        const hull = pt.outline ? new THREE.InstancedMesh(inflate(pt.geo, pt.outline), ink, cap) : null;
+        for (const mm of [mesh, hull]) if (mm) { mm.count = 0; mm.frustumCulled = false; mm.userData.toon = true; this.world.add(mm); }
+        meshes.push({ mesh, hull });
+      }
+      this.fol.groups.push({ list, mats, cap, meshes });
+    }
+    return shadows;
+  },
+
+  // Only foliage near the camera is uploaded; refreshed whenever the view drifts far enough.
+  updateFoliage(cx, cy) {
+    const F = this.fol, R = 48;
+    if (!F || Math.abs(cx - F.cx) + Math.abs(cy - F.cy) < 14) return;
+    F.cx = cx; F.cy = cy;
+    const col = new THREE.Color();
+    for (const G of F.groups) {
+      let n = 0;
+      for (let i = 0; i < G.list.length && n < G.cap; i++) {
+        const [x, y] = G.list[i];
+        if (Math.abs(x - cx) > R || Math.abs(y - cy) > R) continue;
+        for (const { mesh, hull } of G.meshes) {
+          mesh.setMatrixAt(n, G.mats[i]);
+          mesh.setColorAt(n, col.setScalar(0.88 + U.hash2(x, y, 16) * 0.22)); // a little shade variety
+          if (hull) hull.setMatrixAt(n, G.mats[i]);
+        }
+        n++;
+      }
+      for (const { mesh, hull } of G.meshes) {
+        mesh.count = n; mesh.instanceMatrix.needsUpdate = true; if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+        if (hull) { hull.count = n; hull.instanceMatrix.needsUpdate = true; }
+      }
+    }
   },
 
   // Docks and footbridges.
@@ -417,6 +495,7 @@ const Scene3D = {
   },
 
   render(time) {
+    this.updateFoliage(this.target.x, this.target.z);
     this.waterMat.uniforms.uTime.value = time;
     this.renderer.render(this.scene, this.camera);
   },
