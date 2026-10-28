@@ -284,8 +284,9 @@ const World = {
     this.buildings.push(shop);
     for (let y = shop.y; y < shop.y + shop.h; y++) for (let x = shop.x; x < shop.x + shop.w; x++) this.tile[this.idx(x, y)] = T.FLOOR;
     this.shopkeeper = { x: shop.x - 0.4, y: shop.y + shop.h - 0.5 };
-    const cabin = { x: cx - 8, y: cy - 2, w: 5, h: 4, type: 'cabin', name: 'Your cabin' };
+    const cabin = { x: cx - 8, y: cy - 2, w: 5, h: 4, type: 'ranger', name: 'Ranger Station' };
     this.buildings.push(cabin);
+    this.ranger = { x: cabin.x + cabin.w + 0.5, y: cabin.y + cabin.h - 0.5 };
     this.spawn = { x: cx + 0.5, y: cy + 3.5 };
     this.town = { x: cx, y: cy };
 

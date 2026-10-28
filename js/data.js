@@ -72,6 +72,18 @@ const SPECIES = [
 ];
 const SPECIES_BY_ID = Object.fromEntries(SPECIES.map((s) => [s.id, s]));
 
+// Legal minimum length to keep, in cm (0 = no limit, Infinity = protected, catch and release only).
+const SIZE_LIMITS = { perch: 18, brook: 20, rainbow: 30, brown: 35, grayling: 30, smallmouth: 30, largemouth: 30,
+  walleye: 38, pike: 55, catfish: 35, chinook: 60, muskie: 100, sturgeon: Infinity };
+for (const s of SPECIES) s.min = SIZE_LIMITS[s.id] || 0;
+
+// Fishing permits by area. The town lake permit comes with the cabin.
+const PERMITS = [
+  { id: 'town', name: 'Silverjaw Lake', price: 15, desc: 'The town lake, its dock and shoreline.' },
+  { id: 'river', name: 'Rivers & Streams', price: 45, desc: 'Every river and mountain stream in the valley.' },
+  { id: 'back', name: 'Backcountry Lakes & Ponds', price: 70, desc: 'All lakes and ponds beyond Silverjaw.' },
+];
+
 // sink: m/s when idle (negative floats up). Depth behaviour handled in fishing.js.
 const LURES = [
   { id: 'spinner', key: '1', name: 'Inline Spinner', price: 15, pack: 1, sink: 0.35, sight: 6, snag: 0.5,

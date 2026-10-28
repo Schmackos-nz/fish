@@ -120,6 +120,22 @@
   .switch.on { background: var(--accent); }
   .switch.on::after { transform: translateX(20px); }
   #pause .sheet { width: 340px; text-align: center; }
+  #permits { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(720px, 94vw); max-height: 88vh; overflow-y: auto; }
+  .owned { color: var(--good); font-weight: 600; font-size: 13px; }
+  #catch .legal { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+  #catch .legal.ok { color: var(--good); background: rgba(125, 195, 131, 0.12); }
+  #catch .legal.bad { color: var(--bad); background: rgba(226, 103, 90, 0.14); }
+  .jail-sheet { width: min(520px, 94vw); overflow: hidden; padding: 0; text-align: center; }
+  .jail-sheet .bars { height: 120px; background:
+      repeating-linear-gradient(90deg, #2a3134 0 14px, transparent 14px 46px),
+      linear-gradient(#1a1f22, #0f1416); border-bottom: 1px solid var(--line); }
+  .jail-body { padding: 24px 32px 30px; }
+  .eyebrow-bad { font: 600 11px var(--font); letter-spacing: 2.5px; text-transform: uppercase; color: var(--bad); margin-bottom: 6px; }
+  .terms { display: grid; gap: 6px; margin: 16px 0 18px; text-align: left; }
+  .terms div { display: flex; justify-content: space-between; padding: 10px 14px; border-radius: 10px; background: var(--card-2); }
+  .terms span { color: var(--muted); }
+  .jail-progress { height: 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.08); overflow: hidden; margin-bottom: 16px; }
+  #jailBar { height: 100%; width: 0; background: var(--accent); transition: width .08s linear; }
   #pause .menu { width: 100%; margin-top: 18px; }
   #pause .menu button { justify-content: center; }
 </style>
@@ -154,7 +170,7 @@
       <div><span>Run</span><span><kbd>Shift</kbd></span></div>
       <div><span>Crouch (sneak)</span><span><kbd>C</kbd></span></div>
       <div><span>Jump · Dodge roll</span><span><kbd>Space</kbd> <kbd>Q</kbd></span></div>
-      <div><span>Talk · Shop</span><span><kbd>E</kbd></span></div>
+      <div><span>Talk · Shop · Permits</span><span><kbd>E</kbd></span></div>
     </section>
     <section><h4>Fishing</h4>
       <div><span>Cast</span><span>Hold, release at peak</span></div>
@@ -174,6 +190,12 @@
       <div><span>Swat a bug</span><span>Click it</span></div>
       <div><span>Journal · Map</span><span><kbd>J</kbd> <kbd>M</kbd></span></div>
       <div><span>Pause</span><span><kbd>Esc</kbd></span></div>
+    </section>
+    <section><h4>The law</h4>
+      <div><span>Buy area permits</span><span>Ranger Dale</span></div>
+      <div><span>Undersized fish</span><span>Release them</span></div>
+      <div><span>Wardens patrol</span><span>Run if they chase</span></div>
+      <div><span>Caught?</span><span>Jail, fine, catch seized</span></div>
     </section>
   </div>
 </div></div>
@@ -203,29 +225,43 @@
 <div id="journal" class="panel hidden"></div>
 <div id="catch" class="panel hidden"></div>
 <div id="share" class="panel hidden"></div>
+<div id="permits" class="panel hidden"></div>
+
+<div id="jail" class="modal hidden"><div class="sheet jail-sheet">
+  <div class="bars"></div>
+  <div class="jail-body">
+    <div class="eyebrow-bad">Valley Fisheries Lockup</div>
+    <h2>Busted.</h2>
+    <p class="sub" id="jailWhy"></p>
+    <div class="terms" id="jailTerms"></div>
+    <div class="jail-progress"><div id="jailBar"></div></div>
+    <button id="jailBtn" class="primary">Serve your time</button>
+  </div>
+</div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=11"></script>
-<script src="js/data.js?v=11"></script>
-<script src="js/audio.js?v=11"></script>
-<script src="js/world.js?v=11"></script>
-<script src="js/scene-sprites.js?v=11"></script>
-<script src="js/scene.js?v=11"></script>
-<script src="js/folk.js?v=11"></script>
-<script src="js/actors.js?v=11"></script>
-<script src="js/fish.js?v=11"></script>
-<script src="js/fishing.js?v=11"></script>
-<script src="js/fight.js?v=11"></script>
-<script src="js/player.js?v=11"></script>
-<script src="js/npcs.js?v=11"></script>
-<script src="js/gun.js?v=11"></script>
-<script src="js/bugs.js?v=11"></script>
-<script src="js/floaters.js?v=11"></script>
-<script src="js/animals.js?v=11"></script>
-<script src="js/tools.js?v=11"></script>
-<script src="js/hud.js?v=11"></script>
-<script src="js/share.js?v=11"></script>
-<script src="js/menus.js?v=11"></script>
-<script src="js/main.js?v=11"></script>
+<script src="js/util.js?v=12"></script>
+<script src="js/data.js?v=12"></script>
+<script src="js/audio.js?v=12"></script>
+<script src="js/world.js?v=12"></script>
+<script src="js/scene-sprites.js?v=12"></script>
+<script src="js/scene.js?v=12"></script>
+<script src="js/folk.js?v=12"></script>
+<script src="js/actors.js?v=12"></script>
+<script src="js/fish.js?v=12"></script>
+<script src="js/fishing.js?v=12"></script>
+<script src="js/fight.js?v=12"></script>
+<script src="js/player.js?v=12"></script>
+<script src="js/npcs.js?v=12"></script>
+<script src="js/gun.js?v=12"></script>
+<script src="js/bugs.js?v=12"></script>
+<script src="js/floaters.js?v=12"></script>
+<script src="js/animals.js?v=12"></script>
+<script src="js/wardens.js?v=12"></script>
+<script src="js/tools.js?v=12"></script>
+<script src="js/hud.js?v=12"></script>
+<script src="js/share.js?v=12"></script>
+<script src="js/menus.js?v=12"></script>
+<script src="js/main.js?v=12"></script>
 </body>
 </html>

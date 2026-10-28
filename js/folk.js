@@ -53,6 +53,7 @@ const Folk = {
       if (!side) { g.beginPath(); g.moveTo(43, 44 + bob); g.quadraticCurveTo(50, 56 + bob, 46, 67 + bob); g.lineTo(36, 67 + bob); g.lineTo(36, 46 + bob); g.closePath(); g.fill(); g.stroke(); }
     }
     if (pal.apron && dir !== 'up') blob(pal.vest, () => g.roundRect(24, 48 + bob, 16, 19, 3));
+    if (pal.badge && dir !== 'up') { g.fillStyle = '#E8C04A'; g.beginPath(); g.arc(side ? 38 : 24, 51 + bob, 3.2, 0, Math.PI * 2); g.fill(); g.stroke(); }
     if (dir === 'down' && !pal.apron) { g.beginPath(); g.moveTo(32, 46 + bob); g.lineTo(32, 66 + bob); g.stroke(); }
 
     // Raised arms go in front.
@@ -96,6 +97,11 @@ const Folk = {
     } else if (pal.hatStyle === 'cap') {
       blob(pal.hat, () => { g.moveTo(hx - 18, hy - 9); g.bezierCurveTo(hx - 17, hy - 31, hx + 17, hy - 31, hx + 18, hy - 9); g.closePath(); });
       if (dir !== 'up') blob(U.shade(pal.hat, -0.2), ell(side ? hx + 18 : hx, hy - 9, side ? 10 : 15, 3.5));
+    } else if (pal.hatStyle === 'ranger') {
+      // Flat wide brim and a pinched "Montana" crown.
+      blob(pal.hat, ell(hx, hy - 10, 26, 5));
+      blob(pal.hat, () => { g.moveTo(hx - 13, hy - 11); g.lineTo(hx - 8, hy - 30); g.lineTo(hx, hy - 25); g.lineTo(hx + 8, hy - 30); g.lineTo(hx + 13, hy - 11); g.closePath(); });
+      g.fillStyle = 'rgba(0,0,0,0.3)'; g.fillRect(hx - 13, hy - 15, 26, 3);
     } else if (pal.hatStyle === 'none') {
       // Fluffy hair puffs (Hettie).
       for (const [ox, oy] of [[-14, -10], [14, -10], [-6, -16], [6, -16], [0, -18]]) blob(pal.hair, ell(hx + ox, hy + oy, 7, 6));

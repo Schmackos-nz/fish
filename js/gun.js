@@ -97,6 +97,7 @@ const Gun = {
     Fish.spookNear(a.x, a.y, 16);
     Fish.list.forEach((f) => { if (U.dist(f.x, f.y, a.x, a.y) < 16) f.cool = 20; });
     Npcs.onGunshot(Player.x, Player.y);
+    Wardens.onGunshot();
     Floaters.onGunshot();
     Animals.onGunshot(a.x, a.y);
     Game.save();

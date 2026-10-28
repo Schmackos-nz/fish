@@ -5,7 +5,7 @@ const Menus = {
   open: null,
 
   close() {
-    for (const id of ['shop', 'journal', 'catch', 'share']) document.getElementById(id).classList.add('hidden');
+    for (const id of ['shop', 'journal', 'catch', 'share', 'permits']) document.getElementById(id).classList.add('hidden');
     this.open = null;
   },
 
@@ -32,9 +32,12 @@ const Menus = {
       ${sp.legendary ? '<div class="prize">★ LEGENDARY ★</div>' : f.prized ? '<div class="prize">★ PRIZED FISH ★</div>' : sp.rare ? '<div class="rec">Rare catch!</div>' : ''}
       <canvas id="catchArt" width="300" height="130"></canvas>
       <div style="font-size:18px"><b>${U.fmtKg(f.kg)}</b> · ${f.cm} cm</div>
+      ${sp.min === Infinity ? '<div class="legal bad">Protected species — release it</div>'
+        : sp.min && f.cm < sp.min ? `<div class="legal bad">Undersized — legal minimum ${sp.min} cm</div>`
+        : sp.min ? `<div class="legal ok">Legal size · minimum ${sp.min} cm</div>` : '<div class="legal ok">No size limit</div>'}
       ${first ? '<div class="rec">New species for the journal!</div>' : record ? '<div class="rec">New personal best!</div>' : `<div class="desc">Best: ${U.fmtKg(j.best)}</div>`}
       <div style="margin:8px 0;color:#8fd16a">Worth ${U.fmtMoney(val)} at the shack</div>
-      <button id="keepBtn" ${full ? 'disabled' : ''}>Keep (creel ${Game.creel.length}/${Game.creelMax})</button>
+      <button id="keepBtn" ${full ? 'disabled' : ''} class="${f.cm < sp.min ? 'danger' : ''}">${f.cm < sp.min ? 'Keep anyway (illegal)' : 'Keep'} · creel ${Game.creel.length}/${Game.creelMax}</button>
       <button id="releaseBtn">Release (+${U.fmtMoney(val * 0.35)} bounty)</button>
       ${f.prized ? '<div style="margin-top:10px"><button id="shareBtn" class="gold">📸 Share a photo with a friend</button></div>' : ''}`;
     el.classList.remove('hidden');
@@ -73,7 +76,7 @@ const Menus = {
         const best = Object.entries(s.lures).sort((a, b) => b[1] - a[1])[0][0];
         const times = s.time.map((v, i) => v >= 1.2 ? TIME_NAMES[i] : null).filter(Boolean).join('/') || 'any time';
         return j ? `<div class="card"><canvas data-sp="${s.id}" width="150" height="60"></canvas><br><b>${s.name}</b><br>
-            ${j.prized ? '<span style="color:#f2c14e">★ ' + j.prized + ' prized</span><br>' : ''}Caught ${j.count} · best ${U.fmtKg(j.best)} (${j.cm} cm)<br><span class="desc">${hab} · ${times} · likes ${LURE_BY_ID[best].name}</span></div>`
+            ${j.prized ? '<span style="color:#f2c14e">★ ' + j.prized + ' prized</span><br>' : ''}Caught ${j.count} · best ${U.fmtKg(j.best)} (${j.cm} cm)<br><span class="desc">${s.min === Infinity ? 'Protected · release only' : s.min ? 'Keep ≥ ' + s.min + ' cm' : 'No size limit'} · ${hab} · ${times} · likes ${LURE_BY_ID[best].name}</span></div>`
           : `<div class="card unknown"><b>???</b><br><span class="desc">${s.legendary ? 'A legend of these waters.' : 'Found in: ' + hab}</span></div>`;
       }).join('')}</div>`;
     el.classList.remove('hidden');
@@ -90,6 +93,33 @@ const Menus = {
       .sort((a, b) => b.best - a.best);
     return rows.map((r, i) => `<div class="row" ${r.you ? 'style="color:#f2c14e;font-weight:bold"' : ''}><div>${i + 1}. ${r.name}</div>
       <div class="desc">${r.best ? U.fmtKg(r.best) + ' ' + SPECIES_BY_ID[r.sp].name : 'nothing yet'} · ${r.count} caught</div></div>`).join('');
+  },
+
+  openPermits() {
+    if (this.open) return;
+    this.open = 'permits';
+    this.renderPermits();
+    document.getElementById('permits').classList.remove('hidden');
+  },
+
+  renderPermits() {
+    const el = document.getElementById('permits');
+    el.innerHTML = `<button class="close" id="pmClose">✕</button><h2>Ranger Station</h2>
+      <div class="desc">"Wardens patrol every bank in the valley. Fish without the right permit — or keep an undersized fish — and you'll be cooling your heels in the lockup." — Ranger Dale</div>
+      <h3>Fishing permits</h3>
+      ${PERMITS.map((p) => `<div class="row"><div><b>${p.name}</b><div class="desc">${p.desc}</div></div>
+        ${Game.permits[p.id] ? '<span class="owned">✓ Held</span>' : `<button class="primary" data-permit="${p.id}" ${Game.money < p.price ? 'disabled' : ''}>Buy ${U.fmtMoney(p.price)}</button>`}</div>`).join('')}
+      <h3>Size limits — minimum length to keep</h3>
+      <div class="grid">${SPECIES.filter((s) => !s.legendary || s.min).map((s) => `<div class="card"><b>${s.name}</b><br>
+        <span class="desc">${s.min === Infinity ? 'Protected — release only' : s.min ? s.min + ' cm' : 'No limit'}</span></div>`).join('')}</div>
+      <div class="desc" style="margin-top:14px">You have <b style="color:var(--accent)">${U.fmtMoney(Game.money)}</b>${Game.stats.jailed ? ' · Times jailed: ' + Game.stats.jailed : ''}</div>`;
+    el.querySelector('#pmClose').onclick = () => this.close();
+    el.querySelectorAll('[data-permit]').forEach((b) => b.onclick = () => {
+      const p = PERMITS.find((q) => q.id === b.dataset.permit);
+      Game.money -= p.price; Game.permits[p.id] = true; Sfx.coin();
+      Hud.toast(p.name + ' permit — you\'re legal there now.', UI.good, 2.2);
+      this.renderPermits(); Game.save();
+    });
   },
 
   openShop() {

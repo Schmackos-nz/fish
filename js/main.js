@@ -60,6 +60,7 @@ const Game = {
     this.stats = { caught: 0, released: 0 };
     this.npcRecords = {};
     this.ammo = 12;
+    this.permits = { town: true }; // the town lake permit comes with the cabin
     this.spray = 3;
     Object.assign(this.env, { hour: 6, day: 1, weather: WEATHERS[0], weatherT: 3 });
   },
@@ -69,7 +70,7 @@ const Game = {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         seed: this.seed, money: this.money, lures: this.lures, owned: this.owned, drag: this.drag,
         gear: { rod: this.gear.rod.id, reel: this.gear.reel.id, line: this.gear.line.id },
-        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords, ammo: this.ammo, spray: this.spray,
+        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords, ammo: this.ammo, spray: this.spray, permits: this.permits,
         px: Player.x, py: Player.y, hour: this.env.hour, day: this.env.day, weather: this.env.weather.id,
       }));
     } catch (e) { /* storage unavailable: play on without saving */ }
@@ -83,6 +84,7 @@ const Game = {
       this.npcRecords = s.npcRecords || {};
       this.ammo = s.ammo === undefined ? 12 : s.ammo;
       this.spray = s.spray === undefined ? 3 : s.spray;
+      this.permits = s.permits || { town: true };
       Object.assign(this, { money: s.money, lures: s.lures, owned: s.owned, drag: s.drag, creel: s.creel, creelMax: s.creelMax, journal: s.journal, stats: s.stats });
       this.gear = {
         rod: RODS.find((r) => r.id === s.gear.rod) || RODS[0],
@@ -134,6 +136,7 @@ function buildWorld(seed, savedPos) {
   Fish.reset(); Fishing.reset();
   Gun.out = false; Gun.floaters = []; Bugs.list = []; Tools.current = 'rod';
   Npcs.init();
+  Wardens.init();
   Floaters.init();
   Animals.init();
   if (savedPos && !World.blocked(savedPos.x, savedPos.y)) Player.place(savedPos.x, savedPos.y);
@@ -271,6 +274,7 @@ function handleGlobalKeys() {
   if (Input.pressed('KeyE') && Fishing.state !== 'fight') {
     const npc = Npcs.near(Player.x, Player.y, 2.5);
     if (U.dist(Player.x, Player.y, k.x, k.y) < 3) Menus.openShop();
+    else if (U.dist(Player.x, Player.y, World.ranger.x, World.ranger.y) < 3) Menus.openPermits();
     else if (npc && npc.state !== 'fight' && npc.state !== 'show') Npcs.talk(npc);
   }
   if (Fishing.state !== 'fight' && Input.wheel) {
@@ -299,7 +303,9 @@ function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
   if (Game.mode === 'title') titleFrame(dt);
-  else if (Game.mode === 'pause') {
+  else if (Game.mode === 'jail') {
+    Scene3D.render(Game.time);
+  } else if (Game.mode === 'pause') {
     if (Input.pressed('Escape') && !closeModals()) resume();
     Scene3D.render(Game.time);
     Hud.draw();
@@ -318,6 +324,7 @@ function frame(now) {
       Fishing.update(dt);
       Fish.update(dt, Player, Fishing.lure, Game.env);
       Npcs.update(dt);
+      Wardens.update(dt);
       Tools.update(dt);
       Gun.update(dt);
       Bugs.update(dt);
@@ -334,6 +341,7 @@ function frame(now) {
     Scene3D.updateEnv(Game.env, dt);
     Actors.update(dt, Game.env);
     Npcs.render();
+    Wardens.render();
     Gun.render(dt);
     Floaters.render();
     Animals.render();

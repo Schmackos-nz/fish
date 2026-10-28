@@ -254,17 +254,17 @@ const Scene3D = {
 
   buildBuilding(b) {
     const g = new THREE.Group();
-    const wallH = 2.1, shop = b.type === 'shop';
+    const wallH = 2.1, shop = b.type === 'shop', ranger = b.type === 'ranger';
     const base = Math.max(this.groundH(b.x + b.w / 2, b.y + b.h / 2), 0.1);
     const wall = new THREE.Mesh(new THREE.BoxGeometry(b.w, wallH, b.h - 0.4),
-      new THREE.MeshLambertMaterial({ color: shop ? 0x8a5a34 : 0x6e5136 }));
+      new THREE.MeshLambertMaterial({ color: shop ? 0x8a5a34 : ranger ? 0x7a6a48 : 0x6e5136 }));
     wall.position.set(b.w / 2, wallH / 2, b.h / 2 + 0.2);
     g.add(wall);
     // Gable roof as an extruded triangle.
     const shape = new THREE.Shape();
     shape.moveTo(-0.4, 0); shape.lineTo(b.w + 0.4, 0); shape.lineTo(b.w / 2, 1.5); shape.closePath();
     const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: b.h + 0.2, bevelEnabled: false }),
-      new THREE.MeshLambertMaterial({ color: shop ? 0x3f6e7a : 0x7a3a2a }));
+      new THREE.MeshLambertMaterial({ color: shop ? 0x3f6e7a : ranger ? 0x3f6a3a : 0x7a3a2a }));
     roof.position.set(0, wallH, -0.1);
     g.add(roof);
     const door = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.3), new THREE.MeshLambertMaterial({ color: 0x3a2614 }));
@@ -275,13 +275,16 @@ const Scene3D = {
     const win = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.7), winMat);
     win.position.set(b.w - 1.3, 1.25, b.h + 0.01);
     g.add(win);
-    if (shop) {
+    if (shop || ranger) {
       const c = document.createElement('canvas'); c.width = 128; c.height = 32;
       const cx = c.getContext('2d');
-      cx.fillStyle = '#e9d9a8'; cx.fillRect(0, 0, 128, 32);
-      cx.fillStyle = '#3a2614'; cx.font = 'bold 20px Trebuchet MS'; cx.textAlign = 'center'; cx.fillText('TACKLE', 56, 23);
-      cx.fillStyle = '#d9a43a'; cx.beginPath(); cx.ellipse(110, 16, 11, 5, 0, 0, 7); cx.fill();
-      cx.beginPath(); cx.moveTo(99, 16); cx.lineTo(93, 10); cx.lineTo(93, 22); cx.fill();
+      cx.fillStyle = ranger ? '#2f5a2c' : '#e9d9a8'; cx.fillRect(0, 0, 128, 32);
+      cx.fillStyle = ranger ? '#f2e6c0' : '#3a2614'; cx.font = 'bold 18px sans-serif'; cx.textAlign = 'center';
+      cx.fillText(ranger ? 'RANGER' : 'TACKLE', ranger ? 64 : 56, 23);
+      if (!ranger) {
+        cx.fillStyle = '#d9a43a'; cx.beginPath(); cx.ellipse(110, 16, 11, 5, 0, 0, 7); cx.fill();
+        cx.beginPath(); cx.moveTo(99, 16); cx.lineTo(93, 10); cx.lineTo(93, 22); cx.fill();
+      }
       const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c) }));
       sign.position.set(b.w / 2, wallH + 0.15, b.h + 0.12);
       g.add(sign);

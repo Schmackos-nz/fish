@@ -130,6 +130,7 @@ const Hud = {
     Npcs.drawBubbles(this);
     Floaters.drawBubbles(this);
     Animals.drawLabels(this);
+    Wardens.drawLabels(this);
     this.drawCursorInfo();
     const sh = this.drawStatus(20, 20);
     this.drawControls(20, 20 + sh + 12);
@@ -163,6 +164,13 @@ const Hud = {
     const where = World.waterName(Fishing.lure ? Fishing.lure.x : Player.x, Fishing.lure ? Fishing.lure.y : Player.y) || 'The valley';
     this.icon('pin', x + 26, y + 102, 0.9);
     this.text(where, x + 38, y + 106, UI.water, 12, 500);
+    // Permit status for the water you're fishing (or looking at).
+    const px = Fishing.lure ? Fishing.lure.x : Input.mouse.wx, py = Fishing.lure ? Fishing.lure.y : Input.mouse.wy;
+    const zone = Permits.zoneAt(px, py) || Permits.zoneAt(Player.x, Player.y);
+    if (zone) {
+      const ok = Permits.has(zone);
+      this.text(ok ? '✓ Permit' : '✗ No permit', x + w - 16, y + 106, ok ? UI.good : UI.bad, 11, 'right', 600);
+    }
     return h;
   },
 
@@ -172,6 +180,8 @@ const Hud = {
     const r = (keys, label, opt = {}) => rows.push({ keys, label, ...opt });
     const flash = Math.sin(Game.time * 14) > 0;
     const k = World.shopkeeper;
+    if (Wardens.anyChasing()) r(['Shift'], 'Warden on your tail — run! (Q to roll)', { hot: true, flash });
+    else if (Permits.fishingIllegally()) r(['!'], 'No permit for this water — wardens patrol', { hot: true });
     if (Bugs.list.some((b) => b.state !== 'leave')) r(['Click'], 'Swat the bugs', { hot: true, flash: Bugs.list.some((b) => b.state === 'land') && flash });
     if (st === 'idle') {
       r(['WASD'], 'Move · Shift run · C crouch' + (Player.crouch ? ' (on)' : ''), { held: Player.crouch });
@@ -183,6 +193,7 @@ const Hud = {
       else if (tool === 'binos') r(['Hold'], 'Scout for fish & game', { held: Tools.looking });
       r(['1–4'], tool === 'hands' ? 'Equip a tool' : 'Switch tool');
       if (U.dist(Player.x, Player.y, k.x, k.y) < 3) r(['E'], 'Tackle shack', { hot: true });
+      else if (U.dist(Player.x, Player.y, World.ranger.x, World.ranger.y) < 3) r(['E'], 'Ranger Dale — permits', { hot: true });
       else if (Npcs.near(Player.x, Player.y, 2.5)) r(['E'], 'Chat', { hot: true });
       return rows;
     }
@@ -274,6 +285,12 @@ const Hud = {
     g.beginPath(); g.arc(cx, cy, R, 0, 7); g.clip();
     g.imageSmoothingEnabled = false;
     g.drawImage(Art.minimap, Player.x - R / s, Player.y - R / s, R * 2 / s, R * 2 / s, cx - R, cy - R, R * 2, R * 2);
+    for (const wd of Wardens.list) {
+      if (U.dist(wd.x, wd.y, Player.x, Player.y) > 48) continue;
+      const nx = cx + (wd.x - Player.x) * s, ny = cy + (wd.y - Player.y) * s;
+      g.fillStyle = wd.state === 'chase' ? UI.bad : '#C9B98A'; g.strokeStyle = '#141a1c'; g.lineWidth = 1.5;
+      g.beginPath(); g.moveTo(nx, ny - 5); g.lineTo(nx + 4.5, ny + 3.5); g.lineTo(nx - 4.5, ny + 3.5); g.closePath(); g.fill(); g.stroke();
+    }
     for (const n of Npcs.list) {
       const nx = cx + (n.x - Player.x) * s, ny = cy + (n.y - Player.y) * s;
       g.fillStyle = '#fff'; g.beginPath(); g.arc(nx, ny, 3, 0, 7); g.fill();
