@@ -214,7 +214,7 @@ const Actors = {
     this.tipScene = tip;
 
     // Aim ring: faint at full range while ready, live while loading the rod.
-    const aiming = Fishing.state === 'ready' || Fishing.state === 'charging';
+    const aiming = Fishing.state === 'charging' || (Fishing.state === 'idle' && !Menus.open && World.isWater(Input.mouse.wx, Input.mouse.wy));
     this.aimRing.visible = aiming;
     if (aiming) {
       const ca = Math.atan2(Input.mouse.wy - p.y, Input.mouse.wx - p.x);

@@ -1,4 +1,4 @@
-// Casting, the reel, lure behaviour in the water, snags, knots and the hookset.
+// Casting, the reel, lure behaviour in the water, snags and the hookset.
 'use strict';
 
 const LINE_PER_TURN = 0.16; // metres of line per handle turn per unit of gear ratio
@@ -6,8 +6,8 @@ const LINE_PER_TURN = 0.16; // metres of line per handle turn per unit of gear r
 const Fishing = {
   state: 'idle', bailOpen: false, power: 0, chargeT: 0, lineOut: 0,
   lure: null, engaged: null, strikeAt: 0, nibbleAt: -9, tip: { x: 0, y: 0 }, aim: 0,
-  omega: 0, handle: 0, clickAcc: 0, twitchT: 0, bend: 0, tipBob: 0, knotHold: 0, snag: null, jiggleDir: 0,
-  flight: null, lureId: 'spinner', ccwWarn: 0,
+  omega: 0, handle: 0, clickAcc: 0, twitchT: 0, bend: 0, tipBob: 0, snag: null,
+  flight: null, lureId: 'spinner',
 
   reset() {
     this.state = 'idle'; this.bailOpen = false; this.lure = null; this.engaged = null; this.lineOut = 0;
@@ -20,7 +20,7 @@ const Fishing = {
   updateTip() {
     const p = Player;
     let ang;
-    if (this.state === 'idle' || this.state === 'ready' || this.state === 'charging') ang = Math.atan2(Input.mouse.wy - p.y, Input.mouse.wx - p.x);
+    if (this.state === 'idle' || this.state === 'charging') ang = Math.atan2(Input.mouse.wy - p.y, Input.mouse.wx - p.x);
     else if (this.lure) ang = Math.atan2(this.lure.y - p.y, this.lure.x - p.x);
     else ang = this.aim;
     if (this.state === 'fight') ang += Fight.rodSide * 0.9;
@@ -37,7 +37,7 @@ const Fishing = {
   canCastWith(id) { return (Game.lures[id] || 0) > 0; },
 
   selectLure(id) {
-    if (this.state !== 'idle' && this.state !== 'ready') { this.say('Reel in before changing lures.', '#f2c14e'); return; }
+    if (this.state !== 'idle') { this.say('Reel in first (Space) to change lures.', '#f2c14e'); return; }
     if (!this.canCastWith(id)) { this.say('No ' + LURE_BY_ID[id].name + ' left — buy more at the tackle shack.', '#e2584d'); return; }
     this.lureId = id;
     this.say('Tied on: ' + LURE_BY_ID[id].name, '#8fd16a', 1.4);
@@ -45,11 +45,9 @@ const Fishing = {
 
   update(dt) {
     this.updateTip();
-    // Crank input: clockwise mouse circles only (anti-reverse is on).
+    // Crank input (main.js): holding the left button reels, spinning the mouse reels faster.
     const rad = Input.crank;
     const turns = Math.max(0, rad) / (Math.PI * 2);
-    if (rad < 0) this.ccwWarn += -rad;
-    if (this.ccwWarn > Math.PI * 6) { this.ccwWarn = 0; this.say('Crank CLOCKWISE — the anti-reverse is on.', '#f2c14e'); }
     this.handle += Math.max(0, rad);
     this.omega = U.lerp(this.omega, turns / Math.max(dt, 1e-3), Math.min(1, dt * 6));
     if (turns > 0 && this.state !== 'fight') {
@@ -63,15 +61,12 @@ const Fishing = {
     switch (this.state) {
       case 'idle':
         this.bend = U.lerp(this.bend, 0, dt * 6);
-        if (Input.pressed('Space')) {
-          if (!this.canCastWith(this.lureId)) { this.say('Out of that lure — press 1-5 to pick another.', '#e2584d'); break; }
-          this.bailOpen = true; this.state = 'ready'; Sfx.bail();
-          this.say('Bail open — hold LMB to load the rod', '#f3ead6', 1.6);
+        // Press and hold to load the rod; the bail flips open by itself.
+        if (Input.mousePressed) {
+          if (!this.canCastWith(this.lureId)) { this.say('Out of that lure — pick another from the lure bar.', '#e2584d'); break; }
+          this.bailOpen = true; Sfx.bail();
+          this.state = 'charging'; this.chargeT = 0;
         }
-        break;
-      case 'ready':
-        if (Input.pressed('Space')) { this.bailOpen = false; this.state = 'idle'; Sfx.bail(); }
-        else if (Input.mousePressed) { this.state = 'charging'; this.chargeT = 0; }
         break;
       case 'charging': {
         this.chargeT += dt;
@@ -83,13 +78,6 @@ const Fishing = {
       }
       case 'flying': this.updateFlight(dt); break;
       case 'line': this.updateLine(dt, lineIn); break;
-      case 'knot':
-        this.updateDrift(dt, 0);
-        if (Input.keys.has('KeyR')) {
-          this.knotHold += dt;
-          if (this.knotHold > 1.6) { this.state = 'line'; this.say('Knot picked out.', '#8fd16a', 1.4); }
-        } else this.knotHold = Math.max(0, this.knotHold - dt * 0.5);
-        break;
       case 'snagged': this.updateSnag(dt, turns); break;
       case 'fight': Fight.update(dt, turns); break;
     }
@@ -123,12 +111,6 @@ const Fishing = {
     l.h = Math.sin(k * Math.PI) * f.peak + (1 - k) * 0.6;
     this.lineOut = Math.max(this.lineOut, U.dist(this.tip.x, this.tip.y, l.x, l.y) * 1.12);
     this.bend = U.lerp(this.bend, 0, dt * 4);
-    // Feather: close the bail to stop the lure short.
-    if (Input.pressed('Space') || (Input.mousePressed && f.t > 0.12)) {
-      this.bailOpen = false; Sfx.bail();
-      this.land();
-      return;
-    }
     if (k >= 1) this.land();
   },
 
@@ -136,6 +118,8 @@ const Fishing = {
     const l = this.lure;
     l.h = 0;
     this.state = 'line';
+    this.bailOpen = false; Sfx.bail();
+    this.lineOut = U.dist(this.tip.x, this.tip.y, l.x, l.y) + 0.3;
     if (World.isWater(l.x, l.y)) {
       l.inWater = true;
       const dep = World.depthAt(l.x, l.y);
@@ -144,7 +128,7 @@ const Fishing = {
       const heavy = l.id === 'spoon' ? 1 : l.id === 'worm' ? 0.4 : 0.7;
       Sfx.splash(heavy); Hud.ripple(l.x, l.y, heavy);
       Fish.spookNear(l.x, l.y, 0.6 + heavy * 0.9);
-      if (L.id === 'worm') this.say('Close the bail (crank or Space) and wait…', '#f3ead6', 1.6);
+      if (L.id === 'worm') this.say('Now wait… click when the bobber goes UNDER.', '#f3ead6', 2);
     } else {
       l.onLand = true;
       const o = World.objAt(l.x, l.y);
@@ -158,7 +142,7 @@ const Fishing = {
     this.state = 'snagged'; this.snag = { where, tension: 0, jiggles: 0 };
     Sfx.knot();
     const txt = where === 'tree' ? 'Snagged in a tree!' : where === 'roof' ? 'Hooked the roof…' : 'Snagged on the bottom!';
-    this.say(txt + '  A/D to jiggle, or crank hard to break off', '#f2c14e', 3);
+    this.say(txt + '  Click to tug it free, or Space to cut the line', '#f2c14e', 3);
   },
 
   // Current drift: rivers carry the lure; the line swings it across the flow.
@@ -180,20 +164,12 @@ const Fishing = {
     const px = l.x, py = l.y;
     this.updateDrift(dt);
 
-    // First crank flips the bail shut, like a real spinning reel.
-    if (this.bailOpen && (lineIn > 0 || Input.pressed('Space'))) {
-      this.bailOpen = false; Sfx.bail();
-      const slack = this.lineOut - U.dist(this.tip.x, this.tip.y, l.x, l.y);
-      if (slack > 2.5 && this.omega > 1.2 && Math.random() < 0.35) {
-        this.state = 'knot'; this.knotHold = 0; Sfx.knot();
-        this.say('Wind knot! Too much slack — hold R to pick it out', '#e2584d', 3);
-        return;
-      }
-      lineIn = 0;
-    } else if (!this.bailOpen && Input.pressed('Space')) {
-      this.hookset();
-      if (this.state !== 'line') return;
-    }
+    // Click when it strikes. Reeling straight through the strike sets the hook too.
+    const striking = this.engaged && this.engaged.state === 'strike';
+    if (striking && (Input.mousePressed || Input.pressed('Space'))) { this.hookset(1); if (this.state !== 'line') return; }
+    else if (striking && Input.mouse.down && Game.time - this.strikeAt > 0.3) { this.hookset(0.85); if (this.state !== 'line') return; }
+    else if (Input.mousePressed && Game.time - this.nibbleAt < 0.6) this.strikeEarly();
+    else if (Input.pressed('Space')) { this.reelInFast(); return; }
 
     if (!this.bailOpen) {
       this.lineOut = Math.max(0, this.lineOut - lineIn);
@@ -229,7 +205,7 @@ const Fishing = {
     }
 
     // Back at the rod tip: lure is out of the water.
-    if (U.dist(this.tip.x, this.tip.y, l.x, l.y) < 1.1 && !this.bailOpen) {
+    if (U.dist(this.tip.x, this.tip.y, l.x, l.y) < 1.1) {
       const follower = Fish.list.find((f) => f.state === 'follow');
       if (follower) this.say('A ' + follower.sp.name + ' followed it right in…', '#8ec7d6', 2);
       this.state = 'idle'; this.lure = null; this.lineOut = 0; this.engaged = null;
@@ -309,48 +285,52 @@ const Fishing = {
     Sfx.fail();
   },
 
-  hookset() {
+  strikeEarly() {
+    const nib = Fish.list.find((x) => x.state === 'nibble');
+    if (!nib) return;
+    Fish.spook(nib, Player.x, Player.y); nib.cool = 10;
+    this.say('Too early — that was just a nibble! Wait for it to go UNDER.', '#e2584d', 2);
+    Sfx.fail();
+  },
+
+  reelInFast() {
+    const l = this.lure;
+    if (l && l.id === 'worm' && !l.baited) this.useLure('worm');
+    Sfx.bail();
+    this.state = 'idle'; this.lure = null; this.lineOut = 0; this.engaged = null; this.bailOpen = false;
+  },
+
+  hookset(mult) {
     const l = this.lure, f = this.engaged;
     this.tipBob = 1.4; this.bend = 0.9;
     const slack = this.lineOut - U.dist(this.tip.x, this.tip.y, l.x, l.y);
-    if (!f || f.state !== 'strike') {
-      // Struck at a nibble: the fish is gone.
-      if (Game.time - this.nibbleAt < 0.6) {
-        const nib = Fish.list.find((x) => x.state === 'nibble');
-        if (nib) { Fish.spook(nib, Player.x, Player.y); nib.cool = 10; }
-        this.say('Too early — that was just a nibble!', '#e2584d', 1.8);
-        Sfx.fail();
-      }
-      this.twitch();
-      return;
-    }
     const window = l.id === 'worm' ? 1.2 : 0.9;
     const react = (Game.time - this.strikeAt) / window;
-    const taut = slack < 1 ? 1 : slack < 3 ? 0.7 : 0.4;
-    const q = Game.gear.rod.hookset * taut * (1.05 - react * 0.35) * (0.8 + Math.random() * 0.35);
-    if (q > 0.5) {
+    const taut = slack < 1 ? 1 : slack < 3 ? 0.75 : 0.5;
+    const q = Game.gear.rod.hookset * taut * mult * (1.05 - react * 0.35) * (0.85 + Math.random() * 0.3);
+    if (q > 0.45) {
       Fight.start(f, U.clamp(q, 0.5, 1.2));
     } else {
       Fish.spook(f, Player.x, Player.y); f.cool = 12; this.engaged = null;
-      this.say(taut < 1 ? 'Missed — too much slack in the line!' : 'Missed the hookset!', '#e2584d', 1.8);
+      this.say('Missed the hookset!', '#e2584d', 1.8);
       Sfx.fail();
     }
   },
 
   updateSnag(dt, turns) {
     const s = this.snag;
-    // Rapid A/D alternation jiggles the lure.
-    const dir = Input.pressed('KeyA') ? -1 : Input.pressed('KeyD') ? 1 : 0;
-    if (dir && dir !== this.jiggleDir) {
-      this.jiggleDir = dir; s.jiggles++; this.tipBob = 0.8; Sfx.click();
-      if (Math.random() < (s.where === 'bottom' ? 0.13 : 0.08)) {
+    // Each click tugs at it; holding the reel down pulls until the line gives.
+    if (Input.mousePressed) {
+      s.jiggles++; this.tipBob = 0.8; Sfx.click();
+      if (Math.random() < (s.where === 'bottom' ? 0.22 : 0.15)) {
         this.state = 'line'; this.snag = null;
         this.say('Popped it free!', '#8fd16a', 1.4);
         if (this.lure.onLand && s.where !== 'bottom') { this.lure.x += (this.tip.x - this.lure.x) * 0.15; this.lure.y += (this.tip.y - this.lure.y) * 0.15; this.lure.inWater = World.isWater(this.lure.x, this.lure.y); }
         return;
       }
     }
-    s.tension = Math.max(0, s.tension + turns * 2.2 - dt * 0.6);
+    if (Input.pressed('Space')) { Sfx.snap(); this.loseLure('Cut the line — lure lost.'); return; }
+    s.tension = Math.max(0, s.tension + turns * 1.2 - dt * 0.6);
     this.bend = U.clamp(s.tension / Game.gear.line.strength, 0, 1.2);
     if (s.tension > Game.gear.line.strength) {
       Sfx.snap();

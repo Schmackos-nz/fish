@@ -33,7 +33,7 @@ const Fight = {
     else if (this.mode === 'side') this.swim = away + (Math.random() < 0.5 ? 1 : -1) * (1.2 + Math.random() * 0.4);
     else if (this.mode === 'sulk') this.swim = away + (Math.random() - 0.5) * 2.5;
     else if (this.mode === 'tire') this.swim = away + Math.PI + (Math.random() - 0.5);
-    else if (this.mode === 'jump') { this.jumpWarn = 0.7; this.modeT = 2.2; Fishing.say('He\'s coming up — DROP the rod [S]!', '#f2c14e', 1.1); }
+    else if (this.mode === 'jump') { this.jumpWarn = 0.8; this.modeT = 2.2; Fishing.say('It\'s coming up — LET GO of the mouse!', '#f2c14e', 1.2); }
   },
 
   effort() { return { run: 1, side: 0.85, sulk: 0.55, jump: 0.7, tire: 0.2 }[this.mode]; },
@@ -42,9 +42,13 @@ const Fight = {
     const f = this.fish, sp = f.sp, gear = Game.gear, l = Fishing.lure;
     this.time += dt;
     // ----- angler input -----
-    const side = (Input.keys.has('KeyD') ? 1 : 0) - (Input.keys.has('KeyA') ? 1 : 0);
+    // The rod points where the mouse is: aim it away from the fish's run for side strain.
+    const toFish = Math.atan2(f.y - Player.y, f.x - Player.x);
+    const toMouse = Math.atan2(Input.mouse.wy - Player.y, Input.mouse.wx - Player.x);
+    const side = U.clamp(U.angDiff(toFish, toMouse) / 0.9, -1, 1);
     this.rodSide = U.lerp(this.rodSide, side, Math.min(1, dt * 4));
-    const lift = Input.keys.has('KeyS') ? 0.05 : Input.keys.has('KeyW') ? 1 : 0.6;
+    // Holding the button = reeling with the rod up; letting go drops the rod (bow to a jump).
+    const lift = Input.mouse.down ? 0.85 : 0.1;
     this.rodLift = U.lerp(this.rodLift, lift, Math.min(1, dt * 6));
     if (Input.pressed('KeyQ') || Input.wheel > 0) this.setDrag(Game.drag - 0.25);
     if (Input.pressed('KeyE') || Input.wheel < 0) this.setDrag(Game.drag + 0.25);
@@ -137,7 +141,7 @@ const Fight = {
       if (this.slackT > 1.2 && Math.random() < dt * 0.6 * (1.25 - this.hookHold)) return this.thrown('Slack line — the hook fell out.');
     } else this.slackT = 0;
     if (f.airborne && f.airT < dt * 1.5 && this.rodLift > 0.45 && Math.random() < 0.55 * this.rodLift * (1.3 - this.hookHold)) {
-      return this.thrown('It threw the hook mid-jump! (Drop the rod with S when it jumps.)');
+      return this.thrown('It threw the hook mid-jump! (Let go of the mouse when it jumps.)');
     }
 
     // Tiring: hard pressure, side strain and drag work all count.
@@ -149,10 +153,7 @@ const Fight = {
     const pd = U.dist(Player.x, Player.y, f.x, f.y);
     const small = f.kg < 0.6;
     this.landReady = (pd < 2.6 && f.stamina < 0.32) || (small && pd < 1.8);
-    if (Input.pressed('KeyF')) {
-      if (this.landReady) return this.land();
-      if (pd < 3) { f.stamina = Math.min(1, f.stamina + 0.15); this.mode = 'run'; this.modeT = 1.5; this.swim = Math.atan2(f.y - Player.y, f.x - Player.x); Sfx.splash(0.8); Fishing.say('Too green — it bolted from the net!', '#e2584d', 1.4); }
-    }
+    if (this.landReady) return this.land();
   },
 
   headShake(power) { this.spike = Math.max(this.spike, power); },
@@ -174,7 +175,7 @@ const Fight = {
     f.state = 'spooked'; f.airborne = false; f.t = 0; f.cool = 30;
     this.end();
     Npcs.onPlayerLoss();
-    Fishing.loseLure('SNAP! Line broke at ' + this.tension.toFixed(1) + ' kg — ease the drag or lower the rod.');
+    Fishing.loseLure('SNAP! Line broke at ' + this.tension.toFixed(1) + ' kg — scroll down to ease the drag, and stop reeling when it screams.');
   },
 
   thrown(msg) {

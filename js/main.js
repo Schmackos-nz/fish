@@ -2,7 +2,7 @@
 'use strict';
 
 const SAVE_KEY = 'reelwild.save.v1';
-const CRANK_STATES = new Set(['line', 'fight', 'snagged', 'knot']);
+const CRANK_STATES = new Set(['line', 'fight', 'snagged']);
 
 const Input = {
   keys: new Set(), down: new Set(), mouse: { sx: 0, sy: 0, wx: 0, wy: 0, down: false, rdown: false },
@@ -20,6 +20,7 @@ const Input = {
     addEventListener('blur', () => { this.keys.clear(); this.mouse.down = false; });
     target.addEventListener('contextmenu', (e) => e.preventDefault());
     target.addEventListener('mousedown', (e) => {
+      if (e.button === 0 && Hud.click(e.clientX, e.clientY)) return; // HUD buttons eat the click
       if (e.button === 0) { this.mouse.down = true; this.mousePressed = true; this.lastHeading = null; this.segX = this.segY = 0; }
       if (e.button === 2) { this.mouse.rdown = true; this.rPressed = true; }
     });
@@ -145,7 +146,7 @@ function start(fresh) {
     title.classList.add('hidden');
     Game.running = true;
     Game.save();
-    Hud.toast('Walk to the water, press SPACE to open the bail', '#f3ead6', 4);
+    Hud.toast('Walk to the water with WASD, then hold the left mouse button to cast', '#f3ead6', 4.5);
   }, 30);
 }
 
@@ -173,9 +174,8 @@ function frame(now) {
   if (Game.running) {
     const w = Scene3D.screenToWorld(Input.mouse.sx, Input.mouse.sy);
     Input.mouse.wx = w.x; Input.mouse.wy = w.y;
-    let crank = Input.crankAcc;
-    // Hold C to crank at a steady medium speed (Shift for fast).
-    if (Input.keys.has('KeyC')) crank += Math.PI * 2 * (Input.keys.has('ShiftLeft') || Input.keys.has('ShiftRight') ? 2.6 : 1.5) * dt;
+    // Holding the left button turns the reel steadily; spinning the mouse while holding reels faster.
+    const crank = Input.mouse.down ? Math.PI * 2 * 1.5 * dt + Math.max(0, Input.crankAcc) * 0.7 : 0;
     Input.crank = CRANK_STATES.has(Fishing.state) && !Menus.open ? crank : 0;
     Input.crankAcc = 0;
     handleGlobalKeys();
