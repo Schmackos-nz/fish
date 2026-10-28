@@ -253,6 +253,26 @@ const Scene3D = {
     });
     posts.count = np;
     this.world.add(mesh, posts);
+    // Hand rails on some bridges: a post every metre along both edges and a top rail.
+    const wood = new THREE.MeshLambertMaterial({ color: 0x6a4526 });
+    for (const b of World.bridges || []) {
+      if (!b.rails) continue;
+      const horiz = b.dx !== 0;
+      const a0 = horiz ? Math.min(b.x0, b.x1) : Math.min(b.y0, b.y1), a1 = (horiz ? Math.max(b.x0, b.x1) : Math.max(b.y0, b.y1)) + 1;
+      const mid = (horiz ? b.y0 : b.x0) + 0.5;
+      for (const side of [-1.42, 1.42]) {
+        const c = mid + side, len = a1 - a0;
+        const rail = new THREE.Mesh(new THREE.BoxGeometry(horiz ? len : 0.07, 0.07, horiz ? 0.07 : len), wood);
+        rail.position.set(horiz ? a0 + len / 2 : c, 0.78, horiz ? c : a0 + len / 2);
+        const mid2 = rail.clone(); mid2.position.y = 0.52;
+        this.world.add(rail, mid2);
+        for (let a = a0; a <= a1 + 0.01; a += 1) {
+          const post = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.62, 0.09), wood);
+          post.position.set(horiz ? a : c, 0.52, horiz ? c : a);
+          this.world.add(post);
+        }
+      }
+    }
   },
 
   buildBuilding(b) {
@@ -260,6 +280,7 @@ const Scene3D = {
       shop: { wall: 0x8a5a34, roof: 0x3f6e7a, sign: ['TACKLE', '#e9d9a8', '#3a2614'] },
       ranger: { wall: 0x7a6a48, roof: 0x3f6a3a, sign: ['RANGER', '#2f5a2c', '#f2e6c0'] },
       store: { wall: 0xe0d6c0, roof: 0xb83a32, sign: ['STORE', '#b83a32', '#fff4e0'] },
+      bikes: { wall: 0x4a4a52, roof: 0x2a2a2e, sign: ['BIKES', '#1a1a1a', '#F2C14E'] },
     };
     const HOUSE_WALLS = [0xe2d3ac, 0xa9c4d2, 0xd7b0a8, 0xbfd0a0, 0xe8dcc8, 0xc8b8d8];
     const HOUSE_ROOFS = [0x7a3a2a, 0x3f5a7a, 0x5a6a3a, 0x6a4a3a, 0x8a5a2a];

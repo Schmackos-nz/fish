@@ -19,6 +19,7 @@ const Markers = {
       if (b.type === 'shop') out.push({ x: d.x, y: d.y, label: 'Tackle Shop', icon: '🎣', color: '#E3A945' });
       else if (b.type === 'ranger') out.push({ x: d.x, y: d.y, label: 'Ranger · Permits', icon: '🪪', color: '#E3A945' });
       else if (b.type === 'store') out.push({ x: d.x, y: d.y, label: 'General Store', icon: '🛒', color: '#E3A945' });
+      else if (b.type === 'bikes') out.push({ x: d.x, y: d.y, label: 'Dirt Bikes', icon: '🏍️', color: '#E3A945' });
       else if (b.type === 'house' && Game.home && Game.home.id === b.id) out.push({ x: d.x, y: d.y, label: 'Home', icon: '🏠', color: '#7DC383' });
       else if (b.type === 'house' && b.vacant) out.push({ x: d.x, y: d.y, label: 'For rent · ' + U.fmtMoney(b.rent) + '/day', icon: '🔑', color: '#7FC4D4' });
     }

@@ -18,6 +18,7 @@ const Interior = {
       if (b.type === 'shop') World.shopkeeper = this.layout(b).vendor;
       if (b.type === 'ranger') World.ranger = this.layout(b).vendor;
       if (b.type === 'store') World.clerk = this.layout(b).vendor;
+      if (b.type === 'bikes') World.revs = this.layout(b).vendor;
     }
     const clerkC = document.createElement('canvas'); clerkC.width = Folk.W; clerkC.height = Folk.H;
     Folk.draw(clerkC.getContext('2d'), CLERK_PAL, 'down', 0, 'normal');
@@ -25,6 +26,12 @@ const Interior = {
     this.clerk.material.map.magFilter = THREE.LinearFilter; this.clerk.material.map.minFilter = THREE.LinearFilter;
     this.clerk.position.set(World.clerk.x, 0.04, World.clerk.y);
     this.group.add(this.clerk);
+    const rc = document.createElement('canvas'); rc.width = Folk.W; rc.height = Folk.H;
+    Folk.draw(rc.getContext('2d'), REVS_PAL, 'down', 0, 'normal');
+    this.revs = Actors.billboard(rc, 1, 1.25);
+    this.revs.material.map.magFilter = THREE.LinearFilter; this.revs.material.map.minFilter = THREE.LinearFilter;
+    this.revs.position.set(World.revs.x, 0.04, World.revs.y);
+    this.group.add(this.revs);
   },
 
   // Room geometry for a building: size, furniture rectangles and where people stand.
@@ -41,6 +48,10 @@ const Interior = {
       w = 8; h = 6;
       furn = [R(0.4, 0.1, 3, 0.5, 'board', 0x3f6a3a), R(1.5, 2.2, 4, 0.8, 'counter', 0x7a6a48), R(6.2, 0.2, 1.4, 1.2, 'shelf', 0x5a4a32)];
       vendor = { x: x0 + 3.5, y: y0 + 1.5 };
+    } else if (b.type === 'bikes') {
+      w = 9; h = 6;
+      furn = [R(0.6, 1.6, 3, 0.8, 'counter', 0x2a2a2e), R(4.6, 0.4, 1.8, 1, 'bikepad', 0x555a60), R(4.6, 2.8, 1.8, 1, 'bikepad', 0x555a60), R(7.2, 0.2, 1.4, 0.6, 'shelf', 0x3a3a40)];
+      vendor = { x: x0 + 2, y: y0 + 0.9 };
     } else if (b.type === 'store') {
       w = 9; h = 6;
       furn = [R(0.8, 3.2, 3, 0.7, 'grocer', 0xb8b0a0), R(5.2, 3.2, 3, 0.7, 'grocer', 0xb8b0a0), R(0.6, 1.6, 3, 0.8, 'counter', 0xb83a32), R(7.2, 0.2, 1.4, 1, 'fridge', 0xdfe6ea)];
@@ -84,7 +95,7 @@ const Interior = {
     const win = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.9), new THREE.MeshBasicMaterial({ color: 0x9fd4ee }));
     win.position.set(r.x0 + r.w - 2, 1.4, r.y0 + 0.01); g.add(win);
     for (const f of r.furn) {
-      const hgt = { shelf: 1.7, board: 1.2, counter: 0.9, grocer: 1.3, fridge: 1.8, bed: 0.5, stove: 0.9, chest: 0.6, table: 0.75 }[f.kind];
+      const hgt = { shelf: 1.7, board: 1.2, counter: 0.9, grocer: 1.3, fridge: 1.8, bed: 0.5, stove: 0.9, chest: 0.6, table: 0.75, bikepad: 0.15 }[f.kind];
       const m = new THREE.Mesh(new THREE.BoxGeometry(f.w, hgt, f.h), new THREE.MeshLambertMaterial({ color: f.color }));
       m.position.set(f.x + f.w / 2, hgt / 2, f.y + f.h / 2); g.add(m);
       if (f.kind === 'shelf' || f.kind === 'grocer') {
@@ -95,6 +106,7 @@ const Interior = {
           box.position.set(f.x + 0.2 + i * 0.35, yy * hgt * 0.75, f.y + f.h + 0.02); g.add(box);
         }
       }
+      if (f.kind === 'bikepad') { const bk = Bikes.model(BIKES[(f.y > r.y0 + 2 ? 2 : 1)].color); bk.position.set(f.x + f.w / 2, 0.15, f.y + f.h / 2); bk.rotation.y = 0.5; g.add(bk); }
       if (f.kind === 'bed') { const p = new THREE.Mesh(new THREE.BoxGeometry(f.w * 0.8, 0.15, 0.4), new THREE.MeshLambertMaterial({ color: 0xf4f0e6 })); p.position.set(f.x + f.w / 2, 0.58, f.y + 0.3); g.add(p); }
       if (f.kind === 'stove') for (const ox of [0.35, 1.05]) { const bn = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.03, 12), new THREE.MeshBasicMaterial({ color: 0x8a2a1a })); bn.position.set(f.x + ox, 0.92, f.y + 0.4); g.add(bn); }
       if (f.kind === 'board') { const map = new THREE.Mesh(new THREE.PlaneGeometry(f.w * 0.9, 0.9), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(Art.minimap) })); map.position.set(f.x + f.w / 2, 1.4, r.y0 + 0.02); g.add(map); }

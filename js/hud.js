@@ -132,6 +132,7 @@ const Hud = {
     Swimmers.drawBubbles(this);
     Couples.drawCensor(this);
     Tim.drawBubble(this);
+    Bikes.drawBubbles(this);
     Animals.drawLabels(this);
     Wardens.drawLabels(this);
     this.drawCursorInfo();
@@ -190,6 +191,12 @@ const Hud = {
     if (Wardens.anyChasing()) r(['Shift'], 'Warden on your tail — run! (Q to roll)', { hot: true, flash });
     else if (Permits.fishingIllegally()) r(['!'], 'No permit for this water — wardens patrol', { hot: true });
     if (Bugs.list.some((b) => Bugs.swattable(b))) r(['Click'], 'Swat the bug on you', { hot: true, flash: Bugs.list.some((b) => b.state === 'land') && flash });
+    if (Bikes.riding) {
+      r(['WASD'], 'Ride');
+      r(['Space'], 'Jump');
+      r(['E'], 'Get off and park', { hot: true });
+      return rows;
+    }
     if (st === 'idle') {
       r(['WASD'], 'Move · Shift run · C crouch' + (Player.crouch ? ' (on)' : ''), { held: Player.crouch });
       r(['Space'], 'Jump    Shift+C  Slide');
@@ -468,6 +475,11 @@ const Hud = {
   // Context panel above the hotbars.
   drawStatePanel(cx, bottom) {
     const F = Fishing, L = LURE_BY_ID[F.lureId], g = this.g;
+    if (Bikes.riding) {
+      const sp = Math.hypot(Bikes.vel.x, Bikes.vel.y);
+      this.pill(BIKE_BY_ID[Game.bike.id].name + '  ·  ' + Math.round(sp * 3.6) + ' km/h  ·  fuel ' + Math.round(Game.fuel) + '%', cx, bottom - 14, Game.fuel < 15 ? UI.bad : UI.ink, 13);
+      return;
+    }
     if (Gun.out) {
       this.pill('Rifle · ' + (Game.ammo || 0) + ' rounds' + (Gun.scoped ? '' : ' · right-click to scope'), cx, bottom - 14, UI.bad, 13);
       return;

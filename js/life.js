@@ -257,6 +257,7 @@ const Travel = {
     const h = this.cost(d);
     Life.passHours(h, 2);
     Player.place(d.x, d.y);
+    if (Bikes.riding) { Game.bike.x = d.x; Game.bike.y = d.y; }
     Scene3D.target.set(d.x, Scene3D.standH(d.x, d.y), d.y);
     Fish.reset();
     const fade = document.getElementById('fade');
@@ -273,11 +274,13 @@ const Interact = {
   best() {
     const P = Player, cands = [];
     const add = (x, y, r, label, run) => { const d = U.dist(P.x, P.y, x, y); if (d < r) cands.push({ d, x, y, label, run }); };
+    if (Bikes.riding) return { d: 0, x: P.x, y: P.y, label: 'Get off the bike', run: () => Bikes.dismount() };
     if (Interior.active) {
       const b = Interior.active.b;
       if (b.type === 'shop') add(World.shopkeeper.x, World.shopkeeper.y, 2.8, 'Hettie\'s Tackle', () => Menus.openShop());
       if (b.type === 'ranger') add(World.ranger.x, World.ranger.y, 2.8, 'Ranger Dale — permits', () => Menus.openPermits());
       if (b.type === 'store') add(World.clerk.x, World.clerk.y, 2.8, 'General Store', () => Life.openStore());
+      if (b.type === 'bikes') add(World.revs.x, World.revs.y, 2.8, 'Revs — bikes & fuel', () => Bikes.openShop());
       const f = Interior.near();
       if (f) cands.push({ d: 0.5, x: f.x + f.w / 2, y: f.y + f.h / 2, label: f.label, run: () => Life.useFurniture(f.kind) });
     } else {
@@ -288,6 +291,7 @@ const Interact = {
         else if (b.vacant) add(dr.x, dr.y, 1.6, 'Cottage for rent — ' + U.fmtMoney(b.rent) + '/day', () => Life.openRent(b));
         else add(dr.x, dr.y, 1.6, b.name, () => Hud.toast(b.name + ' — the door\'s locked.', UI.muted, 1.6));
       }
+      if (Bikes.near()) add(Game.bike.x, Game.bike.y, 2, 'Ride your ' + BIKE_BY_ID[Game.bike.id].name, () => Bikes.mount());
       add(World.bbq.x, World.bbq.y, 2, 'BBQ — cook your catch', () => Life.openCook('the BBQ'));
       add(World.tim.x, World.tim.y, 2.6, 'Talk to Tim — tips & goals', () => Tim.open());
       add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());

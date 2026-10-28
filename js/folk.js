@@ -112,6 +112,12 @@ const Folk = {
     } else if (pal.hatStyle === 'cap') {
       blob(pal.hat, () => { g.moveTo(hx - 18, hy - 9); g.bezierCurveTo(hx - 17, hy - 31, hx + 17, hy - 31, hx + 18, hy - 9); g.closePath(); });
       if (dir !== 'up') blob(U.shade(pal.hat, -0.2), ell(side ? hx + 18 : hx, hy - 9, side ? 10 : 15, 3.5));
+    } else if (pal.hatStyle === 'helmet') {
+      // Full motocross lid: dome down over the ears, peak, and a dark visor strip.
+      blob(pal.hat, () => { g.moveTo(hx - 21, hy + 4); g.bezierCurveTo(hx - 22, hy - 30, hx + 22, hy - 30, hx + 21, hy + 4); g.closePath(); });
+      g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(hx - 3, hy - 24, 6, 18);
+      if (dir !== 'up') blob(pal.visor || '#222', () => g.roundRect(hx - 18, hy - 11, 36, 6, 3));
+      blob(U.shade(pal.hat, -0.2), () => g.ellipse(side ? hx + 16 : hx, hy - 15, side ? 10 : 14, 3, 0, 0, Math.PI * 2));
     } else if (pal.hatStyle === 'ranger') {
       // Flat wide brim and a pinched "Montana" crown.
       blob(pal.hat, ell(hx, hy - 10, 26, 5));

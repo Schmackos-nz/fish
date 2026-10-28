@@ -42,6 +42,13 @@ const Sfx = {
     const bbp = this.ctx.createBiquadFilter(); bbp.type = 'bandpass'; bbp.frequency.value = 900; bbp.Q.value = 3;
     this.buzzOsc.connect(bbp).connect(this.buzzGain).connect(this.master);
     this.buzzOsc.start(); bl.start();
+    // Two-stroke engine: detuned saw + square through a growly low-pass.
+    this.engGain = this.ctx.createGain(); this.engGain.gain.value = 0;
+    this.engA = this.ctx.createOscillator(); this.engA.type = 'sawtooth'; this.engA.frequency.value = 60;
+    this.engB = this.ctx.createOscillator(); this.engB.type = 'square'; this.engB.frequency.value = 61.5;
+    const elp = this.ctx.createBiquadFilter(); elp.type = 'lowpass'; elp.frequency.value = 700; elp.Q.value = 4;
+    this.engA.connect(elp); this.engB.connect(elp); elp.connect(this.engGain).connect(this.master);
+    this.engA.start(); this.engB.start();
   },
 
   loopNoise(freq, q, type) {
@@ -101,6 +108,12 @@ const Sfx = {
 
   shot() { this.burst(0.06, 7000, 0.9, 'highpass'); this.tone(150, 0.16, 0.5, 'square', 50); this.burst(0.5, 2400, 0.6, 'lowpass', 0.7, 140); },
   slap(v) { this.burst(0.07, 1800, 0.25 * v + 0.1, 'bandpass', 1.2); this.tone(180, 0.05, 0.15 * v, 'square', 90); },
+  setEngine(level, rpm) {
+    if (!this.ctx) return;
+    const t = this.ctx.currentTime;
+    this.engGain.gain.setTargetAtTime(U.clamp(level, 0, 1) * 0.06, t, 0.1);
+    this.engA.frequency.setTargetAtTime(rpm, t, 0.08); this.engB.frequency.setTargetAtTime(rpm * 1.025, t, 0.08);
+  },
   setBuzz(level, pitch) {
     if (!this.ctx) return;
     this.buzzGain.gain.setTargetAtTime(level * level * 0.012, this.ctx.currentTime, 0.08);

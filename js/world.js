@@ -68,7 +68,7 @@ const World = {
     this.tile = new Uint8Array(N); this.obj = new Uint8Array(N); this.kind = new Uint8Array(N);
     this.depth = new Float32Array(N); this.flowX = new Float32Array(N); this.flowY = new Float32Array(N);
     this.height = new Float32Array(N);
-    this.lakes = []; this.buildings = [];
+    this.lakes = []; this.buildings = []; this.bridges = [];
     const moist = new Float32Array(N);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = this.idx(x, y);
@@ -292,7 +292,8 @@ const World = {
     const shop = { x: cx + 2, y: cy - 4, w: 4, h: 6, face: 'west', type: 'shop', name: "Hettie's Tackle" };
     const ranger = { x: cx - 7, y: cy - 4, w: 4, h: 5, face: 'east', type: 'ranger', name: 'Ranger Station' };
     const store = { x: cx - 7, y: cy + 4, w: 4, h: 7, face: 'east', type: 'store', name: 'General Store' };
-    for (const b of [shop, ranger, store]) {
+    const bikes = { x: cx + 2, y: cy + 5, w: 5, h: 6, face: 'west', type: 'bikes', name: 'Dirt Cheap Bikes' };
+    for (const b of [shop, ranger, store, bikes]) {
       this.buildings.push(b);
       for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) { this.tile[this.idx(x, y)] = T.FLOOR; this.obj[this.idx(x, y)] = O.NONE; }
     }
@@ -388,7 +389,7 @@ const World = {
   doorOf(b) { return this.localToWorld(b, 0.9, this.depthOf(b) + 0.55); },
 
   carvePath(x0, y0, x1, y1) {
-    let x = x0, y = y0, steps = 0;
+    let x = x0, y = y0, steps = 0, landX = Math.floor(x0), landY = Math.floor(y0);
     while (steps++ < 1500) {
       const ang = Math.atan2(y1 - y, x1 - x) + (U.valueNoise(steps * 0.04, 3, this.seed + 77) - 0.5) * 1.4;
       x += Math.cos(ang) * 0.5; y += Math.sin(ang) * 0.5;
@@ -398,18 +399,48 @@ const World = {
       if (this.tile[i] === T.WATER) {
         const k = this.kind[i];
         if (k === K.LAKE || k === K.POND) break;
-        // Footbridge three planks wide, so diagonal crossings don't leave corner-to-corner gaps.
-        for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
-          if (!this.inB(tx + ox, ty + oy)) continue;
-          const j = this.idx(tx + ox, ty + oy);
-          if (this.tile[j] === T.WATER && (this.kind[j] === K.RIVER || this.kind[j] === K.STREAM)) { this.tile[j] = T.PLANK; this.obj[j] = O.NONE; }
-        }
+        // Span the river with a straight bridge from this bank to the far bank, or give up here.
+        const end = this.buildBridge(landX, landY, ang);
+        if (!end) break;
+        x = end.x; y = end.y; landX = Math.floor(x); landY = Math.floor(y);
         continue;
       }
+      if (this.tile[i] !== T.PLANK) { landX = tx; landY = ty; }
       if (this.tile[i] === T.FLOOR || this.tile[i] === T.PLANK) continue;
       this.tile[i] = T.PATH;
       this.obj[i] = O.NONE;
     }
+  },
+
+  // A straight, three-plank bridge from a land tile across a river or stream to land on the far side.
+  // Tries the axis closest to the path's heading, then the other one. Returns the far-bank point, or null.
+  buildBridge(lx, ly, ang) {
+    const sx = Math.sign(Math.cos(ang)) || 1, sy = Math.sign(Math.sin(ang)) || 1;
+    const dirs = Math.abs(Math.cos(ang)) > Math.abs(Math.sin(ang)) ? [[sx, 0], [0, sy]] : [[0, sy], [sx, 0]];
+    for (const [dx, dy] of dirs) {
+      let x = lx, y = ly, n = 0, ok = true;
+      for (;;) {
+        x += dx; y += dy; n++;
+        if (!this.inB(x, y) || n > 26) { ok = false; break; }
+        const i = this.idx(x, y), t = this.tile[i];
+        if (t === T.WATER && (this.kind[i] === K.LAKE || this.kind[i] === K.POND)) { ok = false; break; }
+        if (t !== T.WATER && t !== T.PLANK) break; // far bank
+      }
+      // The far bank has to be real, walkable ground.
+      if (!ok || n < 2 || this.tile[this.idx(x, y)] === T.ROCK) continue;
+      const px = dy ? 1 : 0, py = dx ? 1 : 0; // across the bridge
+      for (let s = 0; s <= n; s++) for (let w = -1; w <= 1; w++) {
+        const bx = lx + dx * s + px * w, by = ly + dy * s + py * w;
+        if (!this.inB(bx, by)) continue;
+        const j = this.idx(bx, by);
+        if (this.tile[j] === T.WATER) this.tile[j] = T.PLANK;
+        else if (this.tile[j] !== T.PLANK && this.tile[j] !== T.FLOOR) this.tile[j] = T.PATH; // tidy approaches
+        this.obj[j] = O.NONE;
+      }
+      this.bridges.push({ x0: lx + dx, y0: ly + dy, x1: x - dx, y1: y - dy, dx, dy, rails: U.hash2(lx, ly, this.seed + 3) < 0.6 });
+      return { x: x + 0.5, y: y + 0.5 };
+    }
+    return null;
   },
 
   nameWaters(rng) {

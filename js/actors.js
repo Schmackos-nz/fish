@@ -166,7 +166,7 @@ const Actors = {
     const holding = Tools.current === 'rod' || Tools.current === 'gun';
     this.player.material.map = this.frames[(holding ? 'g' : '') + dir + frame];
     this.player.scale.x = dir === 'side' && Math.cos(a) < 0 ? -1 : 1;
-    this.player.position.set(p.x, base + p.z + (p.moving && !p.rolling ? Math.abs(Math.sin(p.walkT * 8 * Math.PI / 2)) * 0.04 : 0), p.y);
+    this.player.position.set(p.x, base + p.z + (Bikes.riding ? 0.38 : 0) + (p.moving && !p.rolling && !Bikes.riding ? Math.abs(Math.sin(p.walkT * 8 * Math.PI / 2)) * 0.04 : 0), p.y);
     // Crouch squashes, the roll tumbles head over heels.
     this.player.scale.y = p.rolling ? 0.6 : p.crouch ? 0.72 : 1;
     this.player.rotation.z = p.rolling ? (Math.cos(p.rollDir) >= 0 ? -0.35 : 0.35) : 0; // leaning back into the slide

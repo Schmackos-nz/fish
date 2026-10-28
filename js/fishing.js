@@ -70,7 +70,7 @@ const Fishing = {
       case 'idle':
         this.bend = U.lerp(this.bend, 0, dt * 6);
         // Press and hold to load the rod; the bail flips open by itself.
-        if (Input.mousePressed && Tools.current === 'rod' && !Interior.active) {
+        if (Input.mousePressed && Tools.current === 'rod' && !Interior.active && !Bikes.riding) {
           if (!this.canCastWith(this.lureId)) { this.say('Out of that lure — pick another from the lure bar.', '#e2584d'); break; }
           this.bailOpen = true; Sfx.bail();
           this.state = 'charging'; this.chargeT = 0;

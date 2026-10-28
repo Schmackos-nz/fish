@@ -30,6 +30,7 @@ const Player = {
     }
     const free = F === 'idle' && !Menus.open;
     if (!free) ix = iy = 0;
+    if (Bikes.riding) { Bikes.ride(dt, ix, iy); return; }
 
     // Moves: Space jump; C crouches — or, while running, drops you into a slide.
     this.rollCool = Math.max(0, this.rollCool - dt);

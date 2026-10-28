@@ -12,6 +12,7 @@ const Tools = {
   current: 'rod', repelT: 0, looking: false, look: { x: 0, y: 0 }, mistT: 0,
 
   select(id) {
+    if (Bikes.riding) { Hud.toast('Hands on the bars! Get off first (E).', UI.muted, 1.4); return; }
     if (Fishing.state !== 'idle') { Hud.toast('Reel in first (Space) before you swap tools.', '#f2c14e', 1.6); return; }
     const next = this.current === id ? 'hands' : id; // same key again puts it away
     this.current = next;
