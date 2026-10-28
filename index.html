@@ -119,6 +119,7 @@
   #saveInfo { align-self: center; margin: -2px 0 2px; padding: 5px 14px; border-radius: 999px; background: rgba(26,20,16,0.82);
     color: #FFE27A; font: 600 12.5px var(--font); }
   #title footer { position: absolute; left: 24px; right: 24px; bottom: 18px; display: flex; justify-content: space-between; pointer-events: none; }
+  #title footer .theme-btn { pointer-events: auto; padding: 5px 14px; border-radius: 999px; border: 3px solid #1a1410; background: #FFD447; color: #1a1410; font: 400 15px "Lilita One", sans-serif; box-shadow: 0 3px 0 #1a1410; }
   #title footer span { padding: 5px 12px; border-radius: 999px; background: rgba(26,20,16,0.7); color: #EEE7D7; font: 600 12px var(--font); }
   @media (max-width: 820px) { .title-wrap { flex-direction: column; gap: 6px; } #titleTim { width: 160px; } .logo .l2 { right: -10px; } }
 
@@ -186,7 +187,7 @@
       </div>
     </div>
   </div>
-  <footer><span>v1.0</span><span>🎣 Best with a mouse &amp; keyboard</span></footer>
+  <footer><span>v1.0</span><button id="themeBtn" class="theme-btn">♪ Play theme</button><span>🎣 Best with a mouse &amp; keyboard</span></footer>
 </div>
 
 <div id="help" class="modal hidden"><div class="sheet">
@@ -248,6 +249,7 @@
   <p class="sub">Saved on this device.</p>
   <div class="setting"><div><label>Master volume</label><div class="desc">Reel clicks, splashes and drag scream.</div></div><input id="setVolume" type="range" min="0" max="100"></div>
   <div class="setting"><div><label>Camera distance</label><div class="desc">You can also zoom with the scroll wheel.</div></div><input id="setZoom" type="range" min="8" max="34"></div>
+  <div class="setting"><div><label>Theme tune</label><div class="desc">Plays on the main menu.</div></div><div id="setMusic" class="switch"></div></div>
   <div class="setting"><div><label>Controls panel</label><div class="desc">Context hints in the top-left (H).</div></div><div id="setControls" class="switch"></div></div>
   <div class="setting"><div><label>Reset progress</label><div class="desc">Deletes your valley, money and journal.</div></div><button id="setReset" class="danger">Reset</button></div>
 </div></div>
@@ -284,37 +286,38 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=36"></script>
-<script src="js/data.js?v=36"></script>
-<script src="js/audio.js?v=36"></script>
-<script src="js/world.js?v=36"></script>
-<script src="js/scene-sprites.js?v=36"></script>
-<script src="js/toon.js?v=36"></script>
-<script src="js/scene.js?v=36"></script>
-<script src="js/folk.js?v=36"></script>
-<script src="js/actors.js?v=36"></script>
-<script src="js/fish.js?v=36"></script>
-<script src="js/fishing.js?v=36"></script>
-<script src="js/fight.js?v=36"></script>
-<script src="js/player.js?v=36"></script>
-<script src="js/npcs.js?v=36"></script>
-<script src="js/gun.js?v=36"></script>
-<script src="js/bugs.js?v=36"></script>
-<script src="js/floaters.js?v=36"></script>
-<script src="js/animals.js?v=36"></script>
-<script src="js/wardens.js?v=36"></script>
-<script src="js/interiors.js?v=36"></script>
-<script src="js/life.js?v=36"></script>
-<script src="js/weed.js?v=36"></script>
-<script src="js/markers.js?v=36"></script>
-<script src="js/swimmers.js?v=36"></script>
-<script src="js/couples.js?v=36"></script>
-<script src="js/tim.js?v=36"></script>
-<script src="js/bikes.js?v=36"></script>
-<script src="js/tools.js?v=36"></script>
-<script src="js/hud.js?v=36"></script>
-<script src="js/share.js?v=36"></script>
-<script src="js/menus.js?v=36"></script>
-<script src="js/main.js?v=36"></script>
+<script src="js/util.js?v=37"></script>
+<script src="js/data.js?v=37"></script>
+<script src="js/audio.js?v=37"></script>
+<script src="js/music.js?v=37"></script>
+<script src="js/world.js?v=37"></script>
+<script src="js/scene-sprites.js?v=37"></script>
+<script src="js/toon.js?v=37"></script>
+<script src="js/scene.js?v=37"></script>
+<script src="js/folk.js?v=37"></script>
+<script src="js/actors.js?v=37"></script>
+<script src="js/fish.js?v=37"></script>
+<script src="js/fishing.js?v=37"></script>
+<script src="js/fight.js?v=37"></script>
+<script src="js/player.js?v=37"></script>
+<script src="js/npcs.js?v=37"></script>
+<script src="js/gun.js?v=37"></script>
+<script src="js/bugs.js?v=37"></script>
+<script src="js/floaters.js?v=37"></script>
+<script src="js/animals.js?v=37"></script>
+<script src="js/wardens.js?v=37"></script>
+<script src="js/interiors.js?v=37"></script>
+<script src="js/life.js?v=37"></script>
+<script src="js/weed.js?v=37"></script>
+<script src="js/markers.js?v=37"></script>
+<script src="js/swimmers.js?v=37"></script>
+<script src="js/couples.js?v=37"></script>
+<script src="js/tim.js?v=37"></script>
+<script src="js/bikes.js?v=37"></script>
+<script src="js/tools.js?v=37"></script>
+<script src="js/hud.js?v=37"></script>
+<script src="js/share.js?v=37"></script>
+<script src="js/menus.js?v=37"></script>
+<script src="js/main.js?v=37"></script>
 </body>
 </html>

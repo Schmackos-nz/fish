@@ -156,9 +156,9 @@ function buildWorld(seed, savedPos) {
 
 // ---------- settings ----------
 const Settings = {
-  volume: 70, zoom: 16,
+  volume: 70, zoom: 16, music: true,
   load() { try { Object.assign(this, JSON.parse(localStorage.getItem('reelwild.settings')) || {}); } catch (e) { /* defaults */ } },
-  save() { try { localStorage.setItem('reelwild.settings', JSON.stringify({ volume: this.volume, zoom: this.zoom })); } catch (e) { /* ignore */ } },
+  save() { try { localStorage.setItem('reelwild.settings', JSON.stringify({ volume: this.volume, zoom: this.zoom, music: this.music })); } catch (e) { /* ignore */ } },
   apply() { if (Sfx.master) Sfx.master.gain.value = (this.volume / 100) * 0.7; },
 };
 
@@ -199,6 +199,7 @@ function refreshTitle() {
 }
 
 function showTitle() {
+  if (Sfx.ctx && Settings.music) setTimeout(() => { if (Game.mode === 'title') Music.play(); }, 400);
   Game.mode = 'title';
   $('title').classList.remove('hidden');
   $('pause').classList.add('hidden');
@@ -210,6 +211,7 @@ function showTitle() {
 }
 
 function enterPlay() {
+  Music.stop();
   Sfx.init(); Settings.apply();
   Game.mode = 'play';
   $('title').classList.add('hidden');
@@ -246,6 +248,7 @@ function openModal(id) {
     $('setVolume').value = Settings.volume;
     $('setZoom').value = Settings.zoom;
     $('setControls').classList.toggle('on', Hud.showControls);
+    $('setMusic').classList.toggle('on', Settings.music);
     $('setReset').textContent = 'Reset';
   }
   $(id).classList.remove('hidden');
@@ -274,6 +277,18 @@ function wireScreens() {
   for (const id of ['help', 'settings']) $(id).addEventListener('mousedown', (e) => { if (e.target.id === id) $(id).classList.add('hidden'); });
   $('setVolume').oninput = (e) => { Settings.volume = +e.target.value; Settings.apply(); Settings.save(); };
   $('setZoom').oninput = (e) => { Settings.zoom = +e.target.value; if (Game.mode !== 'title') Scene3D.camDist = Settings.zoom; Settings.save(); };
+  $('setMusic').onclick = () => {
+    Settings.music = !Settings.music; Settings.save(); $('setMusic').classList.toggle('on', Settings.music);
+    if (!Settings.music) Music.stop(0.3); else if (Game.mode === 'title') { Sfx.init(); Settings.apply(); Music.play(); }
+  };
+  $('themeBtn').onclick = () => { Sfx.init(); Settings.apply(); Music.stop(0.1); setTimeout(() => Music.play(), 150); };
+  // Browsers only allow sound after a click or key press: the first one on the menu starts the theme.
+  const firstTouch = () => {
+    removeEventListener('pointerdown', firstTouch); removeEventListener('keydown', firstTouch);
+    Sfx.init(); Settings.apply();
+    if (Game.mode === 'title' && Settings.music) Music.play();
+  };
+  addEventListener('pointerdown', firstTouch); addEventListener('keydown', firstTouch);
   $('setControls').onclick = () => { Hud.toggleControls(); $('setControls').classList.toggle('on', Hud.showControls); };
   $('setReset').onclick = (e) => {
     if (e.target.textContent !== 'Click again to confirm') { e.target.textContent = 'Click again to confirm'; return; }
@@ -315,7 +330,7 @@ function titleFrame(dt) {
   if (Input.pressed('Escape')) closeModals();
   const c = World.lakes[0];
   Scene3D.camDist = 34;
-  Scene3D.updateCamera(dt, { x: c.x + Math.sin(titleT * 0.04) * c.r * 0.6, y: c.y + c.r * 0.15 + Math.cos(titleT * 0.03) * 4 });
+  Scene3D.updateCamera(dt, { x: c.x + Math.sin(titleT * 0.04) * c.r * 0.6, y: c.y + c.r * 0.38 + Math.cos(titleT * 0.03) * 4 });
   Scene3D.updateEnv(TITLE_ENV, dt);
   Npcs.update(dt); Floaters.update(dt);
   Npcs.render(); Floaters.render();
