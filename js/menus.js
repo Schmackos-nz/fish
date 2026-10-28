@@ -63,7 +63,7 @@ const Menus = {
     const el = document.getElementById('journal');
     const known = SPECIES.filter((s) => Game.journal[s.id]).length;
     el.innerHTML = `<button class="close" id="jClose">✕</button><h2>Angler's Journal</h2>
-      <div class="desc">${known}/${SPECIES.length} species · ${Game.stats.caught} caught · ${Game.stats.released} released · ${Game.stats.shot || 0} shot (shame) · ${Game.stats.swatted || 0} bugs swatted</div>
+      <div class="desc">${known}/${SPECIES.length} species · ${Game.stats.caught} caught · ${Game.stats.released} released · ${Game.stats.shot || 0} shot (shame) · ${Game.stats.swatted || 0} bugs swatted · ${Game.stats.deer || 0} deer · ${Game.stats.boar || 0} boar</div>
       <h3>Valley anglers — biggest fish</h3>
       ${this.leaderboard()}
       <h3>Species</h3>

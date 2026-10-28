@@ -56,6 +56,7 @@ const Hud = {
     this.drawWorldLabels();
     Npcs.drawBubbles(this);
     Floaters.drawBubbles(this);
+    Animals.drawLabels(this);
     this.drawCursorInfo();
     Bugs.draw(g);
     if (this.bigMap) this.drawBigMap(W, H);
@@ -83,6 +84,7 @@ const Hud = {
     if (Bugs.list.some((b) => b.state !== 'leave')) r(['Click'], 'Swat the bugs!', { hot: true, flash: Bugs.list.some((b) => b.state === 'land') && flash });
     if (Gun.out) {
       r(['Click'], 'Shoot  (' + (Game.ammo || 0) + ' shells)', { hot: true });
+      r(['Aim'], 'Fish in the shallows, deer & boar on land');
       r(['WASD'], 'Walk');
       r(['G'], 'Put the shotgun away');
       return rows;

@@ -86,7 +86,9 @@ const Gun = {
       new THREE.Vector3(a.x, Math.max(0, Scene3D.groundH(a.x, a.y)) + 0.05, a.y)]);
     t.userData.t = 0; t.visible = true;
 
-    if (World.isWater(a.x, a.y)) {
+    if (Animals.shotAt(a.x, a.y)) {
+      Sfx.thunk();
+    } else if (World.isWater(a.x, a.y)) {
       Hud.ripple(a.x, a.y, 1.6); Hud.ripple(a.x + 0.3, a.y - 0.2, 0.9); Sfx.splash(0.9);
       // Buckshot spreads; shallow fish are easy, deep ones are mostly safe.
       let hit = null, best = 1e9;
@@ -103,6 +105,7 @@ const Gun = {
     Fish.list.forEach((f) => { if (U.dist(f.x, f.y, a.x, a.y) < 16) f.cool = 20; });
     Npcs.onGunshot(Player.x, Player.y);
     Floaters.onGunshot();
+    Animals.onGunshot(a.x, a.y);
     Game.save();
   },
 

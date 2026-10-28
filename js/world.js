@@ -32,13 +32,13 @@ const World = {
     for (const b of this.buildings) if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h) return b;
     return null;
   },
-  // Player collision. Shallow water can be waded.
+  // Player collision. Water up to about waist deep can be waded.
   blocked(x, y) {
     const tx = Math.floor(x), ty = Math.floor(y);
     if (!this.inB(tx, ty)) return true;
     const i = this.idx(tx, ty);
     if (BLOCKING_OBJ.has(this.obj[i])) return true;
-    if (this.tile[i] === T.WATER && this.depth[i] > 0.55) return true;
+    if (this.tile[i] === T.WATER && this.depth[i] > 1.05) return true;
     return !!this.buildingAt(x, y);
   },
 
@@ -298,7 +298,12 @@ const World = {
       if (this.tile[i] === T.WATER) {
         const k = this.kind[i];
         if (k === K.LAKE || k === K.POND) break;
-        this.tile[i] = T.PLANK; this.obj[i] = O.NONE; // footbridge
+        // Footbridge three planks wide, so diagonal crossings don't leave corner-to-corner gaps.
+        for (let oy = -1; oy <= 1; oy++) for (let ox = -1; ox <= 1; ox++) {
+          if (!this.inB(tx + ox, ty + oy)) continue;
+          const j = this.idx(tx + ox, ty + oy);
+          if (this.tile[j] === T.WATER && (this.kind[j] === K.RIVER || this.kind[j] === K.STREAM)) { this.tile[j] = T.PLANK; this.obj[j] = O.NONE; }
+        }
         continue;
       }
       if (this.tile[i] === T.FLOOR || this.tile[i] === T.PLANK) continue;

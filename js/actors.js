@@ -203,7 +203,11 @@ const Actors = {
     this.player.position.set(p.x, base + (p.moving ? Math.abs(Math.sin(p.walkT * 8 * Math.PI / 2)) * 0.04 : 0), p.y);
     this.ghost.material.map = this.player.material.map;
     this.ghost.position.copy(this.player.position); this.ghost.scale.copy(this.player.scale);
-    this.playerShadow.position.set(p.x, Math.max(base, 0.01) + 0.015, p.y);
+    // While wading the shadow becomes a foam ring at the waterline.
+    this.playerShadow.position.set(p.x, p.wading ? 0.03 : Math.max(base, 0.01) + 0.015, p.y);
+    this.playerShadow.material.color.set(p.wading ? 0xeaf6f4 : 0x000000);
+    this.playerShadow.material.opacity = p.wading ? 0.55 : 0.28;
+    this.playerShadow.scale.setScalar(p.wading ? 1.25 + Math.sin(Game.time * 3) * 0.06 : 1);
     this.keeper.position.set(World.shopkeeper.x, Scene3D.standH(World.shopkeeper.x, World.shopkeeper.y), World.shopkeeper.y);
     Scene3D.lantern.position.set(p.x, base + 1.4, p.y);
 

@@ -82,7 +82,7 @@ const Scene3D = {
   // Where feet stand: on ground, decking, or wading at the surface.
   standH(x, y) {
     if (World.tileAt(x, y) === T.PLANK) return 0.28;
-    return Math.max(this.groundH(x, y), -0.12);
+    return Math.max(this.groundH(x, y), -0.42);
   },
 
   buildTerrain() {

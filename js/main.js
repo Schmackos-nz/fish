@@ -133,6 +133,7 @@ function buildWorld(seed, savedPos) {
   Gun.out = false; Gun.floaters = []; Bugs.list = [];
   Npcs.init();
   Floaters.init();
+  Animals.init();
   if (savedPos && !World.blocked(savedPos.x, savedPos.y)) Player.place(savedPos.x, savedPos.y);
   else Player.place(World.spawn.x, World.spawn.y);
   Scene3D.target.set(Player.x, 0, Player.y);
@@ -194,6 +195,7 @@ function frame(now) {
       Gun.update(dt);
       Bugs.update(dt);
       Floaters.update(dt);
+      Animals.update(dt);
     }
     Hud.update(dt);
     // Frame the action: drift the camera toward the lure or the hooked fish.
@@ -206,6 +208,7 @@ function frame(now) {
     Npcs.render();
     Gun.render(dt);
     Floaters.render();
+    Animals.render();
     Scene3D.render(Game.time);
     Hud.draw();
     saveT += dt;
