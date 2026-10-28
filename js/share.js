@@ -25,7 +25,7 @@ const Share = {
     const withBlob = (fn) => (this.blob ? fn(this.blob) : c.toBlob((b) => { this.blob = b; fn(b); }, 'image/png'));
     el.querySelector('#shShare').onclick = () => withBlob(async (b) => {
       const file = new File([b], this.fileName(), { type: 'image/png' });
-      const data = { files: [file], title: 'Outdoors with Tim', text: this.caption() };
+      const data = { files: [file], title: 'Grand Trout Auto IV', text: this.caption() };
       if (navigator.canShare && navigator.canShare(data)) {
         try { await navigator.share(data); msg('Shared!'); } catch (e) { if (e.name !== 'AbortError') msg('Sharing failed — try Copy or Download.'); }
       } else { this.download(b); msg('This browser can\'t share files directly, so the picture was downloaded instead.'); }
@@ -39,9 +39,9 @@ const Share = {
 
   caption() {
     const i = this.info;
-    return `I just landed a ${i.prized ? 'prized ' : ''}${i.sp.name} — ${U.fmtKg(i.kg)}, ${i.cm} cm — at ${i.place} in Outdoors with Tim! 🎣`;
+    return `I just landed a ${i.prized ? 'prized ' : ''}${i.sp.name} — ${U.fmtKg(i.kg)}, ${i.cm} cm — at ${i.place} in Grand Trout Auto IV! 🎣`;
   },
-  fileName() { return 'outdoors-with-tim-' + this.info.sp.id + '-' + Math.round(this.info.kg * 100) / 100 + 'kg.png'; },
+  fileName() { return 'grand-trout-auto-iv-' + this.info.sp.id + '-' + Math.round(this.info.kg * 100) / 100 + 'kg.png'; },
   download(b) {
     const a = document.createElement('a');
     a.href = URL.createObjectURL(b); a.download = this.fileName();
@@ -116,7 +116,7 @@ const Share = {
     const where = i.place + '  ·  Day ' + i.day + ', ' + TIME_NAMES[i.phase].toLowerCase();
     g.lineWidth = 4; g.strokeText(where, 30, H - 22); g.fillText(where, 30, H - 22);
     g.textAlign = 'right'; g.font = '700 26px ' + UI.display; g.fillStyle = '#f2c14e';
-    g.strokeText('OUTDOORS WITH TIM', W - 26, H - 22); g.fillText('OUTDOORS WITH TIM', W - 26, H - 22);
+    g.strokeText('GRAND TROUT AUTO IV', W - 26, H - 22); g.fillText('GRAND TROUT AUTO IV', W - 26, H - 22);
     return c;
   },
 
