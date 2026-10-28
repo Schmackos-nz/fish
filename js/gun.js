@@ -36,13 +36,6 @@ const Gun = {
     }
   },
 
-  toggle() {
-    if (!this.out && Fishing.state !== 'idle') { Hud.toast('Reel in first (Space) before you do anything rash.', '#f2c14e', 1.8); return; }
-    this.out = !this.out;
-    Sfx.bail();
-    Hud.toast(this.out ? 'Shotgun out. Hettie would not approve.' : 'Shotgun away. Back to honest fishing.', this.out ? '#e2584d' : '#8fd16a', 1.8);
-  },
-
   // Where the shot will land: the cursor, clamped to range.
   aimPoint() {
     const p = Player, m = Input.mouse;

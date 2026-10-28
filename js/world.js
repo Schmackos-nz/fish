@@ -42,6 +42,16 @@ const World = {
     return !!this.buildingAt(x, y);
   },
 
+  // Collision while airborne: bushes and logs can be hopped.
+  blockedLow(x, y) {
+    const tx = Math.floor(x), ty = Math.floor(y);
+    if (!this.inB(tx, ty)) return true;
+    const i = this.idx(tx, ty), o = this.obj[i];
+    if (BLOCKING_OBJ.has(o) && o !== O.BUSH && o !== O.LOG) return true;
+    if (this.tile[i] === T.WATER && this.depth[i] > 1.05) return true;
+    return !!this.buildingAt(x, y);
+  },
+
   generate(seed) {
     this.seed = seed;
     const W = this.W, H = this.H, N = W * H;

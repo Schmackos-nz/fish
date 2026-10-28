@@ -102,9 +102,9 @@ const Animals = {
         // Amble, stop, nibble, amble.
         if (an.t > 2 + Math.random() * 3) { an.t = 0; an.heading += (Math.random() - 0.5) * 2.5; an.amble = Math.random() < 0.5; }
         want = an.amble ? 0.7 : 0;
-        const nervous = an.type === 'deer' ? (Player.moving ? (Player.running ? 12 : 8) : 5) + (Gun.out ? 3 : 0) : 0;
+        const nervous = an.type === 'deer' ? ((Player.moving ? (Player.running ? 12 : 8) : 5) + (Gun.out ? 3 : 0)) * (Player.crouch ? 0.5 : 1) : 0;
         if (an.type === 'deer' && pd < nervous) this.startle(an);
-        if (an.type === 'boar' && pd < 5.5 && an.cool <= 0) { an.state = 'alert'; an.t = 0; Hud.toast('*SNORT* — a boar is squaring up to you!', '#e2584d', 1.4); Sfx.thunk(); }
+        if (an.type === 'boar' && pd < (Player.crouch ? 3 : 5.5) && an.cool <= 0) { an.state = 'alert'; an.t = 0; an.dodged = false; Hud.toast('*SNORT* — a boar is squaring up to you!', '#e2584d', 1.4); Sfx.thunk(); }
       } else if (an.state === 'flee') {
         an.heading = Math.atan2(an.y - Player.y, an.x - Player.x) + Math.sin(an.t * 4) * 0.5;
         want = an.type === 'deer' ? 6.5 : 5;
@@ -115,7 +115,8 @@ const Animals = {
       } else if (an.state === 'charge') {
         an.heading = an.heading + U.angDiff(an.heading, Math.atan2(Player.y - an.y, Player.x - an.x)) * Math.min(1, dt * 2);
         want = 7.5;
-        if (pd < 0.8) this.trample(an);
+        if (pd < 0.8 && Player.evasive) { if (!an.dodged) { an.dodged = true; Hud.toast('Dodged!', '#8fd16a', 1); } }
+        else if (pd < 0.8) this.trample(an);
         else if (an.t > 2.6) { an.state = 'flee'; an.t = 0; an.cool = 12; }
       }
       an.speed = U.lerp(an.speed, want, Math.min(1, dt * 4));

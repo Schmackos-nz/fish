@@ -200,14 +200,17 @@ const Actors = {
     const frame = p.moving ? (Math.floor(p.walkT * 8) % 4) : 0;
     this.player.material.map = this.frames[dir + frame];
     this.player.scale.x = dir === 'side' && Math.cos(a) < 0 ? -1 : 1;
-    this.player.position.set(p.x, base + (p.moving ? Math.abs(Math.sin(p.walkT * 8 * Math.PI / 2)) * 0.04 : 0), p.y);
+    this.player.position.set(p.x, base + p.z + (p.moving && !p.rolling ? Math.abs(Math.sin(p.walkT * 8 * Math.PI / 2)) * 0.04 : 0), p.y);
+    // Crouch squashes, the roll tumbles head over heels.
+    this.player.scale.y = p.crouch ? 0.72 : 1;
+    this.player.rotation.z = p.rolling ? (1 - p.rollT / ROLL_TIME) * Math.PI * 2 * (Math.cos(p.rollDir) >= 0 ? -1 : 1) : 0;
     this.ghost.material.map = this.player.material.map;
-    this.ghost.position.copy(this.player.position); this.ghost.scale.copy(this.player.scale);
+    this.ghost.position.copy(this.player.position); this.ghost.scale.copy(this.player.scale); this.ghost.rotation.z = this.player.rotation.z;
     // While wading the shadow becomes a foam ring at the waterline.
     this.playerShadow.position.set(p.x, p.wading ? 0.03 : Math.max(base, 0.01) + 0.015, p.y);
     this.playerShadow.material.color.set(p.wading ? 0xeaf6f4 : 0x000000);
     this.playerShadow.material.opacity = p.wading ? 0.55 : 0.28;
-    this.playerShadow.scale.setScalar(p.wading ? 1.25 + Math.sin(Game.time * 3) * 0.06 : 1);
+    this.playerShadow.scale.setScalar(p.wading ? 1.25 + Math.sin(Game.time * 3) * 0.06 : 1 - p.z * 0.5);
     this.keeper.position.set(World.shopkeeper.x, Scene3D.standH(World.shopkeeper.x, World.shopkeeper.y), World.shopkeeper.y);
     Scene3D.lantern.position.set(p.x, base + 1.4, p.y);
 
@@ -215,12 +218,12 @@ const Actors = {
     const { hand, tip, ctrl } = this.rodPoints(p, base);
     this.rod.geometry.setFromPoints(new THREE.QuadraticBezierCurve3(hand, ctrl, tip).getPoints(12));
     this.rod.material.color.set(Game.gear.rod.color);
-    this.rod.visible = !Gun.out; // rod goes on your back while the shotgun's out
+    this.rod.visible = Tools.current === 'rod';
     this.tipScene = tip;
 
     // Aim ring: red crosshair for the shotgun, gold landing marker for casts.
     const charging = Fishing.state === 'charging';
-    const aiming = !Menus.open && (Gun.out || charging || (Fishing.state === 'idle' && World.isWater(Input.mouse.wx, Input.mouse.wy)));
+    const aiming = !Menus.open && (Gun.out || charging || (Tools.current === 'rod' && Fishing.state === 'idle' && World.isWater(Input.mouse.wx, Input.mouse.wy)));
     this.aimRing.visible = aiming;
     if (aiming) {
       let ax, ay;
@@ -264,7 +267,7 @@ const Actors = {
       g.visible = true; g.position.copy(tip).y -= 0.3;
     }
 
-    if (Gun.out) { this.line.visible = false; for (const id in this.lures) this.lures[id].visible = false; }
+    if (Tools.current !== 'rod') { this.line.visible = false; for (const id in this.lures) this.lures[id].visible = false; }
     else this.line.visible = true;
 
     // Fish under the surface.

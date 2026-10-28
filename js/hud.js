@@ -49,7 +49,9 @@ const Hud = {
     g.clearRect(0, 0, W, H);
     this.drawStatus(16, 16);
     this.drawControls(16, 140);
-    this.drawLureBar(16, H - 74);
+    Tools.drawBar(this, 16, H - 76);
+    if (Tools.current === 'rod') this.drawLureBar(16, H - 146);
+    else this.slots = [];
     this.drawMinimap(W - 176, 16);
     this.drawReel(W - 120, H - 120);
     this.drawStatePanel(W / 2, H - 24);
@@ -59,6 +61,7 @@ const Hud = {
     Animals.drawLabels(this);
     this.drawCursorInfo();
     Bugs.draw(g);
+    Tools.drawOverlay(this);
     if (this.bigMap) this.drawBigMap(W, H);
   },
 
@@ -82,22 +85,21 @@ const Hud = {
     const flash = Math.sin(Game.time * 14) > 0;
     const k = World.shopkeeper;
     if (Bugs.list.some((b) => b.state !== 'leave')) r(['Click'], 'Swat the bugs!', { hot: true, flash: Bugs.list.some((b) => b.state === 'land') && flash });
-    if (Gun.out) {
-      r(['Click'], 'Shoot  (' + (Game.ammo || 0) + ' shells)', { hot: true });
-      r(['Aim'], 'Fish in the shallows, deer & boar on land');
-      r(['WASD'], 'Walk');
-      r(['G'], 'Put the shotgun away');
+    if (st === 'idle') {
+      r(['WASD'], 'Walk · Shift run · C crouch' + (Player.crouch ? ' (on)' : ''), { held: Player.crouch });
+      r(['Space'], 'Jump  ·  Q  dodge roll');
+      const tool = Tools.current;
+      if (tool === 'rod') { r(['Hold L'], 'Cast — let go at the peak', { hot: World.isWater(Input.mouse.wx, Input.mouse.wy) }); r(['Tab'], 'Change lure'); }
+      else if (tool === 'gun') r(['Click'], 'Shoot  (' + (Game.ammo || 0) + ' shells) — fish, deer, boar', { hot: true });
+      else if (tool === 'spray') r(['Click'], 'Spray  (' + (Game.spray || 0) + ' cans) — bugs gone 90 s', { hot: Bugs.list.length > 0 });
+      else if (tool === 'binos') r(['Hold L'], 'Scout — spot fish & game', { held: Tools.looking });
+      r(['1-4'], tool === 'hands' ? 'Pick up a tool' : 'Switch tool (same key: put away)');
+      if (U.dist(Player.x, Player.y, k.x, k.y) < 3) r(['E'], 'Tackle shack', { hot: true });
+      else if (Npcs.near(Player.x, Player.y, 2.5)) r(['E'], 'Chat', { hot: true });
+      r(['J'], 'Journal   ·   M  Map');
       return rows;
     }
     switch (st) {
-      case 'idle':
-        r(['WASD'], 'Walk  (Shift to run)');
-        r(['Hold L'], 'Cast — let go at the peak', { hot: World.isWater(Input.mouse.wx, Input.mouse.wy) });
-        if (U.dist(Player.x, Player.y, k.x, k.y) < 3) r(['E'], 'Tackle shack', { hot: true });
-        else if (Npcs.near(Player.x, Player.y, 2.5)) r(['E'], 'Chat', { hot: true });
-        r(['G'], 'Pull out the shotgun…');
-        r(['J'], 'Journal   ·   M  Map');
-        break;
       case 'charging':
         r(['Let go'], 'at the peak!', { hot: true, flash: F.power > 0.9 && flash });
         break;
@@ -152,23 +154,25 @@ const Hud = {
     const g = this.g;
     this.slots = [];
     LURES.forEach((L, i) => {
-      const sx = x + i * 62, n = Game.lures[L.id] || 0, sel = Fishing.lureId === L.id;
-      this.slots.push({ x: sx, y, w: 56, h: 58, id: L.id });
+      const sx = x + i * 52, n = Game.lures[L.id] || 0, sel = Fishing.lureId === L.id;
+      this.slots.push({ x: sx, y, w: 48, h: 62, id: L.id });
       g.fillStyle = sel ? 'rgba(201,168,106,.35)' : 'rgba(18,26,30,.82)';
       g.strokeStyle = sel ? '#f2c14e' : '#556'; g.lineWidth = sel ? 2 : 1;
-      g.beginPath(); g.roundRect(sx, y, 56, 58, 7); g.fill(); g.stroke();
+      g.beginPath(); g.roundRect(sx, y, 48, 62, 7); g.fill(); g.stroke();
       g.globalAlpha = n ? 1 : 0.35;
-      g.fillStyle = L.color; g.beginPath(); g.ellipse(sx + 28, y + 24, 13, 7, 0, 0, Math.PI * 2); g.fill();
-      g.fillStyle = L.accent; g.fillRect(sx + 24, y + 20, 8, 8);
+      g.fillStyle = L.color; g.beginPath(); g.ellipse(sx + 24, y + 26, 11, 6, 0, 0, Math.PI * 2); g.fill();
+      g.fillStyle = L.accent; g.fillRect(sx + 21, y + 23, 6, 6);
       g.globalAlpha = 1;
-      this.text(L.key, sx + 6, y + 13, '#a99f8a', 11);
-      this.text('×' + n, sx + 50, y + 13, n ? '#f3ead6' : '#e2584d', 11, 'right');
-      this.text(L.name.split(' ').pop(), sx + 28, y + 51, sel ? '#ffffff' : '#c8bfae', 11, 'center', sel);
+      this.text('×' + n, sx + 44, y + 13, n ? '#f3ead6' : '#e2584d', 10, 'right');
+      this.text(L.name.split(' ').pop(), sx + 24, y + 54, sel ? '#ffffff' : '#c8bfae', 10, 'center', sel);
     });
   },
 
   click(x, y) {
     if (Bugs.swat(x, y)) return true;
+    for (const s of this.toolSlots || []) {
+      if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) { Tools.select(s.id); return true; }
+    }
     for (const s of this.slots || []) {
       if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) { Fishing.selectLure(s.id); return true; }
     }
