@@ -123,7 +123,7 @@ const Npcs = {
         n.spot = { x: d.x, y: d.y, ang: Math.PI / 2 }; n.state = 'walk'; n.walkT = 0;
       }
       if (n.state === 'bush') continue; // Couples handles them
-      if (n.state === 'home') { if (!night) { n.goingHome = false; n.state = 'cast'; n.casts = 0; n.t = Math.random() * 15; } continue; }
+      if (n.state === 'home') { n.homeT = (n.homeT || 0) - dt; if (!night && n.homeT <= 0) this.leaveHome(n); continue; }
       switch (n.state) {
         case 'brawl': this.brawlTick(n, dt, close); break;
         case 'walk': this.walk(n, dt); break;
@@ -146,7 +146,7 @@ const Npcs = {
     const s = n.spot;
     const d = U.dist(n.x, n.y, s.x, s.y);
     if (d < 0.3) {
-      if (n.goingHome) { n.state = 'home'; return; }
+      if (n.goingHome) { n.state = 'home'; n.homeT = n.dayVisit ? 40 + Math.random() * 80 : 0; return; }
       if (n.goingBush) { n.state = 'bush'; return; }
       n.state = 'cast'; n.t = 1 + Math.random(); n.face = s.ang; n.casts = 3 + ((Math.random() * 4) | 0);
       // Someone's already fishing here? Just like real life, it's on.
@@ -164,12 +164,28 @@ const Npcs = {
     n.stuck = moved ? 0 : (n.stuck || 0) + dt;
     // Wandering anglers don't pathfind; if they wedge against trees, they pick somewhere else.
     if ((n.stuck > 1.5 || n.walkT > 40) && n.goingBush) { n.x = s.x; n.y = s.y; n.state = 'bush'; return; }
-    if ((n.stuck > 1.5 || n.walkT > 40) && n.goingHome) { n.x = s.x; n.y = s.y; n.state = 'home'; return; }
+    if ((n.stuck > 1.5 || n.walkT > 40) && n.goingHome) { n.x = s.x; n.y = s.y; n.state = 'home'; n.homeT = n.dayVisit ? 40 + Math.random() * 80 : 0; return; }
     if (n.stuck > 1.5 || n.walkT > 40) { n.spot = this.nearestSpot(n.x, n.y, n.spot); n.walkT = 0; n.stuck = 0; if (U.dist(n.x, n.y, n.spot.x, n.spot.y) > 30) { n.x = n.spot.x; n.y = n.spot.y; } }
+  },
+
+  // Out the front door and off to a fishing spot.
+  leaveHome(n) {
+    const d = World.doorOf(n.home);
+    n.x = d.x; n.y = d.y; n.goingHome = false; n.dayVisit = false; n.lure = null;
+    const cands = this.spots.filter((s) => U.dist(n.x, n.y, s.x, s.y) < 70 && !this.list.some((o) => o !== n && o.spot === s));
+    n.spot = cands.length ? cands[(Math.random() * cands.length) | 0] : n.spot;
+    n.state = 'walk'; n.walkT = 0; n.stuck = 0; n.casts = 3 + ((Math.random() * 4) | 0);
   },
 
   cast(n) {
     if (n.casts-- <= 0) {
+      // Sometimes it's back home for a cuppa before heading out again.
+      if (n.home && Math.random() < 0.18) {
+        const d = World.doorOf(n.home);
+        n.goingHome = true; n.dayVisit = true; n.lure = null;
+        n.spot = { x: d.x, y: d.y, ang: Math.PI / 2 }; n.state = 'walk'; n.walkT = 0;
+        return;
+      }
       // Time to move on: another bank within reach.
       const cands = this.spots.filter((s) => { const d = U.dist(n.x, n.y, s.x, s.y); return d > 6 && d < 45 && !this.list.some((o) => o.spot === s); });
       // Now and then someone fancies a spot that's already taken.

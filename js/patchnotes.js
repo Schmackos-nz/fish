@@ -2,6 +2,16 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '1.2', name: 'Wild Things', date: '29 Oct 2026', notes: [
+    ['new', 'Forage mushrooms in the forest and meadows. Some are delicious, some are deadly, and the deadly white ones look a lot like the tasty white ones'],
+    ['new', 'Snakes in the forest. A bite poisons you (crouch-walk past them to improve your odds)'],
+    ['new', 'Valley Clinic on the main street: Nurse Ngaio heals you and flushes out poison, for a fee'],
+    ['new', 'Ducks paddling about on the lakes and ponds. They take off if you charge at them'],
+    ['new', 'NPC hunters in hi-vis stalking deer and boar (and entering the hunting derby)'],
+    ['new', 'Big houses: roomy two-bed places to rent, and some locals live in them too'],
+    ['changed', 'Cottage rent is cheaper ($15 to $30 a day)'],
+    ['changed', 'Locals pop home during the day, then walk out the front door to their next fishing spot'],
+  ] },
   { v: '1.1', name: 'Here Be Monsters', date: '29 Oct 2026', notes: [
     ['new', 'Urban legend fish: the Bunyip, the Taniwha Eel and the Dam Monster Carp. Watch for a huge silhouette sliding past'],
     ['new', 'Leviathan Heavy rod and 60 kg Diamond Braid at Hettie\'s. Without both, a legend snaps you off in seconds'],

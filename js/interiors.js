@@ -1,6 +1,7 @@
 // Walk-in interiors. Each room is built off-map (x < -50) and the angler is moved into it.
 'use strict';
 
+const NURSE_PAL = { hat: '#F4F4F4', hatStyle: 'none', hair: '#2A1A10', shirt: '#7FC4D4', pants: '#5A9AB0', skin: '#A86A48', mitt: '#F4F4F4' };
 const CLERK_PAL = { hat: '#B83A32', hatStyle: 'cap', shirt: '#E8E2D0', vest: '#B83A32', pants: '#3A3A4A', skin: '#C08A60', apron: true, hair: '#2A1A10' };
 
 const Interior = {
@@ -19,10 +20,12 @@ const Interior = {
       if (b.type === 'ranger') World.ranger = this.layout(b).vendor;
       if (b.type === 'store') World.clerk = this.layout(b).vendor;
       if (b.type === 'bikes') World.revs = this.layout(b).vendor;
+      if (b.type === 'clinic') World.nurse = this.layout(b).vendor;
     }
     this.clerk = standee(CLERK_PAL, World.clerk.x, World.clerk.y);
     this.revs = standee(REVS_PAL, World.revs.x, World.revs.y);
-    this.group.add(this.clerk, this.revs);
+    this.nurse = standee(NURSE_PAL, World.nurse.x, World.nurse.y);
+    this.group.add(this.clerk, this.revs, this.nurse);
   },
 
   // Room geometry for a building: size, furniture rectangles and where people stand.
@@ -47,6 +50,14 @@ const Interior = {
       w = 9; h = 6;
       furn = [R(0.8, 3.2, 3, 0.7, 'grocer', 0xb8b0a0), R(5.2, 3.2, 3, 0.7, 'grocer', 0xb8b0a0), R(0.6, 1.6, 3, 0.8, 'counter', 0xb83a32), R(7.2, 0.2, 1.4, 1, 'fridge', 0xdfe6ea)];
       vendor = { x: x0 + 2, y: y0 + 0.9 };
+    } else if (b.type === 'clinic') {
+      w = 8; h = 6;
+      furn = [R(1.5, 2.2, 4, 0.8, 'counter', 0xF4F4F0), R(0.4, 0.3, 1.2, 1.9, 'cot', 0xDFE6EA), R(6.3, 0.3, 1.2, 1.9, 'cot', 0xDFE6EA), R(3.2, 0.1, 1.6, 0.5, 'shelf', 0x7FC4D4)];
+      vendor = { x: x0 + 3.5, y: y0 + 1.5 };
+    } else if (b.big) {
+      w = 10; h = 7;
+      furn = [R(0.4, 0.3, 2, 1.6, 'bed', 0x8a4a3a, 'Sleep'), R(2.8, 0.3, 2, 1.6, 'bed', 0x4a5a8a, 'Sleep'), R(8.2, 0.2, 1.4, 0.8, 'stove', 0x2a2a2e, 'Cook'),
+        R(8.3, 5.5, 1.2, 0.8, 'chest', 0x7a4a24, 'Storage'), R(4.6, 3.2, 1.6, 1.2, 'table', 0x9a6a3a), R(0.6, 5.2, 2.8, 0.9, 'couch', 0x6a8a5a)];
     } else {
       w = 7; h = 5;
       furn = [R(0.4, 0.3, 2, 1.6, 'bed', 0x8a4a3a, 'Sleep'), R(5.2, 0.2, 1.4, 0.8, 'stove', 0x2a2a2e, 'Cook'),

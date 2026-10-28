@@ -51,6 +51,7 @@ const Wanted = {
     for (const w of Wardens.list) if (w.state !== 'ko') out.push({ x: w.x, y: w.y, kind: 'warden', o: w });
     for (const r of Bikes.riders) if (!(r.ko > 0)) { const p = Bikes.riderPos(r); out.push({ x: p.x, y: p.y, kind: 'biker', o: r }); }
     for (const u of this.units) if (!u.ko) out.push({ x: u.x, y: u.y, kind: 'unit', o: u });
+    for (const h of Hunters.list) if (!h.ko) out.push({ x: h.x, y: h.y, kind: 'hunter', o: h });
     return out;
   },
 

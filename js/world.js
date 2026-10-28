@@ -296,6 +296,7 @@ const World = {
     const store = { x: cx - 7, y: cy + 4, w: 4, h: 7, face: 'east', type: 'store', name: 'General Store' };
     const bikes = { x: cx + 2, y: cy + 5, w: 5, h: 6, face: 'west', type: 'bikes', name: 'Dirt Cheap Bikes' };
     const gas = { x: cx + 2, y: cy + 14, w: 4, h: 4, face: 'west', type: 'gas', name: 'Gas Station' };
+    const clinic = { x: cx + 7, y: cy - 3, w: 4, h: 4, face: 'south', type: 'clinic', name: 'Valley Clinic' };
     // Two pumps on a little forecourt across the street from the kiosk.
     this.pumps = [{ x: cx - 3, y: cy + 15 }, { x: cx - 3, y: cy + 17.5 }];
     this.fillDry(cx - 6, cy + 10, 14, 12, 0);
@@ -307,7 +308,7 @@ const World = {
       if ((x >= cx - 5 && x <= cx - 2 && y >= cy + 13 && y <= cy + 19) || ((x === cx - 1 || x === cx) && y <= cy + 19)) this.tile[i] = T.PATH;
       if (this.tile[i] !== T.FLOOR) this.obj[i] = O.NONE;
     }
-    for (const b of [shop, ranger, store, bikes, gas]) {
+    for (const b of [shop, ranger, store, bikes, gas, clinic]) {
       this.fillDry(b.x, b.y, b.w, b.h, 2);
       this.buildings.push(b);
       for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) { this.tile[this.idx(x, y)] = T.FLOOR; this.obj[this.idx(x, y)] = O.NONE; }
@@ -376,18 +377,19 @@ const World = {
     for (let tries = 0; tries < 5000 && this.houses.length < 14; tries++) {
       const a = rng() * Math.PI * 2, d = 18 + rng() * 85;
       const x = Math.round(this.town.x + Math.cos(a) * d), y = Math.round(this.town.y + Math.sin(a) * d);
-      if (!this.areaFree(x - 1, y - 1, 6, 6) || this.waterNear(x, y, 4, 3, 3)) continue;
+      const big = rng() < 0.3, w = big ? 6 : 4, h = big ? 4 : 3;
+      if (!this.areaFree(x - 1, y - 1, w + 2, h + 3) || this.waterNear(x, y, w, h, 3)) continue;
       if (this.buildings.some((b) => U.dist(b.x + b.w / 2, b.y + b.h / 2, x + 2, y + 1.5) < 10)) continue;
-      for (let yy = y - 1; yy <= y + 4; yy++) for (let xx = x - 1; xx <= x + 4; xx++) {
+      for (let yy = y - 1; yy <= y + h + 1; yy++) for (let xx = x - 1; xx <= x + w; xx++) {
         const i = this.idx(xx, yy);
         this.obj[i] = O.NONE;
         if (this.tile[i] === T.FOREST || this.tile[i] === T.MEADOW || this.tile[i] === T.MUD) this.tile[i] = T.GRASS;
       }
-      const b = { x, y, w: 4, h: 3, type: 'house', name: 'Cottage', id: this.houses.length, rent: 25 + Math.floor(rng() * 5) * 5, hue: rng() };
+      const b = { x, y, w, h, big, type: 'house', name: big ? 'Big house' : 'Cottage', id: this.houses.length, rent: big ? 40 + Math.floor(rng() * 4) * 5 : 15 + Math.floor(rng() * 4) * 5, hue: rng() };
       this.buildings.push(b); this.houses.push(b);
     }
     const vacant = Math.min(4, this.houses.length);
-    this.houses.forEach((b, i) => { b.vacant = i >= this.houses.length - vacant; if (b.vacant) b.name = 'Cottage for rent'; else b.unlocked = rng() < 0.45; });
+    this.houses.forEach((b, i) => { b.vacant = i >= this.houses.length - vacant; if (b.vacant) b.name = b.big ? 'Big house for rent' : 'Cottage for rent'; else b.unlocked = rng() < 0.45; });
   },
 
   // A shady character's camp in the woods, not too far from town.

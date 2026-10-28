@@ -96,6 +96,7 @@ const Life = {
     Game.food = Math.min(100, Game.food + f.energy);
     Sfx.tone(380, 0.08, 0.12, 'triangle', 300);
     Hud.toast('Ate ' + f.name + ' (+' + f.energy + ' food)', UI.good, 1.6);
+    if (f.shroom) Forage.eaten(f);
     Game.save();
   },
 
@@ -103,7 +104,7 @@ const Life = {
     if (Wanted.level > 0) { Hud.toast('Can\'t sleep with the cops after you! Lose them first.', UI.bad, 2); return; }
     if (this.sleeping) return;
     this.sleeping = true;
-    const fade = document.getElementById('fade');
+    const fade = document.getElementById('sleepFade');
     fade.textContent = 'Zzz…'; fade.classList.add('on');
     setTimeout(() => {
       const h = Game.env.hour;
@@ -239,7 +240,7 @@ const Life = {
 
   openRent(b) {
     const moving = !!Game.home;
-    this.panel(`<h2>Cottage for rent</h2><div class="desc">A snug little place with a bed, a stove and a storage chest. Rent is charged every morning — fall more than two days behind and you're evicted, and anything stored inside is lost.</div>
+    this.panel(`<h2>${b.big ? 'Big house' : 'Cottage'} for rent</h2><div class="desc">${b.big ? 'A roomy family place: two beds, a couch, a stove and a storage chest.' : 'A snug little place with a bed, a stove and a storage chest.'} Rent is charged every morning — fall more than two days behind and you're evicted, and anything stored inside is lost.</div>
       <div class="row" style="margin-top:14px"><div><b>${U.fmtMoney(b.rent)} per day</b><div class="desc">First day paid now${moving ? ' · you\'ll move out of your current cottage (stored items come with you)' : ''}.</div></div>
       <button class="primary" id="rentBtn" ${Game.money < b.rent ? 'disabled' : ''}>${moving ? 'Move here' : 'Rent it'}</button></div>`, (el) => {
       el.querySelector('#rentBtn').onclick = () => this.rent(b);
@@ -345,6 +346,7 @@ const Interact = {
       if (b.type === 'ranger') add(World.ranger.x, World.ranger.y, 2.8, 'Ranger Dale — permits', () => Menus.openPermits());
       if (b.type === 'store') add(World.clerk.x, World.clerk.y, 2.8, 'General Store', () => Life.openStore());
       if (b.type === 'bikes') add(World.revs.x, World.revs.y, 2.8, 'Revs — bikes & fuel', () => Bikes.openShop());
+      if (b.type === 'clinic') add(World.nurse.x, World.nurse.y, 2.8, 'Nurse Ngaio — treatment', () => Clinic.open());
       const f = Interior.near();
       if (f) cands.push({ d: 0.5, x: f.x + f.w / 2, y: f.y + f.h / 2, label: Life.furnLabel(f), run: () => Life.useFurniture(f.kind) });
     } else {
@@ -371,6 +373,8 @@ const Interact = {
       add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
       Weed.interactions(add);
       Camp.interactions(cands);
+      const sh = Forage.nearest();
+      if (sh) add(sh.x, sh.y, 1.4, 'Forage the ' + sh.s.look.toLowerCase(), () => Forage.pick(sh));
       const n = Npcs.near(P.x, P.y, 2.5);
       if (n && !['fight', 'show', 'brawl', 'home', 'bush', 'ko', 'armed'].includes(n.state)) {
         add(n.x, n.y, 2.5, Game.weed > 0 ? 'Offer ' + n.name + ' a bag' : 'Chat to ' + n.name, () => (Game.weed > 0 ? Weed.deal(n) : Npcs.talk(n)));

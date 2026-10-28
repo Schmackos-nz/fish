@@ -168,7 +168,7 @@ const Gun = {
     Npcs.onGunshot(Player.x, Player.y);
     Wardens.onGunshot();
     Floaters.onGunshot();
-    Animals.onGunshot(a.x, a.y);
+    Animals.onGunshot(a.x, a.y); Ducks.onGunshot(a.x, a.y);
     Wanted.onGunshot(a.x, a.y);
     Game.save();
   },
@@ -180,6 +180,8 @@ const Gun = {
     } else if (Bikes.hitAt(a.x, a.y, { rifle: 1.4, pistol: 0.8, shotgun: 0.4, smg: 0.45 }[Arsenal.weapon().id] || 1)) {
       // Pinged a bike or kart.
     } else if (Animals.shotAt(a.x, a.y, scoped)) {
+      Sfx.thunk();
+    } else if (Snakes.shotAt(a.x, a.y) || Ducks.shotAt(a.x, a.y)) {
       Sfx.thunk();
     } else if (World.isWater(a.x, a.y)) {
       Hud.ripple(a.x, a.y, pellet ? 0.5 : 1.1); if (!pellet) Sfx.splash(0.6);
