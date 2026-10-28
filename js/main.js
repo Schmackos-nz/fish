@@ -57,6 +57,7 @@ const Game = {
     this.stats = { caught: 0, released: 0 };
     this.npcRecords = {};
     this.ammo = 12; this.guns = ['rifle']; this.weapon = 'rifle'; this.ammoX = { light: 0, shells: 0, rockets: 0 };
+    this.wood = 0; this.chopped = []; this.fires = [];
     this.energy = 100; this.food = 100; this.pantry = [{ name: 'Bread roll', energy: 15 }, { name: 'Bread roll', energy: 15 }];
     this.ingredients = { batter: 0, herbs: 0 }; this.storage = emptyStorage();
     this.bike = null; this.fuel = 0;
@@ -71,7 +72,7 @@ const Game = {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         seed: this.seed, money: this.money, lures: this.lures, owned: this.owned, drag: this.drag,
         gear: { rod: this.gear.rod.id, reel: this.gear.reel.id, line: this.gear.line.id },
-        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords, ammo: this.ammo, spray: this.spray, permits: this.permits, guns: this.guns, weapon: this.weapon, ammoX: this.ammoX, energy: this.energy, food: this.food, pantry: this.pantry, ingredients: this.ingredients, storage: this.storage, home: this.home, rentDebt: this.rentDebt, lastDay: this.lastDay, weed: this.weed, seeds: this.seeds, plants: this.plants, bike: this.bike, fuel: this.fuel,
+        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords, ammo: this.ammo, spray: this.spray, permits: this.permits, guns: this.guns, weapon: this.weapon, ammoX: this.ammoX, wood: this.wood, chopped: this.chopped, fires: (Camp.group ? Camp.fires : this.fires).map((f) => ({ x: f.x, y: f.y, until: f.until })), energy: this.energy, food: this.food, pantry: this.pantry, ingredients: this.ingredients, storage: this.storage, home: this.home, rentDebt: this.rentDebt, lastDay: this.lastDay, weed: this.weed, seeds: this.seeds, plants: this.plants, bike: this.bike, fuel: this.fuel,
         px: Player.x, py: Player.y, hour: this.env.hour, day: this.env.day, weather: this.env.weather.id,
       }));
     } catch (e) { /* storage unavailable: play on without saving */ }
@@ -87,7 +88,7 @@ const Game = {
       this.spray = s.spray === undefined ? 3 : s.spray;
       this.permits = s.permits || { town: true };
       this.food = s.food === undefined ? (s.energy === undefined ? 100 : s.energy) : s.food; // old saves: energy meant food
-      for (const k of ['guns', 'weapon', 'ammoX']) if (s[k] !== undefined) this[k] = s[k];
+      for (const k of ['guns', 'weapon', 'ammoX', 'wood', 'chopped', 'fires']) if (s[k] !== undefined) this[k] = s[k];
       for (const k of ['energy', 'pantry', 'ingredients', 'storage', 'home', 'rentDebt', 'lastDay', 'weed', 'seeds', 'plants', 'bike', 'fuel']) if (s[k] !== undefined) this[k] = s[k];
       Object.assign(this, { money: s.money, lures: s.lures, owned: s.owned, drag: s.drag, creel: s.creel, creelMax: s.creelMax, journal: s.journal, stats: s.stats });
       this.gear = {
@@ -134,6 +135,7 @@ const Game = {
 
 function buildWorld(seed, savedPos) {
   World.generate(seed);
+  Camp.applyChopped();
   Art.buildSprites();
   Art.buildMinimap();
   Scene3D.build();
@@ -152,6 +154,7 @@ function buildWorld(seed, savedPos) {
   Travel.list = null;
   Floaters.init();
   Animals.init();
+  Camp.init();
   if (savedPos && !World.blocked(savedPos.x, savedPos.y)) Player.place(savedPos.x, savedPos.y);
   else Player.place(World.spawn.x, World.spawn.y);
   Scene3D.target.set(Player.x, 0, Player.y);
@@ -375,6 +378,7 @@ function frame(now) {
       Animals.update(dt);
       Interior.update(dt);
       Life.update(dt);
+      Camp.update(dt);
       Swimmers.update(dt);
       Couples.update(dt);
       Tim.update(dt);
@@ -411,6 +415,7 @@ function frame(now) {
     Bikes.render();
     Wanted.render(dt);
     Arsenal.render(dt);
+    Camp.render(dt);
     Scene3D.render(Game.time);
     Hud.draw();
     saveT += dt;

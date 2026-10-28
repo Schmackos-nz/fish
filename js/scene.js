@@ -285,6 +285,15 @@ const Scene3D = {
     return shadows;
   },
 
+  // A tree was felled: forget it and re-upload the nearby foliage.
+  removeTree(x, y) {
+    for (const G of this.fol.groups) {
+      const i = G.list.findIndex(([tx, ty]) => tx === x && ty === y);
+      if (i >= 0) { G.list.splice(i, 1); G.mats.splice(i, 1); }
+    }
+    this.fol.cx = -1e9;
+  },
+
   // Only foliage near the camera is uploaded; refreshed whenever the view drifts far enough.
   updateFoliage(cx, cy) {
     const F = this.fol, R = 48;

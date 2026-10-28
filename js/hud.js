@@ -222,6 +222,7 @@ const Hud = {
       r(['Space'], 'Jump    Shift+C  Slide');
       const tool = Tools.current;
       if (tool === 'rod') { r(['Hold'], 'Cast — release at the peak', { hot: World.isWater(Input.mouse.wx, Input.mouse.wy) }); r(['Tab'], 'Next lure'); }
+      else if (tool === 'axe') { r(['Click'], 'Chop the tree in front · ' + (Game.wood || 0) + ' wood', { hot: !!Camp.treeInFront() }); if ((Game.wood || 0) >= FIRE_COST) r(['E'], 'Build a campfire (' + FIRE_COST + ' wood)'); }
       else if (tool === 'gun') {
         const W = Arsenal.weapon();
         if (W.scope) r(['Right'], 'Hold to look down the scope', { held: Gun.scoped, hot: !Gun.scoped });

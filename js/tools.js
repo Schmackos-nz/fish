@@ -6,6 +6,7 @@ const TOOLS = [
   { id: 'gun', key: '2', name: 'Rifle' },
   { id: 'spray', key: '3', name: 'Bug spray' },
   { id: 'binos', key: '4', name: 'Binoculars' },
+  { id: 'axe', key: '5', name: 'Axe' },
 ];
 
 const Tools = {
@@ -20,11 +21,11 @@ const Tools = {
     this.current = next;
     Gun.out = next === 'gun';
     Sfx.bail();
-    const msg = { rod: 'Rod in hand.', gun: Arsenal.weapon().name + ' out' + (Arsenal.weapon().scope ? ' — right-click to scope.' : '. Press 2 again to switch guns.'), spray: 'Bug spray ready — click to spray.', binos: 'Binoculars — hold the mouse to scout.', hands: 'Hands free.' }[next];
+    const msg = { rod: 'Rod in hand.', gun: Arsenal.weapon().name + ' out' + (Arsenal.weapon().scope ? ' — right-click to scope.' : '. Press 2 again to switch guns.'), spray: 'Bug spray ready — click to spray.', binos: 'Binoculars — hold the mouse to scout.', axe: 'Axe out — click a tree in front of you to chop it.', hands: 'Hands free.' }[next];
     Hud.toast(msg, next === 'gun' ? '#e2584d' : '#c8bfae', 1.4);
   },
 
-  count(id) { return id === 'gun' ? Arsenal.ammo(Arsenal.weapon().ammo) : id === 'spray' ? Game.spray || 0 : null; },
+  count(id) { return id === 'gun' ? Arsenal.ammo(Arsenal.weapon().ammo) : id === 'spray' ? Game.spray || 0 : id === 'axe' ? Game.wood || 0 : null; },
 
   // Bare hands: a jab at whoever (or whatever) is right in front of you.
   punch() {
@@ -81,6 +82,11 @@ const Tools = {
   icon(g, id, x, y, s) {
     g.save(); g.translate(x, y); g.scale(s, s);
     g.lineCap = 'round';
+    if (id === 'axe') {
+      g.strokeStyle = '#a0703c'; g.lineWidth = 3; g.beginPath(); g.moveTo(-9, 12); g.lineTo(7, -10); g.stroke();
+      g.fillStyle = '#c9d0d4'; g.beginPath(); g.moveTo(2, -14); g.quadraticCurveTo(15, -12, 14, -1); g.lineTo(5, -6); g.closePath(); g.fill();
+      g.restore(); return;
+    }
     if (id === 'rod') {
       g.strokeStyle = '#c9a86a'; g.lineWidth = 2.5; g.beginPath(); g.moveTo(-12, 12); g.lineTo(12, -12); g.stroke();
       g.strokeStyle = '#f3ead6'; g.lineWidth = 1; g.beginPath(); g.moveTo(12, -12); g.quadraticCurveTo(16, 0, 10, 10); g.stroke();

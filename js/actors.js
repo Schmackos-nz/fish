@@ -151,7 +151,7 @@ const Actors = {
   update(dt, env) {
     const p = Player, base = Scene3D.standH(p.x, p.y);
     // 3D angler: turn to face, walk cycle, poses.
-    const holding = Tools.current === 'rod' || Tools.current === 'gun';
+    const holding = Tools.current === 'rod' || Tools.current === 'gun' || Tools.current === 'axe';
     const riding = Bikes.riding;
     let px = p.x, py = p.y, y = base + p.z;
     if (riding) { const a = p.face; px -= Math.cos(a) * 0.25; py -= Math.sin(a) * 0.25; y += 0.52; } // on the seat

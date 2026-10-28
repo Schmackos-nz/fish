@@ -192,20 +192,21 @@ const Life = {
     });
   },
 
-  openCook(where) {
+  openCook(where, extra) {
     const rows = Game.creel.map((c, i) => {
       const sp = SPECIES_BY_ID[c.id];
       const base = Math.round(U.clamp(18 + c.kg * 14, 18, 70));
       return `<div class="row"><div><b>${sp.name}</b> <span class="desc">${U.fmtKg(c.kg)} · ${c.cm} cm</span></div><div>${RECIPES.map((r) =>
         `<button data-cook="${i}:${r.id}" ${r.needs && !(Game.ingredients[r.needs] > 0) ? 'disabled' : ''}>${r.label} +${Math.round(base * r.mult)}</button>`).join(' ')}</div></div>`;
     }).join('');
-    this.panel(`<h2>Cook at ${where}</h2><div class="desc">Turn your catch into meals. Batter mix ×${Game.ingredients.batter || 0} · Butter &amp; herbs ×${Game.ingredients.herbs || 0} (from the General Store).</div>
+    this.panel(`<h2>Cook at ${where}</h2>${extra ? extra.html : ''}<div class="desc">Turn your catch into meals. Batter mix ×${Game.ingredients.batter || 0} · Butter &amp; herbs ×${Game.ingredients.herbs || 0} (from the General Store).</div>
       <h3>Your creel</h3>${rows || '<div class="desc">No fish to cook — go catch some!</div>'}`, (el) => {
       el.querySelectorAll('[data-cook]').forEach((b) => { b.onclick = () => {
         const [i, rid] = b.dataset.cook.split(':');
         this.cook(+i, RECIPES.find((r) => r.id === rid));
-        this.openCook(where);
+        this.openCook(where, extra);
       }; });
+      if (extra) extra.wire(el, () => this.openCook(where, extra));
     });
   },
 
@@ -355,6 +356,7 @@ const Interact = {
       add(World.tim.x, World.tim.y, 2.6, 'Talk to Tim — tips & goals', () => Tim.open());
       add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
       Weed.interactions(add);
+      Camp.interactions(cands);
       const n = Npcs.near(P.x, P.y, 2.5);
       if (n && !['fight', 'show', 'brawl', 'home', 'bush', 'ko', 'armed'].includes(n.state)) {
         add(n.x, n.y, 2.5, Game.weed > 0 ? 'Offer ' + n.name + ' a bag' : 'Chat to ' + n.name, () => (Game.weed > 0 ? Weed.deal(n) : Npcs.talk(n)));
