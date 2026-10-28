@@ -3,6 +3,8 @@
 
 const PATCH_NOTES = [
   { v: '1.2', name: 'Wild Things', date: '29 Oct 2026', notes: [
+    ['changed', 'Black out at zero health and wake up in the clinic: Nurse Ngaio tells you what hurt you most, the final blow, and the bill'],
+    ['new', 'Rolling hills across the backcountry: climb them for a view, ride them for air'],
     ['new', 'Forage mushrooms in the forest and meadows. Some are delicious, some are deadly, and the deadly white ones look a lot like the tasty white ones'],
     ['new', 'Snakes in the forest. A bite poisons you (crouch-walk past them to improve your odds)'],
     ['new', 'Valley Clinic on the main street: Nurse Ngaio heals you and flushes out poison, for a fee'],

@@ -76,7 +76,7 @@ const Arsenal = {
     Bikes.blast(x, y, r * 0.9);
     for (const an of Animals.list.slice()) if (an.state !== 'dead' && U.dist(an.x, an.y, x, y) < r) Animals.shotAt(an.x, an.y, true);
     for (const f of Fish.list.slice()) if (f.state !== 'hooked' && !f.sp.myth && U.dist(f.x, f.y, x, y) < r && f.z < 2.5) Gun.kill(f);
-    if (U.dist(x, y, Player.x, Player.y) < r * 0.8) Wanted.hurt(35);
+    if (U.dist(x, y, Player.x, Player.y) < r * 0.8) Wanted.hurt(35, 'an explosion');
     Wanted.crime(1);
   },
 

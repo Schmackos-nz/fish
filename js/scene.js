@@ -58,7 +58,7 @@ const Scene3D = {
     if (!World.inB(x, y)) return 2;
     const i = World.idx(x, y), t = World.tile[i];
     if (t === T.WATER || (t === T.PLANK && World.depth[i] > 0)) return -Math.min(World.depth[i], 6) * 0.32 - 0.06;
-    return 0.14 + Math.max(0, World.height[i] - 0.48) * 7;
+    return 0.14 + Math.max(0, World.height[i] - 0.48) * 7 + (World.hill ? World.hill[i] : 0);
   },
 
   buildHeights() {
@@ -100,9 +100,17 @@ const Scene3D = {
       pos.setY(i, this.heights[z * (W + 1) + x]);
     }
     geo.computeVertexNormals();
+    // Hillshade: sunlit slopes brighten, slopes facing away darken, so the hills read from above.
+    const nrm = geo.attributes.normal, cols = new Float32Array(pos.count * 3), sun = new THREE.Vector3(-0.55, 0.7, -0.45).normalize();
+    for (let i = 0; i < pos.count; i++) {
+      const lit = nrm.getX(i) * sun.x + nrm.getY(i) * sun.y + nrm.getZ(i) * sun.z, flat = sun.y;
+      const k = U.clamp(1 + (lit - flat) * 3.6 + Math.max(0, pos.getY(i) - 1) * 0.015, 0.5, 1.3);
+      cols[i * 3] = cols[i * 3 + 1] = cols[i * 3 + 2] = k;
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
     const tex = new THREE.CanvasTexture(Art.buildGroundTexture());
     tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
-    const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex }));
+    const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, vertexColors: true }));
     this.world.add(mesh);
   },
 
@@ -509,9 +517,14 @@ const Scene3D = {
   screenToWorld(sx, sy) {
     const ndc = new THREE.Vector2((sx / window.innerWidth) * 2 - 1, -(sy / window.innerHeight) * 2 + 1);
     this.ray.setFromCamera(ndc, this.camera);
-    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -Math.max(0, this.target.y * 0.5));
-    const hit = new THREE.Vector3();
-    if (!this.ray.ray.intersectPlane(plane, hit)) return { x: this.target.x, y: this.target.z };
+    // March the ray onto the terrain: hit a flat plane, read the ground there, re-hit at that height.
+    const hit = new THREE.Vector3(), plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    let h = Math.max(0, this.target.y * 0.5);
+    for (let k = 0; k < 4; k++) {
+      plane.constant = -h;
+      if (!this.ray.ray.intersectPlane(plane, hit)) return { x: this.target.x, y: this.target.z };
+      h = Math.max(0, this.groundH(hit.x, hit.z));
+    }
     return { x: hit.x, y: hit.z };
   },
 

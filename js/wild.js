@@ -98,6 +98,7 @@ const Poison = {
     if (!p) return;
     p.left -= dt;
     Wanted.health -= p.rate * dt;
+    Wanted.logDamage(p.src === 'snakebite' ? 'snake venom' : p.src + ' poisoning', p.rate * dt);
     if (Math.random() < dt * 0.15) Hud.toast(U.pick(Math.random, ['You feel sick…', 'Everything\'s spinning.', 'The Clinic is on the main street.']), '#A8E05A', 1.6);
     if (Wanted.health <= 0) { Game.poison = null; Wanted.wasted(); return; }
     if (p.left <= 0) { Game.poison = null; Hud.toast('The poison has worn off. Phew.', UI.good, 2); }
@@ -124,12 +125,35 @@ const Clinic = {
         <button class="primary" id="healBtn" ${!need || Game.money < Math.max(1, cost) ? 'disabled' : ''}>${need ? 'Treat me — ' + U.fmtMoney(cost) : 'You\'re fine'}</button></div>`, (el) => {
       const b = el.querySelector('#healBtn');
       if (b) b.onclick = () => {
-        Game.money -= cost; Wanted.health = 100; Game.poison = null;
+        Game.money -= cost; Wanted.health = 100; Game.poison = null; Wanted.dmgLog = {};
         Sfx.coin(); Hud.toast('All better. Try not to lick anything in the forest.', UI.good, 2.4);
         Game.save(); this.open();
       };
     });
   },
+};
+
+const NURSE_TIPS = [
+  [/police|army/, 'Maybe… stop shooting at people? Just a thought.'],
+  [/venom|snakebite/, 'Crouch-walk past snakes, and watch where you put your feet in the forest.'],
+  [/poisoning/, 'Stick to the golden and brown mushrooms. The white ones are a coin toss.'],
+  [/explosion/, 'Rockets are not a fishing technique.'],
+  [/fists|pistol/, 'If you nick someone\'s ride, they tend to take it personally.'],
+];
+Clinic.wakeUp = function (log, last, bill) {
+  const rows = Object.entries(log).sort((a, b) => b[1] - a[1]).slice(0, 4);
+  const total = rows.reduce((a, r) => a + r[1], 0) || 1;
+  const top = rows[0] ? rows[0][0] : last;
+  const tip = (NURSE_TIPS.find(([re]) => re.test(top)) || [null, 'Whatever you were doing — do less of it.'])[1];
+  Life.panel(`<h2>You're lucky to be alive.</h2>
+    <div class="desc">You come to on a cot in the Valley Clinic. Nurse Ngaio is by your bed: "Mate, you came in here in a right state. Six hours you've been out. Here's what did the most damage:"</div>
+    <h3>What messed you up</h3>
+    ${rows.length ? rows.map(([src, d]) => { const pct = Math.round(d / total * 100); return `<div class="row" style="display:block"><div style="display:flex;justify-content:space-between"><b>${src.charAt(0).toUpperCase() + src.slice(1)}</b><span class="desc">${Math.round(d)} damage · ${pct}%</span></div>
+      <div style="height:8px;border-radius:6px;background:rgba(255,255,255,0.08);margin-top:6px"><div style="height:8px;border-radius:6px;width:${pct}%;background:${pct > 50 ? 'var(--bad)' : 'var(--accent)'}"></div></div></div>`; }).join('') : '<div class="desc">Honestly, we\'re not sure. You just keeled over.</div>'}
+    <div class="row"><div><b>The final blow</b><div class="desc">${last.charAt(0).toUpperCase() + last.slice(1)}</div></div></div>
+    <div class="row"><div><b>Hospital bill</b><div class="desc">Taken straight out of your wallet while you were out.</div></div><b style="color:var(--bad)">−${U.fmtMoney(bill)}</b></div>
+    <div class="desc" style="margin-top:12px">"${tip}"</div>`);
+  Hud.toast('You wake up in the clinic. Fully patched up — and a bit poorer.', UI.good, 3);
 };
 
 // ---------- snakes ----------
@@ -175,7 +199,7 @@ const Snakes = {
       if (pd < 1.1 && s.cool <= 0 && !Bikes.riding && !Interior.active && !Player.airborne) {
         s.cool = 4;
         if (Math.random() < (Player.crouch ? 0.35 : 0.65)) {
-          Wanted.hurt(6); Poison.give(0.8, 'snakebite');
+          Wanted.hurt(6, 'a snakebite'); Poison.give(0.8, 'snakebite');
           Hud.toast('🐍 A snake bit you! You\'re poisoned — get to the Clinic on the main street!', UI.bad, 3);
         } else Hud.toast('🐍 A snake lunges — and misses! Back off!', '#F2C14E', 1.8);
       }

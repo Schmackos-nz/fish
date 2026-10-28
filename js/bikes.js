@@ -321,8 +321,8 @@ const Bikes = {
         const pd = U.dist(r.px, r.py, Player.x, Player.y);
         r.hitCD = (r.hitCD || 0) - dt;
         if (r.chaseT > 0 && r.hitCD <= 0 && !Interior.active) {
-          if (pd < 1.3) { r.hitCD = 1.2; Wanted.hurt(8); r.bubble = U.pick(Math.random, ['TAKE THAT!', 'GIMME MY BIKE!', 'THIEF!']); r.bubbleT = 1.2; }
-          else if (r.armed && pd < 13) { r.hitCD = 1.3 + Math.random(); Wanted.fireAt(r.px, r.py, 0.3, 9); }
+          if (pd < 1.3) { r.hitCD = 1.2; Wanted.hurt(8, r.name + '\'s fists'); r.bubble = U.pick(Math.random, ['TAKE THAT!', 'GIMME MY BIKE!', 'THIEF!']); r.bubbleT = 1.2; }
+          else if (r.armed && pd < 13) { r.hitCD = 1.3 + Math.random(); Wanted.fireAt(r.px, r.py, 0.3, 9, r.name + '\'s pistol'); }
         }
         if (r.chaseT > 0 && Math.random() < dt * 0.4 && pd < 30) { r.bubble = U.pick(Math.random, ['COME BACK HERE!', 'THIEF!', 'That\'s MY bike!']); r.bubbleT = 1.6; }
         if (!r.noBike && r.chaseT <= 0 && U.dist(r.px, r.py, r.x, r.y) < 0.8) { r.state = 'ride'; r.target = this.pickTarget(r); }

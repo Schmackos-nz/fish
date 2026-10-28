@@ -236,7 +236,7 @@ const Actors = {
     }
 
     if (Tools.current !== 'rod') { this.line.visible = false; for (const id in this.lures) this.lures[id].visible = false; }
-    else this.line.visible = true;
+    else this.line.visible = !Interior.active;
 
     // Fish under the surface.
     let n = 0;

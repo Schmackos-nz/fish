@@ -118,6 +118,7 @@ const World = {
     }
 
     this.computeDepth(rng);
+    this.buildHills();
     this.paintLand(rng, moist);
     this.buildTown(rng);
     this.nameWaters(rng);
@@ -270,6 +271,7 @@ const World = {
     let sx = Math.round(lake.x), sy = Math.round(lake.y);
     while (this.inB(sx, sy) && this.tile[this.idx(sx, sy)] === T.WATER) sy++;
     const cx = sx, cy = sy + 7;
+    this.flattenAround(cx, cy + 6, 20, 34);
     // Township clearing: a main street running south from the dock, shops either side.
     for (let y = cy - 7; y <= cy + 20; y++) for (let x = cx - 10; x <= cx + 10; x++) {
       if (!this.inB(x, y)) continue;
@@ -361,6 +363,55 @@ const World = {
     return bad;
   },
 
+  // Rolling hills: a separate height layer on dry land, easing down to flat near water.
+  buildHills() {
+    const W = this.W, H = this.H, N = W * H;
+    const dw = new Float32Array(N).fill(99), q = [];
+    for (let i = 0; i < N; i++) if (this.tile[i] === T.WATER) { dw[i] = 0; q.push(i); }
+    for (let h = 0; h < q.length; h++) {
+      const i = q[h]; if (dw[i] >= 12) continue;
+      const x = i % W, y = (i / W) | 0;
+      for (const [ox, oy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + ox, ny = y + oy; if (!this.inB(nx, ny)) continue;
+        const j = this.idx(nx, ny); if (dw[j] > dw[i] + 1) { dw[j] = dw[i] + 1; q.push(j); }
+      }
+    }
+    this.hill = new Float32Array(N);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const i = this.idx(x, y); if (this.tile[i] === T.WATER) continue;
+      const n = U.fbm(x / 30, y / 30, this.seed + 77, 4);
+      const bump = U.smooth(U.clamp((n - 0.46) / 0.22, 0, 1));
+      this.hill[i] = bump * bump * 10 * U.clamp((dw[i] - 2) / 8, 0, 1);
+    }
+  },
+  hillAt(x, y) { return this.hill && this.inB(x, y) ? this.hill[this.idx(x, y)] : 0; },
+  // Ease hills down to nothing inside r0, full height beyond r1.
+  flattenAround(cx, cy, r0, r1) {
+    for (let y = Math.floor(cy - r1); y <= cy + r1; y++) for (let x = Math.floor(cx - r1); x <= cx + r1; x++) {
+      if (!this.inB(x, y)) continue;
+      const d = U.dist(x, y, cx, cy); if (d > r1) continue;
+      this.hill[this.idx(x, y)] *= U.smooth(U.clamp((d - r0) / (r1 - r0), 0, 1));
+    }
+  },
+  // Level a building plot to its average height, blending into the slope around it.
+  levelPlot(x, y, w, h, m = 3) {
+    let sum = 0, n = 0;
+    for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) { sum += this.hillAt(xx, yy); n++; }
+    const avg = sum / n;
+    for (let yy = y - m; yy < y + h + m; yy++) for (let xx = x - m; xx < x + w + m; xx++) {
+      if (!this.inB(xx, yy)) continue;
+      const ex = Math.max(x - xx, 0, xx - (x + w - 1)), ey = Math.max(y - yy, 0, yy - (y + h - 1)), e = Math.max(ex, ey);
+      const i = this.idx(xx, yy), k = e === 0 ? 1 : 1 - e / (m + 1);
+      this.hill[i] = U.lerp(this.hill[i], avg, k);
+    }
+  },
+  // Steepest rise across a plot (to keep cottages off hillsides).
+  plotSlope(x, y, w, h) {
+    let lo = 1e9, hi = -1e9;
+    for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) { const v = this.hillAt(xx, yy); lo = Math.min(lo, v); hi = Math.max(hi, v); }
+    return hi - lo;
+  },
+
   // Every tile in the rectangle is dry, buildable land.
   areaFree(x, y, w, h) {
     for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) {
@@ -378,13 +429,14 @@ const World = {
       const a = rng() * Math.PI * 2, d = 18 + rng() * 85;
       const x = Math.round(this.town.x + Math.cos(a) * d), y = Math.round(this.town.y + Math.sin(a) * d);
       const big = rng() < 0.3, w = big ? 6 : 4, h = big ? 4 : 3;
-      if (!this.areaFree(x - 1, y - 1, w + 2, h + 3) || this.waterNear(x, y, w, h, 3)) continue;
+      if (!this.areaFree(x - 1, y - 1, w + 2, h + 3) || this.waterNear(x, y, w, h, 3) || this.plotSlope(x - 1, y - 1, w + 2, h + 3) > 1.6) continue;
       if (this.buildings.some((b) => U.dist(b.x + b.w / 2, b.y + b.h / 2, x + 2, y + 1.5) < 10)) continue;
       for (let yy = y - 1; yy <= y + h + 1; yy++) for (let xx = x - 1; xx <= x + w; xx++) {
         const i = this.idx(xx, yy);
         this.obj[i] = O.NONE;
         if (this.tile[i] === T.FOREST || this.tile[i] === T.MEADOW || this.tile[i] === T.MUD) this.tile[i] = T.GRASS;
       }
+      this.levelPlot(x - 1, y - 1, w + 2, h + 3);
       const b = { x, y, w, h, big, type: 'house', name: big ? 'Big house' : 'Cottage', id: this.houses.length, rent: big ? 40 + Math.floor(rng() * 4) * 5 : 15 + Math.floor(rng() * 4) * 5, hue: rng() };
       this.buildings.push(b); this.houses.push(b);
     }
@@ -397,7 +449,8 @@ const World = {
     for (let tries = 0; tries < 4000; tries++) {
       const a = rng() * Math.PI * 2, d = 22 + rng() * 22;
       const x = Math.floor(cx + Math.cos(a) * d), y = Math.floor(cy + Math.sin(a) * d);
-      if (!this.areaFree(x - 1, y - 1, 4, 4) || this.waterNear(x - 1, y - 1, 4, 4, 2)) continue;
+      if (!this.areaFree(x - 1, y - 1, 4, 4) || this.waterNear(x - 1, y - 1, 4, 4, 2) || this.plotSlope(x - 1, y - 1, 4, 4) > 1.6) continue;
+      this.levelPlot(x - 1, y - 1, 4, 4);
       for (let yy = y - 1; yy <= y + 2; yy++) for (let xx = x - 1; xx <= x + 2; xx++) this.obj[this.idx(xx, yy)] = O.NONE;
       this.dusty = { x: x + 0.5, y: y + 0.8 };
       return;

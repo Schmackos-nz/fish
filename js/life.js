@@ -110,7 +110,7 @@ const Life = {
       const h = Game.env.hour;
       const hours = h < 6 ? 6 - h : 30 - h;
       this.passHours(hours, 0);
-      Game.energy = 100; Wanted.health = 100; Game.food = Math.max(0, Game.food - 10);
+      Game.energy = 100; Wanted.health = 100; Game.food = Math.max(0, Game.food - 10); Wanted.dmgLog = {};
       Game.save();
       fade.textContent = WEEKDAYS[(Game.env.day - 1) % 7] + ' · Day ' + Game.env.day + ' · 6:00';
       setTimeout(() => {

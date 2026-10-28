@@ -184,7 +184,7 @@ const Wanted = {
       // Police tackle you if they reach you (not the army).
       if (!u.army && sees && d < 1.2 && !Player.rolling) { this.arrest(); return; }
       u.cd -= dt;
-      if (sees && d < 18 && u.cd <= 0) { u.cd = u.army ? 0.9 + Math.random() * 0.6 : 1.6 + Math.random(); this.fireAt(u.x, u.y, u.army ? 0.5 : 0.32, u.army ? 18 : 11); }
+      if (sees && d < 18 && u.cd <= 0) { u.cd = u.army ? 0.9 + Math.random() * 0.6 : 1.6 + Math.random(); this.fireAt(u.x, u.y, u.army ? 0.5 : 0.32, u.army ? 18 : 11, u.army ? 'army gunfire' : 'police gunfire'); }
     }
     // Armed anglers.
     for (const n of Npcs.list) {
@@ -199,7 +199,7 @@ const Wanted = {
       const threat = Gun.out && d < 14 && !this.hidden;
       if (n.armT <= 0 && !threat) { n.state = 'cast'; n.casts = 0; n.t = 1; Npcs.say(n, 'That\'s what I thought.', 2.5); continue; }
       n.shootCD -= dt;
-      if (threat && n.shootCD <= 0) { n.shootCD = 1.6 + Math.random() * 1.2; this.fireAt(n.x, n.y, 0.3, 10); }
+      if (threat && n.shootCD <= 0) { n.shootCD = 1.6 + Math.random() * 1.2; this.fireAt(n.x, n.y, 0.3, 10, n.name + '\'s pistol'); }
     }
     for (const w of Wardens.list) if (w.state === 'ko') { w.t += dt; if (w.t > 30) { w.state = 'patrol'; w.t = 0; } }
     // Pick up dropped fish by walking over them.
@@ -222,7 +222,7 @@ const Wanted = {
     }
   },
 
-  fireAt(x, y, chance, dmg) {
+  fireAt(x, y, chance, dmg, src = 'a stray bullet') {
     const hit = Math.random() < chance * (Player.moving ? 0.7 : 1) * (Player.crouch ? 0.8 : 1) * (Bikes.riding ? 0.6 : 1);
     const tx = Player.x + (hit ? 0 : (Math.random() - 0.5) * 3), ty = Player.y + (hit ? 0 : (Math.random() - 0.5) * 3);
     const t = this.tracers.find((q) => q.userData.t >= 1) || this.tracers[0];
@@ -230,12 +230,20 @@ const Wanted = {
     t.userData.t = 0; t.visible = true;
     const near = U.dist(x, y, Player.x, Player.y);
     Sfx.burst(0.1, 5000, U.clamp(0.4 - near / 60, 0.05, 0.4), 'highpass'); Sfx.tone(160, 0.12, U.clamp(0.3 - near / 70, 0.04, 0.3), 'square', 60);
-    if (hit) this.hurt(dmg); else Hud.ripple(tx, ty, 0.3);
+    if (hit) this.hurt(dmg, src); else Hud.ripple(tx, ty, 0.3);
   },
 
-  hurt(dmg) {
+  hurt(dmg, src = 'mystery injuries') {
     this.health -= dmg; this.hurtT = 0.4; Bugs.shake = 1; Sfx.slap(1);
+    this.logDamage(src, dmg);
     if (this.health <= 0) this.wasted();
+  },
+
+  // What's been hurting you since you were last patched up (for the nurse's report).
+  logDamage(src, dmg) {
+    const log = this.dmgLog || (this.dmgLog = {});
+    log[src] = (log[src] || 0) + dmg;
+    this.lastHit = src;
   },
 
   clear() {
@@ -251,18 +259,30 @@ const Wanted = {
   },
 
   wasted() {
-    const lost = Math.round(Game.money * 0.25);
-    Game.money -= lost;
-    this.clear(); this.health = 100;
+    if (this.blackingOut) return;
+    this.blackingOut = true;
+    const log = this.dmgLog || {}, last = this.lastHit || 'something nasty';
+    this.dmgLog = {};
+    const bill = Math.min(Game.money, 40 + Math.round(Game.money * 0.15));
+    Game.money -= bill;
+    this.clear(); this.health = 100; Game.poison = null;
     if (Bikes.riding) Bikes.dismount();
-    if (Interior.active) Interior.exit();
     Fishing.reelInFast();
-    Player.place(World.tim.x + 1, World.tim.y + 1.5);
-    Life.passHours(6, 0);
-    const fade = document.getElementById('fade'); fade.classList.add('show'); setTimeout(() => fade.classList.remove('show'), 900);
+    if (Menus.open) Menus.close();
     Sfx.fail();
-    Hud.toast('WASTED — you wake up by the dock. The doctor took ' + U.fmtMoney(lost) + '.', UI.bad, 4.5);
-    Game.save();
+    const fade = document.getElementById('sleepFade');
+    fade.textContent = 'You blacked out…'; fade.classList.add('on');
+    setTimeout(() => {
+      Life.passHours(6, 0);
+      if (Interior.active) Interior.exit();
+      const clinic = World.buildings.find((x) => x.type === 'clinic');
+      if (clinic) { Interior.enter(clinic); Player.place(World.nurse.x + 1.3, World.nurse.y + 1.4); }
+      else Player.place(World.tim.x + 1, World.tim.y + 1.5);
+      fade.classList.remove('on');
+      this.blackingOut = false;
+      Clinic.wakeUp(log, last, bill);
+      Game.save();
+    }, 1800);
   },
 
   // ---------- drawing ----------
