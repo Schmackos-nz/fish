@@ -268,22 +268,23 @@ const Scene3D = {
     const g = new THREE.Group();
     const wallH = house ? 1.7 : 2.1;
     const base = Math.max(this.groundH(b.x + b.w / 2, b.y + b.h / 2), 0.1);
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(b.w, wallH, b.h - 0.4), new THREE.MeshLambertMaterial({ color: st.wall }));
-    wall.position.set(b.w / 2, wallH / 2, b.h / 2 + 0.2);
+    const W = World.frontLen(b), D = World.depthOf(b);
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(W, wallH, D - 0.4), new THREE.MeshLambertMaterial({ color: st.wall }));
+    wall.position.set(W / 2, wallH / 2, D / 2 + 0.2);
     g.add(wall);
     // Gable roof as an extruded triangle.
     const shape = new THREE.Shape();
-    shape.moveTo(-0.4, 0); shape.lineTo(b.w + 0.4, 0); shape.lineTo(b.w / 2, house ? 1.2 : 1.5); shape.closePath();
-    const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: b.h + 0.2, bevelEnabled: false }), new THREE.MeshLambertMaterial({ color: st.roof }));
+    shape.moveTo(-0.4, 0); shape.lineTo(W + 0.4, 0); shape.lineTo(W / 2, house ? 1.2 : 1.5); shape.closePath();
+    const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: D + 0.2, bevelEnabled: false }), new THREE.MeshLambertMaterial({ color: st.roof }));
     roof.position.set(0, wallH, -0.1);
     g.add(roof);
     const door = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.3), new THREE.MeshLambertMaterial({ color: 0x3a2614 }));
-    door.position.set(0.9, 0.65, b.h + 0.01);
+    door.position.set(0.9, 0.65, D + 0.01);
     g.add(door);
     const winMat = new THREE.MeshLambertMaterial({ color: 0xf2d98a, emissive: 0xffb84a, emissiveIntensity: 0 });
     this.windows.push(winMat);
     const win = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.7), winMat);
-    win.position.set(b.w - 1.3, house ? 1.0 : 1.25, b.h + 0.01);
+    win.position.set(W - 1.3, house ? 1.0 : 1.25, D + 0.01);
     g.add(win);
     const signText = st.sign || (b.vacant ? ['FOR RENT', '#f4efe2', '#b83a32'] : null);
     if (signText) {
@@ -300,12 +301,16 @@ const Scene3D = {
       if (house) {
         // A little board on a post by the path.
         const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 0.08), new THREE.MeshLambertMaterial({ color: 0x5a3d22 }));
-        post.position.set(b.w - 0.5, 0.5, b.h + 0.9); g.add(post);
-        sign.position.set(b.w - 0.5, 1.05, b.h + 0.95);
-      } else sign.position.set(b.w / 2, wallH + 0.15, b.h + 0.12);
+        post.position.set(W - 0.5, 0.5, D + 0.9); g.add(post);
+        sign.position.set(W - 0.5, 1.05, D + 0.95);
+      } else sign.position.set(W / 2, wallH + 0.15, D + 0.12);
       g.add(sign);
     }
-    g.position.set(b.x, base, b.y);
+    // Rotate the local model so its front faces the street.
+    const rot = { south: 0, east: Math.PI / 2, west: -Math.PI / 2, north: Math.PI }[b.face || 'south'];
+    const o = World.localToWorld(b, 0, 0);
+    g.rotation.y = rot;
+    g.position.set(o.x, base, o.y);
     this.world.add(g);
   },
 

@@ -121,8 +121,9 @@ const Interior = {
     if (!r) return;
     r.mesh.visible = false;
     this.active = null;
-    Player.place(this.returnTo.x, this.returnTo.y + 0.3);
-    Player.face = Math.PI / 2;
+    const b = r.b, out = Math.atan2(this.returnTo.y - (b.y + b.h / 2), this.returnTo.x - (b.x + b.w / 2));
+    Player.place(this.returnTo.x + Math.cos(out) * 0.3, this.returnTo.y + Math.sin(out) * 0.3);
+    Player.face = out;
     Scene3D.target.set(Player.x, Scene3D.standH(Player.x, Player.y), Player.y);
     Sfx.tone(420, 0.1, 0.12, 'triangle');
   },

@@ -259,15 +259,15 @@ const World = {
     let sx = Math.round(lake.x), sy = Math.round(lake.y);
     while (this.inB(sx, sy) && this.tile[this.idx(sx, sy)] === T.WATER) sy++;
     const cx = sx, cy = sy + 7;
-    for (let y = cy - 7; y <= cy + 6; y++) for (let x = cx - 10; x <= cx + 10; x++) {
+    // Township clearing: a main street running south from the dock, shops either side.
+    for (let y = cy - 7; y <= cy + 13; y++) for (let x = cx - 10; x <= cx + 10; x++) {
       if (!this.inB(x, y)) continue;
       const i = this.idx(x, y);
       if (this.tile[i] === T.WATER) continue;
       this.obj[i] = Math.abs(x - cx) > 8 && U.hash2(x, y, 9) < 0.3 ? O.FLOWERS : O.NONE;
       this.tile[i] = T.GRASS;
     }
-    // Main path from the shop door to the dock.
-    for (let y = sy - 1; y <= cy + 6; y++) for (let x = cx - 1; x <= cx; x++) {
+    for (let y = sy - 1; y <= cy + 13; y++) for (let x = cx - 1; x <= cx; x++) {
       if (!this.inB(x, y)) continue;
       const i = this.idx(x, y);
       if (this.tile[i] !== T.WATER) { this.tile[i] = T.PATH; this.obj[i] = O.NONE; }
@@ -279,29 +279,27 @@ const World = {
       this.tile[i] = T.PLANK; this.obj[i] = O.NONE;
     }
     this.dockEnd = { x: cx, y: sy - 8 };
-    // Tackle shack beside the path.
-    const shop = { x: cx + 2, y: cy - 3, w: 6, h: 4, type: 'shop', name: "Hettie's Tackle" };
-    this.buildings.push(shop);
-    for (let y = shop.y; y < shop.y + shop.h; y++) for (let x = shop.x; x < shop.x + shop.w; x++) this.tile[this.idx(x, y)] = T.FLOOR;
-    this.shopkeeper = { x: shop.x - 0.4, y: shop.y + shop.h - 0.5 };
-    const cabin = { x: cx - 8, y: cy - 2, w: 5, h: 4, type: 'ranger', name: 'Ranger Station' };
-    this.buildings.push(cabin);
-    this.ranger = { x: cabin.x + cabin.w + 0.5, y: cabin.y + cabin.h - 0.5 };
+    // Buildings front onto the street. w/h are the footprint along x/y; face says which side the door is on.
+    const shop = { x: cx + 2, y: cy - 4, w: 4, h: 6, face: 'west', type: 'shop', name: "Hettie's Tackle" };
+    const ranger = { x: cx - 7, y: cy - 4, w: 4, h: 5, face: 'east', type: 'ranger', name: 'Ranger Station' };
+    const store = { x: cx - 7, y: cy + 4, w: 4, h: 7, face: 'east', type: 'store', name: 'General Store' };
+    for (const b of [shop, ranger, store]) {
+      this.buildings.push(b);
+      for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) { this.tile[this.idx(x, y)] = T.FLOOR; this.obj[this.idx(x, y)] = O.NONE; }
+    }
+    this.shopkeeper = this.doorOf(shop);
+    this.ranger = this.doorOf(ranger);
     this.spawn = { x: cx + 0.5, y: cy + 3.5 };
     this.town = { x: cx, y: cy };
-    // General store south of the tackle shack, and a public BBQ by the dock.
-    const store = { x: cx + 2, y: cy + 2, w: 6, h: 4, type: 'store', name: 'General Store' };
-    this.buildings.push(store);
-    for (let y = store.y; y < store.y + store.h; y++) for (let x = store.x; x < store.x + store.w; x++) { this.tile[this.idx(x, y)] = T.FLOOR; this.obj[this.idx(x, y)] = O.NONE; }
     this.bbq = { x: cx + 2.5, y: sy + 1.5 };
     this.placeDusty(rng, cx, cy);
     this.placeHouses(rng);
 
     // Footpaths from town to each lake and out to the rivers.
-    for (const l of this.lakes) if (l !== lake && l.kind === K.LAKE) this.carvePath(cx, cy + 6, l.x, l.y);
+    for (const l of this.lakes) if (l !== lake && l.kind === K.LAKE) this.carvePath(cx, cy + 13, l.x, l.y);
     for (let i = 0; i < 3; i++) {
       const ang = rng() * Math.PI * 2;
-      this.carvePath(cx, cy + 6, cx + Math.cos(ang) * 110, cy + Math.sin(ang) * 110);
+      this.carvePath(cx, cy + 13, cx + Math.cos(ang) * 110, cy + Math.sin(ang) * 110);
     }
   },
 
@@ -348,8 +346,20 @@ const World = {
     this.dusty = { x: cx - 12, y: cy + 10 };
   },
 
-  // Door step in front of a building (doors are on the south face, near the left corner).
-  doorOf(b) { return { x: b.x + 0.9, y: b.y + b.h + 0.55 }; },
+  // A building's local frame: x runs along the front, z runs from the back wall (0) to the front (depth).
+  frontLen(b) { return b.face === 'east' || b.face === 'west' ? b.h : b.w; },
+  depthOf(b) { return b.face === 'east' || b.face === 'west' ? b.w : b.h; },
+  localToWorld(b, lx, lz) {
+    const W = this.frontLen(b), D = this.depthOf(b);
+    switch (b.face) {
+      case 'east': return { x: b.x + lz, y: b.y + W - lx };
+      case 'west': return { x: b.x + b.w - lz, y: b.y + lx };
+      case 'north': return { x: b.x + b.w - lx, y: b.y + b.h - lz };
+      default: return { x: b.x + lx, y: b.y + lz };
+    }
+  },
+  // Door step just outside the front, near the left corner.
+  doorOf(b) { return this.localToWorld(b, 0.9, this.depthOf(b) + 0.55); },
 
   carvePath(x0, y0, x1, y1) {
     let x = x0, y = y0, steps = 0;
