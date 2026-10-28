@@ -52,7 +52,7 @@ const Player = {
     }
 
     this.moving = !!(ix || iy) || this.rolling;
-    this.running = !!(ix || iy) && !this.crouch && (k.has('ShiftLeft') || k.has('ShiftRight'));
+    this.running = !!(ix || iy) && !this.crouch && (k.has('ShiftLeft') || k.has('ShiftRight')) && Game.energy > 3;
     const wasWading = this.wading;
     this.wading = World.isWater(this.x, this.y) && !this.airborne;
     if (this.wading && !wasWading && !this.wadeTold) { this.wadeTold = true; Hud.toast('Wading in — slow going, and the fish can feel you coming.', '#8ec7d6', 2.5); }

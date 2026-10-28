@@ -12,7 +12,7 @@ const Tim = {
     return [
       { done: G.stats.caught > 0, text: 'Catch your first fish', tip: 'Walk onto the dock, hold the left mouse to cast, then grab the reel handle and wind it clockwise.' },
       { done: !!G.stats.sold, text: 'Sell a creel of fish at Hettie\'s', tip: 'Keep a few fish, then head into Hettie\'s Tackle on the main street and sell the lot.' },
-      { done: !!G.stats.cooked, text: 'Cook a meal', tip: 'Energy dropping? Cook a fish on the BBQ by the dock, or buy food at the General Store.' },
+      { done: !!G.stats.cooked, text: 'Cook a meal', tip: 'Getting hungry? Cook a fish on the BBQ by the dock, or buy food at the General Store.' },
       { done: !!(G.permits.river || G.permits.back), text: 'Buy a permit for new water', tip: 'Ranger Dale sells permits for the rivers and the backcountry lakes. The wardens do check.' },
       { done: !!G.home, text: 'Rent a cottage', tip: 'Cottages with a blue "For rent" sign give you a bed, a stove and a chest for your gear.' },
       { done: Object.keys(G.journal).length >= 5, text: 'Catch five different species', tip: 'Every water holds different fish. Streams for trout, the river for bass and salmon, lakes for pike.' },

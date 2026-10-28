@@ -142,6 +142,7 @@ const Hud = {
     // Bottom stack: tools, then lures (rod only), then the context panel.
     const barY = H - 20 - 64;
     Tools.drawBar(this, W / 2, barY);
+    this.drawVitals(20, H - 20);
     let top = barY - 12;
     // Lures can only change with the line in, so the picker steps aside while you fish.
     if (Tools.current === 'rod' && Fishing.state === 'idle') { this.drawLureBar(W / 2, top - 50); top -= 62; } else this.slots = [];
@@ -155,7 +156,7 @@ const Hud = {
   },
 
   drawStatus(x, y) {
-    const e = Game.env, w = 248, h = 140;
+    const e = Game.env, w = 248, h = 118;
     this.card(x, y, w, h);
     const hh = Math.floor(e.hour), mm = Math.floor((e.hour % 1) * 60);
     this.icon(e.daylight > 0.3 ? 'sun' : 'moon', x + 26, y + 28);
@@ -173,14 +174,31 @@ const Hud = {
     // Permit status for the water you're fishing (or looking at).
     const px = Fishing.lure ? Fishing.lure.x : Input.mouse.wx, py = Fishing.lure ? Fishing.lure.y : Input.mouse.wy;
     const zone = Permits.zoneAt(px, py) || Permits.zoneAt(Player.x, Player.y);
-    // Energy
-    this.label('Energy', x + 16, y + 128);
-    this.bar(x + 80, y + 120, w - 96, 8, Game.energy / 100, Game.energy < 20 ? UI.bad : Game.energy < 45 ? UI.accent : UI.good);
     if (zone && !Interior.active) {
       const ok = Permits.has(zone);
       this.text(ok ? '✓ Permit' : '✗ No permit', x + w - 16, y + 106, ok ? UI.good : UI.bad, 11, 'right', 600);
     }
     return h;
+  },
+
+  // Vitals: health, food and energy, bottom-left.
+  drawVitals(x, by) {
+    const g = this.g, w = 232, rows = [
+      ['❤', 'Health', Wanted.health, '#E2584D'],
+      ['🍗', 'Food', Game.food, '#E3A945'],
+      ['⚡', 'Energy', Game.energy, '#7FC4D4'],
+    ];
+    const h = 22 + rows.length * 26, y = by - h;
+    this.card(x, y, w, h);
+    rows.forEach(([icon, name, v, col], i) => {
+      const ry = y + 16 + i * 26, low = v < 20, blink = low && Math.sin(Game.time * 8) > 0;
+      this.text(icon, x + 14, ry + 10, '#fff', 14);
+      this.label(name, x + 36, ry + 9);
+      g.fillStyle = 'rgba(255,255,255,0.08)'; g.beginPath(); g.roundRect(x + 96, ry, w - 146, 12, 6); g.fill();
+      const fw = (w - 146) * U.clamp(v / 100, 0, 1);
+      if (fw > 1) { g.fillStyle = blink ? '#FFFFFF' : low ? UI.bad : col; g.beginPath(); g.roundRect(x + 96, ry, Math.max(fw, 12), 12, 6); g.fill(); }
+      this.text(String(Math.round(v)), x + w - 14, ry + 10, low ? UI.bad : UI.ink, 12, 'right', 600);
+    });
   },
 
   // Live controls: only what you can do right now; urgent ones flash.
@@ -207,9 +225,10 @@ const Hud = {
       else if (tool === 'gun') { r(['Right'], 'Hold to look down the scope', { held: Gun.scoped, hot: !Gun.scoped }); r(['Click'], (Gun.scoped ? 'Fire' : 'Fire from the hip (wild)') + ' · ' + (Game.ammo || 0) + ' rounds', { hot: Gun.scoped }); }
       else if (tool === 'spray') r(['Click'], 'Spray · ' + (Game.spray || 0) + ' cans', { hot: Bugs.list.length > 0 });
       else if (tool === 'binos') r(['Hold'], 'Scout for fish & game', { held: Tools.looking });
+      else if (tool === 'hands') r(['Click'], 'Punch');
       r(['1–4'], tool === 'hands' ? 'Equip a tool' : 'Switch tool');
       if (this.act) r(['E'], this.act.label, { hot: true });
-      r(['I'], 'Bag · eat · energy ' + Math.round(Game.energy));
+      r(['I'], 'Bag · eat food');
       return rows;
     }
     switch (st) {

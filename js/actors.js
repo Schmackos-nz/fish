@@ -161,6 +161,10 @@ const Actors = {
       moving: p.moving && !riding && !p.rolling, phase: p.walkT, t: Game.time, crouch: p.crouch && !p.rolling,
       pose: riding ? 'ride' : p.rolling ? 'slide' : holding ? 'grip' : 'normal',
     });
+    if (Tools.punchT > 0) { // jab: right arm shoots straight out and back
+      const k = Math.sin((1 - Tools.punchT / 0.4) * Math.PI);
+      this.rig.armR.rotation.set(0, 0, 0.3 + k * 1.35); this.rig.upper.rotation.y = -k * 0.35;
+    } else this.rig.upper.rotation.y = 0;
     this.handWorld = Models.handPos(this.rig, this.handWorld || new THREE.Vector3());
     // While wading the shadow becomes a foam ring at the waterline.
     this.playerShadow.position.set(p.x, p.wading ? 0.03 : Math.max(base, 0.01) + 0.015, p.y);

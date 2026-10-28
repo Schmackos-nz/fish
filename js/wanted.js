@@ -62,7 +62,7 @@ const Wanted = {
     return true;
   },
 
-  knockOut(t) {
+  knockOut(t, crime = 1) {
     const o = t.o;
     Sfx.slap(1); Sfx.thunk();
     if (t.kind === 'npc') {
@@ -72,10 +72,10 @@ const Wanted = {
       o.creel = []; o.held = null; o.fish = null; o.lure = null; o.goingBush = false;
       o.state = 'ko'; o.t = 35; Npcs.say(o, U.pick(Math.random, SAY_W.ko), 2);
       Hud.toast(o.name + ' is knocked out' + (fish.length ? ' — dropped ' + fish.length + ' fish' : '') + '!', UI.bad, 2);
-      this.crime(1.3);
-    } else if (t.kind === 'warden') { o.state = 'ko'; o.t = 0; this.crime(1.6); }
-    else if (t.kind === 'biker') { o.ko = 25; this.crime(1.3); }
-    else { o.ko = true; o.koT = 0; this.crime(0.8); }
+      this.crime(1.3 * crime);
+    } else if (t.kind === 'warden') { o.state = 'ko'; o.t = 0; this.crime(1.6 * crime); }
+    else if (t.kind === 'biker') { o.ko = 25; this.crime(1.3 * crime); }
+    else { o.ko = true; o.koT = 0; this.crime(0.8 * crime); }
     this.panic(t.x, t.y);
   },
 
@@ -158,7 +158,7 @@ const Wanted = {
       const lv = Math.floor(this.heat);
       if (lv < this.level) { this.level = lv; Hud.toast(lv ? 'Wanted level dropping…' : 'You lost them. Wanted level cleared.', lv ? UI.accent : UI.good, 2); }
     }
-    if (this.level === 0) this.health = Math.min(100, this.health + dt * 4);
+    if (this.level === 0 && Game.food > 0) this.health = Math.min(100, this.health + dt * 4);
     // Keep the right number of units on the hunt.
     this.spawnT -= dt;
     const want = UNITS_FOR[this.level], awake = this.units.filter((u) => !u.ko).length;
@@ -321,8 +321,6 @@ const Wanted = {
         }
         hud.pill(this.hidden ? '🌿 Hidden' : this.seen ? 'Spotted!' : 'Searching…', cx, y + 20, this.hidden ? UI.good : this.seen ? UI.bad : UI.accent, 11);
       }
-      hud.label('Health', cx - 60, y + 48);
-      hud.bar(cx - 60, y + 54, 120, 8, this.health / 100, this.health < 35 ? UI.bad : UI.good);
     }
     for (const n of Npcs.list) {
       if (n.state !== 'ko' || U.dist(n.x, n.y, Player.x, Player.y) > 25) continue;

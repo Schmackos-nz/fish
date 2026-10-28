@@ -24,7 +24,29 @@ const Tools = {
 
   count(id) { return id === 'gun' ? Game.ammo || 0 : id === 'spray' ? Game.spray || 0 : null; },
 
+  // Bare hands: a jab at whoever (or whatever) is right in front of you.
+  punch() {
+    if (this.punchT > 0 || Bikes.riding || Fishing.state !== 'idle') return;
+    if (Game.energy < 5) { Hud.toast('Too tired to throw a punch.', UI.muted, 1.2); return; }
+    Game.energy -= 6; this.punchT = 0.4;
+    Sfx.whoosh(0.12);
+    const face = Player.face;
+    let best = null, bd = 1.5;
+    for (const t of Wanted.targets()) {
+      const d = U.dist(Player.x, Player.y, t.x, t.y);
+      if (d < bd && Math.abs(U.angDiff(face, Math.atan2(t.y - Player.y, t.x - Player.x))) < 1.1) { bd = d; best = t; }
+    }
+    if (best) { Wanted.knockOut(best, 0.6); Hud.toast('POW!', UI.accent, 0.7); return; }
+    for (const an of Animals.list) {
+      if (an.state === 'dead' || U.dist(Player.x, Player.y, an.x, an.y) > 1.8) continue;
+      Animals.startle(an); Sfx.slap(0.8); Hud.toast(an.type === 'boar' ? 'You punched a boar. Bold.' : 'The deer is deeply offended.', UI.accent, 1.4);
+      return;
+    }
+  },
+
   update(dt) {
+    this.punchT = Math.max(0, (this.punchT || 0) - dt);
+    if (this.current === 'hands' && Input.mousePressed && !Menus.open) this.punch();
     this.repelT = Math.max(0, this.repelT - dt);
     this.mistT = Math.max(0, this.mistT - dt);
     if (this.current === 'spray' && Input.mousePressed && !Menus.open) this.spray();

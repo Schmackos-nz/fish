@@ -1,4 +1,4 @@
-// Daily life: energy and food, cooking, renting a cottage, storage, quick travel, and the E key.
+// Daily life: food (hunger), energy (stamina), cooking, renting a cottage, storage, quick travel, and the E key.
 'use strict';
 
 const FOODS = [
@@ -23,21 +23,29 @@ const Life = {
 
   update(dt) {
     const gh = dt * 24 / 1200; // game hours this frame
-    Game.energy = U.clamp(Game.energy - gh * (Player.running ? 7 : 4), 0, 100);
-    if (Game.energy < 20 && !this.warnedLow) { this.warnedLow = true; Hud.toast('You\'re getting hungry — eat something (I opens your bag).', UI.accent, 3); }
-    if (Game.energy > 30) this.warnedLow = false;
+    // Food: hunger ticks down with the clock, faster when you're running about.
+    Game.food = U.clamp(Game.food - gh * (Player.running ? 6 : 3.5), 0, 100);
+    if (Game.food < 20 && !this.warnedLow) { this.warnedLow = true; Hud.toast('You\'re getting hungry — eat something (I opens your bag).', UI.accent, 3); }
+    if (Game.food > 30) this.warnedLow = false;
+    // Energy: stamina. Running burns it, resting gets it back (but not on an empty stomach).
+    const resting = !Player.moving || Bikes.riding;
+    Game.energy = U.clamp(Game.energy + dt * (Player.running ? -9 : resting ? (Game.food > 0 ? 6 : 0) : Game.food > 0 ? 1.5 : -0.5), 0, 100);
+    if (Game.energy < 8 && !this.warnedTired) { this.warnedTired = true; Hud.toast('Exhausted — stop and catch your breath.', UI.accent, 2.4); }
+    if (Game.energy > 30) this.warnedTired = false;
+    // Starving slowly hurts.
+    if (Game.food <= 0) Wanted.health = Math.max(1, Wanted.health - dt * 0.4);
     this.processDays();
   },
 
-  // Low energy slows you down and weakens your cast.
-  speedMul() { return Game.energy < 10 ? 0.6 : Game.energy < 25 ? 0.85 : 1; },
-  maxPower() { return Game.energy < 10 ? 0.55 : 1; },
+  // Hunger slows you down; exhaustion weakens your cast.
+  speedMul() { return Game.food < 10 ? 0.7 : Game.food < 25 ? 0.88 : 1; },
+  maxPower() { return Game.energy < 12 ? 0.6 : 1; },
 
   passHours(h, drain = 3) {
     const e = Game.env;
     e.hour += h;
     while (e.hour >= 24) { e.hour -= 24; e.day++; }
-    Game.energy = U.clamp(Game.energy - h * drain, 0, 100);
+    Game.food = U.clamp(Game.food - h * drain, 0, 100);
     this.processDays();
   },
 
@@ -85,9 +93,9 @@ const Life = {
     const f = Game.pantry[i];
     if (!f) return;
     Game.pantry.splice(i, 1);
-    Game.energy = Math.min(100, Game.energy + f.energy);
+    Game.food = Math.min(100, Game.food + f.energy);
     Sfx.tone(380, 0.08, 0.12, 'triangle', 300);
-    Hud.toast('Ate ' + f.name + ' (+' + f.energy + ' energy)', UI.good, 1.6);
+    Hud.toast('Ate ' + f.name + ' (+' + f.energy + ' food)', UI.good, 1.6);
     Game.save();
   },
 
@@ -95,8 +103,8 @@ const Life = {
     const h = Game.env.hour;
     const hours = h < 6 ? 6 - h : 30 - h;
     this.passHours(hours, 0);
-    Game.energy = Math.min(100, Game.energy + 40);
-    Hud.toast('You slept until 6:00. (+40 energy)', UI.good, 2.4);
+    Game.energy = 100; Wanted.health = 100; Game.food = Math.max(0, Game.food - 10);
+    Hud.toast('You slept until 6:00. Fully rested.', UI.good, 2.4);
     Game.save();
   },
 
@@ -111,7 +119,7 @@ const Life = {
     Game.pantry.push({ name: recipe.name(sp), energy });
     Game.stats.cooked = (Game.stats.cooked || 0) + 1;
     Sfx.burst(0.6, 1800, 0.2, 'highpass'); // sizzle
-    Hud.toast('Cooked ' + recipe.name(sp) + ' (+' + energy + ' energy when eaten)', UI.good, 2);
+    Hud.toast('Cooked ' + recipe.name(sp) + ' (+' + energy + ' food when eaten)', UI.good, 2);
     Game.save();
   },
 
@@ -132,8 +140,8 @@ const Life = {
   },
 
   openStore() {
-    this.panel(`<h2>General Store</h2><div class="desc">"Food's for eating, not for bait. Mostly." · You have <b style="color:var(--accent)">${U.fmtMoney(Game.money)}</b> · Energy ${Math.round(Game.energy)}</div>
-      <h3>Food</h3>${FOODS.filter((f) => !f.ingredient).map((f) => `<div class="row"><div><b>${f.name}</b><div class="desc">+${f.energy} energy</div></div>
+    this.panel(`<h2>General Store</h2><div class="desc">"Food's for eating, not for bait. Mostly." · You have <b style="color:var(--accent)">${U.fmtMoney(Game.money)}</b> · Food ${Math.round(Game.food)}</div>
+      <h3>Food</h3>${FOODS.filter((f) => !f.ingredient).map((f) => `<div class="row"><div><b>${f.name}</b><div class="desc">+${f.energy} food</div></div>
         <button class="primary" data-food="${f.id}" ${Game.money < f.price ? 'disabled' : ''}>Buy ${U.fmtMoney(f.price)}</button></div>`).join('')}
       <h3>Cooking ingredients</h3>${FOODS.filter((f) => f.ingredient).map((f) => `<div class="row"><div><b>${f.name}</b> <span class="desc">(have ${Game.ingredients[f.id] || 0})</span><div class="desc">${f.desc}</div></div>
         <button data-food="${f.id}" ${Game.money < f.price ? 'disabled' : ''}>Buy ${U.fmtMoney(f.price)}</button></div>`).join('')}`, (el) => {
@@ -167,8 +175,8 @@ const Life = {
   openBag() {
     const home = Game.home ? World.houses[Game.home.id] : null;
     this.panel(`<h2>Your bag</h2>
-      <div class="row"><div><b>Energy</b><div class="desc">Drains over time; low energy slows you and weakens casts.</div></div><b style="color:${Game.energy < 25 ? 'var(--bad)' : 'var(--good)'}">${Math.round(Game.energy)} / 100</b></div>
-      <h3>Food</h3>${Game.pantry.length ? Game.pantry.map((f, i) => `<div class="row"><div><b>${f.name}</b> <span class="desc">+${f.energy} energy</span></div><button class="primary" data-eat="${i}">Eat</button></div>`).join('') : '<div class="desc">Nothing to eat. Buy food at the General Store, or cook fish at the BBQ by the dock.</div>'}
+      <div class="row"><div><b>Health · Food · Energy</b><div class="desc">Eat to stay fed; rest or sleep to recover energy.</div></div><b>${Math.round(Wanted.health)} · ${Math.round(Game.food)} · ${Math.round(Game.energy)}</b></div>
+      <h3>Food</h3>${Game.pantry.length ? Game.pantry.map((f, i) => `<div class="row"><div><b>${f.name}</b> <span class="desc">+${f.energy} food</span></div><button class="primary" data-eat="${i}">Eat</button></div>`).join('') : '<div class="desc">Nothing to eat. Buy food at the General Store, or cook fish at the BBQ by the dock.</div>'}
       <h3>Ingredients</h3><div class="desc">Batter mix ×${Game.ingredients.batter || 0} · Butter &amp; herbs ×${Game.ingredients.herbs || 0}</div>
       <h3>Creel</h3><div class="desc">${Game.creel.length ? Game.creel.map((c) => SPECIES_BY_ID[c.id].name + ' ' + U.fmtKg(c.kg)).join(', ') : 'Empty.'}</div>
       ${Game.weed || Game.seeds ? `<h3>Under the counter</h3><div class="desc">${Game.weed || 0} bags · ${Game.seeds || 0} seeds — wardens will jail you for these.</div>` : ''}
