@@ -148,7 +148,7 @@ const Menus = {
       <h3>Lures</h3>
       ${LURES.map((L) => `<div class="row"><div><b>${L.name}</b> <span class="desc">(have ${Game.lures[L.id] || 0})</span><div class="desc">${L.tip}</div></div>
         <button data-lure="${L.id}" ${Game.money < L.price ? 'disabled' : ''}>${L.pack > 1 ? L.pack + ' for ' : ''}${U.fmtMoney(L.price)}</button></div>`).join('')}
-      <h3>Shotgun shells</h3><div class="row"><div><b>Box of 10 shells</b> <span class="desc">(have ${Game.ammo || 0})</span><div class="desc">"I'm not going to ask what these are for."</div></div>
+      <h3>Rifle ammunition</h3><div class="row"><div><b>Box of 10 rounds</b> <span class="desc">(have ${Game.ammo || 0})</span><div class="desc">"I'm not going to ask what these are for."</div></div>
         <button id="ammoBtn" ${Game.money < 12 ? 'disabled' : ''}>$12</button></div>
       <h3>Bug spray</h3><div class="row"><div><b>Can of repellent</b> <span class="desc">(have ${Game.spray || 0})</span><div class="desc">Drops every mozzie in sight and keeps them off for 90 seconds.</div></div>
         <button id="sprayBtn" ${Game.money < 8 ? 'disabled' : ''}>$8</button></div>

@@ -275,7 +275,10 @@ const Npcs = {
 
   buildMeshes(n) {
     n.frames = {};
-    for (const dir of ['down', 'up', 'side']) for (let f = 0; f < 4; f++) n.frames[dir + f] = this.drawSprite(n.palette, dir, f, 'normal');
+    for (const dir of ['down', 'up', 'side']) {
+      for (let f = 0; f < 4; f++) n.frames[dir + f] = this.drawSprite(n.palette, dir, f, 'normal');
+      n.frames['g' + dir] = this.drawSprite(n.palette, dir, 0, 'grip');
+    }
     n.frames.brag = this.drawSprite(n.palette, 'down', 0, 'brag');
     n.frames.hold = this.drawSprite(n.palette, 'down', 0, 'hold');
     n.mesh = Actors.billboard(document.createElement('canvas'), 1, 1.25);
@@ -303,7 +306,7 @@ const Npcs = {
       const a = n.face;
       const dir = Math.abs(Math.cos(a)) > Math.abs(Math.sin(a)) ? 'side' : Math.sin(a) > 0 ? 'down' : 'up';
       const walking = n.state === 'walk';
-      n.mesh.material.map = n.pose !== 'normal' ? n.frames[n.pose] : n.frames[dir + (walking ? Math.floor(n.walkT * 8) % 4 : 0)];
+      n.mesh.material.map = n.pose !== 'normal' ? n.frames[n.pose] : walking ? n.frames[dir + Math.floor(n.walkT * 8) % 4] : n.frames['g' + dir];
       n.mesh.scale.x = n.pose === 'normal' && dir === 'side' && Math.cos(a) < 0 ? -1 : 1;
       n.mesh.position.set(n.x, base, n.y);
       n.shadow.position.set(n.x, Math.max(base, 0.01) + 0.015, n.y);
@@ -311,7 +314,7 @@ const Npcs = {
       // Rod: up and bent during a fight, laid back mid-cast, hidden while walking or posing.
       const showRod = !walking && n.pose === 'normal';
       n.rod.visible = n.line.visible = showRod;
-      const hand = new THREE.Vector3(n.x + Math.cos(a) * 0.25, base + 0.6, n.y + Math.sin(a) * 0.25 + 0.05);
+      const hand = Folk.handWorld(n.x, n.y, base, dir, n.mesh.scale.x);
       const fighting = n.state === 'fight';
       const back = n.state === 'cast' && n.t < 0.4 ? -0.6 : 1;
       const tip = new THREE.Vector3(n.x + Math.cos(a) * 1.3 * back, base + (fighting ? 1.9 : 1.3), n.y + Math.sin(a) * 1.3 * back);

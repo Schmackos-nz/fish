@@ -1,4 +1,4 @@
-// Deer and wild boar roaming the valley. Deer bolt, boars charge, the shotgun settles it.
+// Deer and wild boar roaming the valley. Deer bolt, boars charge, the rifle settles it.
 'use strict';
 
 const Animals = {
@@ -146,17 +146,18 @@ const Animals = {
     an.state = 'flee'; an.t = 0; an.cool = 15;
   },
 
-  // Called by the shotgun. Returns true if something was hit.
-  shotAt(x, y) {
+  // Called by the rifle. Returns true if something was hit. Scoped shots are tight and reliable.
+  shotAt(x, y, scoped) {
     let best = null, bd = 1e9;
     for (const an of this.list) {
       if (an.state === 'dead') continue;
       const d = U.dist(an.x, an.y, x, y);
-      if (d < (an.type === 'deer' ? 1.2 : 0.9) && d < bd) { bd = d; best = an; }
+      const r = (an.type === 'deer' ? 1.2 : 0.9) * (scoped ? 0.7 : 1);
+      if (d < r && d < bd) { bd = d; best = an; }
     }
     if (!best) return false;
     const range = U.dist(Player.x, Player.y, best.x, best.y);
-    if (Math.random() > U.clamp(1.15 - range / 30, 0.4, 1)) {
+    if (Math.random() > (scoped ? 0.97 : U.clamp(1.15 - range / 30, 0.4, 1))) {
       this.startle(best);
       Hud.toast('Missed! It bolts.', '#a99f8a', 1.2);
       return true;

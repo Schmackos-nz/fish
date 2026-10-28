@@ -57,6 +57,7 @@ const Actors = {
   buildPlayer() {
     for (const dir of ['down', 'up', 'side']) for (let f = 0; f < 4; f++) {
       this.frames[dir + f] = Folk.texture(PLAYER_PAL, dir, f, 'normal');
+      this.frames['g' + dir + f] = Folk.texture(PLAYER_PAL, dir, f, 'grip');
     }
     this.player = this.billboard(document.createElement('canvas'), 1.0, 1.25);
     this.player.material.map = this.frames.down0;
@@ -125,7 +126,7 @@ const Actors = {
   rodPoints(p, base) {
     const F = Fishing, ang = F.aim;
     const dx = Math.cos(ang), dz = Math.sin(ang);
-    const hand = new THREE.Vector3(p.x + dx * 0.25, base + 0.6, p.y + dz * 0.25 + 0.05);
+    const hand = this.handWorld ? this.handWorld.clone() : new THREE.Vector3(p.x, base + 0.3, p.y);
     let tip;
     if (F.state === 'charging') {
       const k = F.power;
@@ -162,12 +163,14 @@ const Actors = {
     const a = p.face;
     const dir = Math.abs(Math.cos(a)) > Math.abs(Math.sin(a)) ? 'side' : Math.sin(a) > 0 ? 'down' : 'up';
     const frame = p.moving ? (Math.floor(p.walkT * 8) % 4) : 0;
-    this.player.material.map = this.frames[dir + frame];
+    const holding = Tools.current === 'rod' || Tools.current === 'gun';
+    this.player.material.map = this.frames[(holding ? 'g' : '') + dir + frame];
     this.player.scale.x = dir === 'side' && Math.cos(a) < 0 ? -1 : 1;
     this.player.position.set(p.x, base + p.z + (p.moving && !p.rolling ? Math.abs(Math.sin(p.walkT * 8 * Math.PI / 2)) * 0.04 : 0), p.y);
     // Crouch squashes, the roll tumbles head over heels.
     this.player.scale.y = p.crouch ? 0.72 : 1;
     this.player.rotation.z = p.rolling ? (1 - p.rollT / ROLL_TIME) * Math.PI * 2 * (Math.cos(p.rollDir) >= 0 ? -1 : 1) : 0;
+    this.handWorld = Folk.handWorld(p.x, p.y, this.player.position.y, dir, this.player.scale.x, this.player.scale.y);
     this.ghost.material.map = this.player.material.map;
     this.ghost.position.copy(this.player.position); this.ghost.scale.copy(this.player.scale); this.ghost.rotation.z = this.player.rotation.z;
     // While wading the shadow becomes a foam ring at the waterline.
@@ -185,9 +188,9 @@ const Actors = {
     this.rod.visible = Tools.current === 'rod';
     this.tipScene = tip;
 
-    // Aim ring: red crosshair for the shotgun, gold landing marker for casts.
+    // Aim ring: red marker for rifle hip-fire, gold landing marker for casts.
     const charging = Fishing.state === 'charging';
-    const aiming = !Menus.open && (Gun.out || charging || (Tools.current === 'rod' && Fishing.state === 'idle' && World.isWater(Input.mouse.wx, Input.mouse.wy)));
+    const aiming = !Menus.open && ((Gun.out && !Gun.scoped) || charging || (Tools.current === 'rod' && Fishing.state === 'idle' && World.isWater(Input.mouse.wx, Input.mouse.wy)));
     this.aimRing.visible = aiming;
     if (aiming) {
       let ax, ay;

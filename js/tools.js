@@ -1,9 +1,9 @@
-// The action bar: what's in your hands. Rod, shotgun, bug spray, binoculars — or nothing.
+// The action bar: what's in your hands. Rod, rifle, bug spray, binoculars — or nothing.
 'use strict';
 
 const TOOLS = [
   { id: 'rod', key: '1', name: 'Rod' },
-  { id: 'gun', key: '2', name: 'Shotgun' },
+  { id: 'gun', key: '2', name: 'Rifle' },
   { id: 'spray', key: '3', name: 'Bug spray' },
   { id: 'binos', key: '4', name: 'Binoculars' },
 ];
@@ -17,7 +17,7 @@ const Tools = {
     this.current = next;
     Gun.out = next === 'gun';
     Sfx.bail();
-    const msg = { rod: 'Rod in hand.', gun: 'Shotgun out. Hettie would not approve.', spray: 'Bug spray ready — click to spray.', binos: 'Binoculars — hold the mouse to scout.', hands: 'Hands free.' }[next];
+    const msg = { rod: 'Rod in hand.', gun: 'Rifle out — right-click to use the scope.', spray: 'Bug spray ready — click to spray.', binos: 'Binoculars — hold the mouse to scout.', hands: 'Hands free.' }[next];
     Hud.toast(msg, next === 'gun' ? '#e2584d' : '#c8bfae', 1.4);
   },
 
@@ -61,8 +61,13 @@ const Tools = {
       g.strokeStyle = '#f3ead6'; g.lineWidth = 1; g.beginPath(); g.moveTo(12, -12); g.quadraticCurveTo(16, 0, 10, 10); g.stroke();
       g.fillStyle = '#8a9a9c'; g.beginPath(); g.arc(-5, 5, 4, 0, 7); g.fill();
     } else if (id === 'gun') {
-      g.fillStyle = '#7a4a24'; g.fillRect(-13, 0, 10, 5);
-      g.fillStyle = '#3a3a40'; g.fillRect(-4, -2, 18, 4); g.fillRect(-4, 2, 6, 3);
+      // Rifle in profile: stock, receiver, long barrel, scope on top.
+      g.fillStyle = '#8A5A30';
+      g.beginPath(); g.moveTo(-17, 1); g.lineTo(-17, 6); g.lineTo(-8, 4); g.lineTo(-5, 3); g.lineTo(6, 3); g.lineTo(6, 1); g.closePath(); g.fill();
+      g.fillStyle = '#C9CDD2'; g.fillRect(-6, -1, 9, 3); g.fillRect(3, -0.5, 15, 1.6);
+      g.fillRect(-8, -6, 12, 3); g.fillRect(2, -7, 3, 5); g.fillRect(-9, -6.5, 2, 4);
+      g.fillRect(-4, -3, 1.5, 2); g.fillRect(1, -3, 1.5, 2);
+      g.fillStyle = '#8A5A30'; g.fillRect(-4, 3, 1.5, 3);
     } else if (id === 'spray') {
       g.fillStyle = '#4aa04c'; g.fillRect(-6, -6, 12, 18);
       g.fillStyle = '#e8e8e8'; g.fillRect(-4, -11, 8, 5); g.fillRect(-2, -2, 4, 8);

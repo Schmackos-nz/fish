@@ -6,6 +6,16 @@ const KEEPER_PAL = { hat: null, hatStyle: 'none', shirt: '#5A7A9A', vest: '#E6DC
 
 const Folk = {
   W: 64, H: 80,
+  // Where the gripping mitten sits on the 64x80 canvas, per facing.
+  HAND: { down: [40, 58], side: [52, 52], up: [46, 54] },
+
+  // World position of the gripping hand on a leaning 1 x 1.25 billboard.
+  handWorld(x, y, base, dir, flip = 1, sy = 1) {
+    const [cx, cy] = this.HAND[dir];
+    const u = (2.5 + cx * 0.92) / this.W, v = (6 + cy * 0.92) / this.H;
+    const lx = (u - 0.5) * flip, h = (1 - v) * 1.25 * sy;
+    return new THREE.Vector3(x + lx, base + h * Math.cos(BILLBOARD_LEAN), y - h * Math.sin(BILLBOARD_LEAN) + 0.02);
+  },
 
   // dir: 'down' | 'up' | 'side' (side faces right). frame: walk cycle 0-3. pose: 'normal' | 'brag' | 'hold' | 'none' (no arms).
   draw(g, pal, dir, frame, pose = 'normal') {
@@ -37,6 +47,10 @@ const Folk = {
     if (pose === 'normal') {
       arm(16, 50 + bob, 11 - (side ? 0 : step), 60 + bob);
       arm(48, 50 + bob, 53 + (side ? 0 : step), 60 + bob);
+    } else if (pose === 'grip') {
+      // Free arm hangs; the gripping arm is drawn in front of the body below.
+      if (side) arm(30, 50 + bob, 27, 60 + bob); else arm(16, 50 + bob, 11 - step, 60 + bob);
+      if (dir === 'up') arm(48, 50 + bob, 46, 54 + bob);
     }
 
     // Body: a soft rounded bell.
@@ -57,6 +71,7 @@ const Folk = {
     if (dir === 'down' && !pal.apron) { g.beginPath(); g.moveTo(32, 46 + bob); g.lineTo(32, 66 + bob); g.stroke(); }
 
     // Raised arms go in front.
+    if (pose === 'grip' && dir !== 'up') { if (side) arm(36, 49 + bob, 52, 52 + bob); else arm(46, 50 + bob, 40, 58 + bob); }
     if (pose === 'brag') { arm(16, 50, 2, 44); arm(48, 50, 62, 44); }
     if (pose === 'hold') { arm(17, 50, 12, 34); arm(47, 50, 52, 34); }
 

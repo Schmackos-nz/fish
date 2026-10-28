@@ -44,7 +44,7 @@ const Floaters = {
     };
     const geo = new THREE.PlaneGeometry(1.15, 2.3); geo.rotateX(-Math.PI / 2);
     const tex = new THREE.CanvasTexture(this.paint(f));
-    tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
+    tex.anisotropy = 4;
     const lilo = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, transparent: true, alphaTest: 0.3 }));
     lilo.renderOrder = 3;
     // Tilted a little toward the camera so the sunbather reads from the angled view.
@@ -56,31 +56,55 @@ const Floaters = {
     this.list.push(f);
   },
 
-  // Top-down pixel art: lilo, pillow, person on their back, something covering the essentials.
+  // Top-down cut-out style (same look as the other characters): lilo, pillow, a round sunbather on
+  // their back, and something generously covering the essentials.
   paint(f) {
-    const c = document.createElement('canvas'); c.width = 16; c.height = 32;
+    const c = document.createElement('canvas'); c.width = 64; c.height = 128;
     const g = c.getContext('2d');
-    const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
-    const [main, rib] = f.lilo, edge = U.shade(f.skin, -0.45);
-    r(0, 0, 16, 32, rib); r(1, 1, 14, 30, main);
-    for (let y = 4; y < 31; y += 4) r(1, y, 14, 1, rib); // inflated ribs
-    r(3, 1, 10, 6, U.shade(main, 0.35)); // pillow
-    // Person outline first, then fill, so they pop against the lilo.
-    const body = (col, o) => {
-      r(5 - o, 2 - o, 6 + o * 2, 5 + o * 2, col);   // head
-      r(4 - o, 7 - o, 8 + o * 2, 10 + o * 2, col);  // torso
-      r(1 - o, 8 - o, 3 + o, 3 + o * 2, col); r(12, 8 - o, 3 + o, 3 + o * 2, col); // arms flopped out
-      r(4 - o, 17, 3 + o * 2, 12 + o, col); r(9 - o, 17, 3 + o * 2, 12 + o, col);   // legs
+    const ink = 'rgba(20,14,10,0.85)';
+    g.lineJoin = 'round'; g.lineCap = 'round';
+    const blob = (fill, path) => { g.fillStyle = fill; g.beginPath(); path(); g.fill(); g.strokeStyle = ink; g.lineWidth = 2; g.stroke(); };
+    const ell = (x, y, rx, ry, rot = 0) => () => g.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2);
+    const limb = (x1, y1, x2, y2, w) => {
+      for (const [col, lw] of [[ink, w + 3], [f.skin, w]]) { g.strokeStyle = col; g.lineWidth = lw; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); }
     };
-    body(edge, 1); body(f.skin, 0);
-    r(5, 2, 6, 2, '#4a2a12'); // hair
-    if (f.shades) { r(5, 4, 6, 1, '#111'); r(6, 4, 1, 1, '#4a6a9a'); r(9, 4, 1, 1, '#4a6a9a'); }
-    r(7, 6, 2, 1, U.shade(f.skin, -0.3)); // contented smile
+    const [main, rib] = f.lilo;
+    // Lilo with inflated ribs and a pillow.
+    blob(main, () => g.roundRect(4, 3, 56, 122, 18));
+    g.strokeStyle = rib; g.lineWidth = 2;
+    for (let y = 36; y < 118; y += 11) { g.beginPath(); g.moveTo(10, y); g.lineTo(54, y); g.stroke(); }
+    blob(U.shade(main, 0.35), () => g.roundRect(12, 8, 40, 22, 10));
+    // Arms flopped out, legs straight.
+    limb(21, 48, 9, 66, 7); limb(43, 48, 55, 66, 7);
+    blob(f.skin, ell(8, 68, 4.5, 4.5)); blob(f.skin, ell(56, 68, 4.5, 4.5));
+    limb(27, 86, 25, 113, 9); limb(37, 86, 39, 113, 9);
+    blob(f.skin, ell(24, 116, 4.5, 5.5)); blob(f.skin, ell(40, 116, 4.5, 5.5));
+    // Round body and big round head.
+    blob(f.skin, ell(32, 66, 15, 23));
+    blob(f.skin, ell(32, 29, 15, 14));
+    blob('#5A3A1E', () => { g.moveTo(17.5, 26); g.bezierCurveTo(18, 12, 46, 12, 46.5, 26); g.quadraticCurveTo(32, 19, 17.5, 26); });
+    // Face: shades or contented closed eyes, and a smile.
+    if (f.shades) { blob('#151515', ell(26, 30, 5.5, 4)); blob('#151515', ell(38, 30, 5.5, 4)); g.strokeStyle = '#151515'; g.lineWidth = 2; g.beginPath(); g.moveTo(31, 30); g.lineTo(33, 30); g.stroke(); }
+    else { g.strokeStyle = ink; g.lineWidth = 1.8; for (const x of [26, 38]) { g.beginPath(); g.arc(x, 29, 3.5, 0.2, Math.PI - 0.2); g.stroke(); } }
+    g.strokeStyle = ink; g.lineWidth = 1.8; g.beginPath(); g.arc(32, 35, 4.5, 0.25, Math.PI - 0.25); g.stroke();
     // Strategic coverage, generously sized.
-    if (f.cover === 'towel') { r(3, 10, 10, 10, '#f4f4f4'); r(3, 12, 10, 2, '#d23a3a'); r(3, 16, 10, 2, '#3a6ad2'); }
-    else if (f.cover === 'paper') { r(2, 9, 12, 11, '#ece6d4'); r(3, 10, 10, 2, '#2a2a2a'); for (let y = 13; y < 19; y += 2) r(3, y, 10, 1, '#8a8478'); }
-    else if (f.cover === 'duck') { r(3, 11, 10, 9, '#f2d01a'); r(8, 8, 5, 5, '#f2d01a'); r(12, 10, 3, 2, '#f2801a'); r(10, 9, 1, 1, '#111'); r(4, 12, 4, 3, '#e8b81a'); }
-    else { r(2, 10, 12, 10, '#d9c27a'); r(5, 12, 6, 6, '#b8984a'); r(2, 14, 12, 2, '#c94a4a'); } // giant sun hat
+    if (f.cover === 'towel') {
+      blob('#F4F4F4', () => g.roundRect(14, 58, 36, 34, 6));
+      g.fillStyle = '#D23A3A'; g.fillRect(15, 66, 34, 4); g.fillStyle = '#3A6AD2'; g.fillRect(15, 78, 34, 4);
+    } else if (f.cover === 'paper') {
+      blob('#ECE6D4', () => g.roundRect(12, 56, 40, 36, 3));
+      g.fillStyle = '#2A2A2A'; g.fillRect(16, 60, 32, 5);
+      g.fillStyle = '#8A8478'; for (let y = 69; y < 88; y += 4) g.fillRect(16, y, 32, 2);
+    } else if (f.cover === 'duck') {
+      blob('#F2D01A', ell(32, 76, 18, 16));
+      blob('#F2D01A', ell(40, 58, 9, 9));
+      blob('#F2801A', ell(49, 58, 5, 3));
+      g.fillStyle = '#111'; g.beginPath(); g.arc(42, 56, 1.8, 0, 7); g.fill();
+    } else {
+      blob('#D9C27A', ell(32, 74, 22, 20));
+      blob('#C9A85A', ell(32, 74, 11, 10));
+      g.strokeStyle = '#C94A4A'; g.lineWidth = 3; g.beginPath(); g.ellipse(32, 74, 13, 12, 0, 0, Math.PI * 2); g.stroke();
+    }
     return c;
   },
 

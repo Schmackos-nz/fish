@@ -99,7 +99,7 @@ const Sfx = {
   },
   fail() { this.tone(330, 0.25, 0.2, 'triangle', 160); },
 
-  shot() { this.tone(70, 0.35, 0.6, 'triangle', 35); this.burst(0.45, 3000, 0.7, 'lowpass', 0.7, 150); this.burst(0.08, 6000, 0.4, 'highpass'); },
+  shot() { this.burst(0.06, 7000, 0.9, 'highpass'); this.tone(150, 0.16, 0.5, 'square', 50); this.burst(0.5, 2400, 0.6, 'lowpass', 0.7, 140); },
   slap(v) { this.burst(0.07, 1800, 0.25 * v + 0.1, 'bandpass', 1.2); this.tone(180, 0.05, 0.15 * v, 'square', 90); },
   setBuzz(level, pitch) {
     if (!this.ctx) return;

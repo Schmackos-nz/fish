@@ -145,6 +145,7 @@ const Hud = {
     if (Tools.current === 'rod' || Fishing.state !== 'idle') this.drawReel(W - 146, H - 176); else this.reel = null;
     Bugs.draw(g);
     Tools.drawOverlay(this);
+    Gun.drawScope(this);
     if (this.bigMap) this.drawBigMap(W, H);
   },
 
@@ -188,7 +189,7 @@ const Hud = {
       r(['Space'], 'Jump    Q  Dodge roll');
       const tool = Tools.current;
       if (tool === 'rod') { r(['Hold'], 'Cast — release at the peak', { hot: World.isWater(Input.mouse.wx, Input.mouse.wy) }); r(['Tab'], 'Next lure'); }
-      else if (tool === 'gun') r(['Click'], 'Shoot · ' + (Game.ammo || 0) + ' shells', { hot: true });
+      else if (tool === 'gun') { r(['Right'], 'Hold to look down the scope', { held: Gun.scoped, hot: !Gun.scoped }); r(['Click'], (Gun.scoped ? 'Fire' : 'Fire from the hip (wild)') + ' · ' + (Game.ammo || 0) + ' rounds', { hot: Gun.scoped }); }
       else if (tool === 'spray') r(['Click'], 'Spray · ' + (Game.spray || 0) + ' cans', { hot: Bugs.list.length > 0 });
       else if (tool === 'binos') r(['Hold'], 'Scout for fish & game', { held: Tools.looking });
       r(['1–4'], tool === 'hands' ? 'Equip a tool' : 'Switch tool');
@@ -450,7 +451,7 @@ const Hud = {
   drawStatePanel(cx, bottom) {
     const F = Fishing, L = LURE_BY_ID[F.lureId], g = this.g;
     if (Gun.out) {
-      this.pill('Shotgun · ' + (Game.ammo || 0) + ' shells', cx, bottom - 14, UI.bad, 13);
+      this.pill('Rifle · ' + (Game.ammo || 0) + ' rounds' + (Gun.scoped ? '' : ' · right-click to scope'), cx, bottom - 14, UI.bad, 13);
       return;
     }
     if (F.state === 'fight') return this.drawFight(cx, bottom);

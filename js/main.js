@@ -335,7 +335,14 @@ function frame(now) {
     if (tgt && Fishing.state !== 'flying') { fx = U.lerp(Player.x, tgt.x, 0.38); fy = U.lerp(Player.y, tgt.y, 0.38); }
     if (Tools.looking) { fx = Tools.look.x; fy = Tools.look.y; }
     else if (Fishing.state !== 'idle') fy += 3; // lift the angler above the fishing panels
+    // Looking down the scope pushes the camera in on the point of aim.
+    const baseDist = Scene3D.camDist;
+    if (Gun.zoom > 0.01) {
+      fx = U.lerp(fx, Gun.look.x, Gun.zoom); fy = U.lerp(fy, Gun.look.y, Gun.zoom);
+      Scene3D.camDist = U.lerp(baseDist, 7, Gun.zoom);
+    }
     Scene3D.updateCamera(dt, { x: fx, y: fy });
+    Scene3D.camDist = baseDist;
     Scene3D.updateEnv(Game.env, dt);
     Actors.update(dt, Game.env);
     Npcs.render();
