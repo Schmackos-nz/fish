@@ -187,7 +187,7 @@ const Bikes = {
         r.mesh.scale.x = dir === 'side' && Math.cos(r.ang) < 0 ? -1 : 1;
         r.mesh.position.set(r.x, h + 0.38 + pitch * 0.3, r.y);
       }
-      const lv = U.clamp(1 - d / 45, 0, 1) * (Interior.active ? 0.2 : 1);
+      const lv = (d < 28 ? (1 - d / 28) ** 2 : 0) * (Interior.active ? 0 : 0.7); // locals fade fast with distance
       if (lv > loud) { loud = lv; rpm = 70 + r.speed * 10 + (r.wheelie > 0 ? 30 : 0); }
     }
     // Your bike: parked where you left it, or under you.

@@ -36,7 +36,7 @@ const Menus = {
         : sp.min && f.cm < sp.min ? `<div class="legal bad">Undersized — legal minimum ${sp.min} cm</div>`
         : sp.min ? `<div class="legal ok">Legal size · minimum ${sp.min} cm</div>` : '<div class="legal ok">No size limit</div>'}
       ${first ? '<div class="rec">New species for the journal!</div>' : record ? '<div class="rec">New personal best!</div>' : `<div class="desc">Best: ${U.fmtKg(j.best)}</div>`}
-      <div style="margin:8px 0;color:#8fd16a">Worth ${U.fmtMoney(val)} at the shack</div>
+      <div style="margin:8px 0;color:#8fd16a">Worth ${U.fmtMoney(val)} at Hettie's Tackle</div>
       <button id="keepBtn" ${full ? 'disabled' : ''} class="${f.cm < sp.min ? 'danger' : ''}">${f.cm < sp.min ? 'Keep anyway (illegal)' : 'Keep'} · creel ${Game.creel.length}/${Game.creelMax}</button>
       <button id="releaseBtn">Release (+${U.fmtMoney(val * 0.35)} bounty)</button>
       ${f.prized ? '<div style="margin-top:10px"><button id="shareBtn" class="gold">📸 Share a photo with a friend</button></div>' : ''}`;

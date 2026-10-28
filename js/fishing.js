@@ -46,7 +46,7 @@ const Fishing = {
 
   selectLure(id) {
     if (this.state !== 'idle') { this.say('Reel in first (Space) to change lures.', '#f2c14e'); return; }
-    if (!this.canCastWith(id)) { this.say('No ' + LURE_BY_ID[id].name + ' left — buy more at the tackle shack.', '#e2584d'); return; }
+    if (!this.canCastWith(id)) { this.say('No ' + LURE_BY_ID[id].name + ' left — buy more at Hettie\'s Tackle.', '#e2584d'); return; }
     this.lureId = id;
     this.say('Tied on: ' + LURE_BY_ID[id].name, '#8fd16a', 1.4);
   },

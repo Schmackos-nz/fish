@@ -429,16 +429,33 @@ const World = {
       // The far bank has to be real, walkable ground.
       if (!ok || n < 2 || this.tile[this.idx(x, y)] === T.ROCK) continue;
       const px = dy ? 1 : 0, py = dx ? 1 : 0; // across the bridge
-      for (let s = 0; s <= n; s++) for (let w = -1; w <= 1; w++) {
+      // Banks slope down into the water, so the deck runs one tile up onto solid ground at each end,
+      // with a cleared path beyond that.
+      // Keep going while the bank is still right at the water's edge (it renders sunk below the surface).
+      const shoreAt = (sx2, sy2) => (this.inB(sx2, sy2) ? this.shore[this.idx(sx2, sy2)] : 9);
+      let e0 = 0, e1 = 0;
+      while (e0 < 4 && shoreAt(lx - dx * (1 + e0), ly - dy * (1 + e0)) <= 2) e0++;
+      while (e1 < 4 && shoreAt(lx + dx * (n + 1 + e1), ly + dy * (n + 1 + e1)) <= 2) e1++;
+      // Still at the water's edge after that? It's marsh or another channel — don't build into it.
+      if (shoreAt(lx - dx * (1 + e0), ly - dy * (1 + e0)) <= 2 || shoreAt(lx + dx * (n + 1 + e1), ly + dy * (n + 1 + e1)) <= 2) continue;
+      // …and never into a building.
+      let clear = true;
+      for (let s = -2 - e0; s <= n + 2 + e1 && clear; s++) for (let w = -1; w <= 1; w++) {
+        const bx = lx + dx * s + px * w, by = ly + dy * s + py * w;
+        if (!this.inB(bx, by) || this.tile[this.idx(bx, by)] === T.FLOOR || this.buildingAt(bx + 0.5, by + 0.5)) { clear = false; break; }
+      }
+      if (!clear) continue;
+      for (let s = -2 - e0; s <= n + 2 + e1; s++) for (let w = -1; w <= 1; w++) {
         const bx = lx + dx * s + px * w, by = ly + dy * s + py * w;
         if (!this.inB(bx, by)) continue;
-        const j = this.idx(bx, by);
-        if (this.tile[j] === T.WATER) this.tile[j] = T.PLANK;
-        else if (this.tile[j] !== T.PLANK && this.tile[j] !== T.FLOOR) this.tile[j] = T.PATH; // tidy approaches
+        const j = this.idx(bx, by), deck = s >= -1 - e0 && s <= n + 1 + e1;
+        if (this.tile[j] === T.FLOOR) continue;
+        if (deck || this.tile[j] === T.WATER) this.tile[j] = T.PLANK;
+        else if (this.tile[j] !== T.PLANK) this.tile[j] = T.PATH;
         this.obj[j] = O.NONE;
       }
-      this.bridges.push({ x0: lx + dx, y0: ly + dy, x1: x - dx, y1: y - dy, dx, dy, rails: U.hash2(lx, ly, this.seed + 3) < 0.6 });
-      return { x: x + 0.5, y: y + 0.5 };
+      this.bridges.push({ x0: lx - dx * (1 + e0), y0: ly - dy * (1 + e0), x1: lx + dx * (n + 1 + e1), y1: ly + dy * (n + 1 + e1), dx, dy, rails: U.hash2(lx, ly, this.seed + 3) < 0.6 });
+      return { x: lx + dx * (n + 2 + e1) + 0.5, y: ly + dy * (n + 2 + e1) + 0.5 };
     }
     return null;
   },

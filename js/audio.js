@@ -46,9 +46,14 @@ const Sfx = {
     this.engGain = this.ctx.createGain(); this.engGain.gain.value = 0;
     this.engA = this.ctx.createOscillator(); this.engA.type = 'sawtooth'; this.engA.frequency.value = 60;
     this.engB = this.ctx.createOscillator(); this.engB.type = 'square'; this.engB.frequency.value = 61.5;
-    const elp = this.ctx.createBiquadFilter(); elp.type = 'lowpass'; elp.frequency.value = 700; elp.Q.value = 4;
-    this.engA.connect(elp); this.engB.connect(elp); elp.connect(this.engGain).connect(this.master);
-    this.engA.start(); this.engB.start();
+    const elp = this.ctx.createBiquadFilter(); elp.type = 'lowpass'; elp.frequency.value = 1100; elp.Q.value = 0.7;
+    // Firing pulses: chop the tone at a fraction of the revs so it putters like a two-stroke.
+    this.engPulse = this.ctx.createGain(); this.engPulse.gain.value = 0.5;
+    this.engLfo = this.ctx.createOscillator(); this.engLfo.type = 'square'; this.engLfo.frequency.value = 15;
+    const lfoAmt = this.ctx.createGain(); lfoAmt.gain.value = 0.5;
+    this.engLfo.connect(lfoAmt).connect(this.engPulse.gain);
+    this.engA.connect(elp); this.engB.connect(elp); elp.connect(this.engPulse).connect(this.engGain).connect(this.master);
+    this.engA.start(); this.engB.start(); this.engLfo.start();
   },
 
   loopNoise(freq, q, type) {
@@ -111,8 +116,9 @@ const Sfx = {
   setEngine(level, rpm) {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
-    this.engGain.gain.setTargetAtTime(U.clamp(level, 0, 1) * 0.06, t, 0.1);
-    this.engA.frequency.setTargetAtTime(rpm, t, 0.08); this.engB.frequency.setTargetAtTime(rpm * 1.025, t, 0.08);
+    this.engGain.gain.setTargetAtTime(U.clamp(level, 0, 1) * 0.035, t, 0.1);
+    this.engA.frequency.setTargetAtTime(rpm * 1.4, t, 0.08); this.engB.frequency.setTargetAtTime(rpm * 1.43, t, 0.08);
+    this.engLfo.frequency.setTargetAtTime(rpm / 4, t, 0.08);
   },
   setBuzz(level, pitch) {
     if (!this.ctx) return;
