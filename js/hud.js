@@ -56,6 +56,7 @@ const Hud = {
     this.drawWorldLabels();
     Npcs.drawBubbles(this);
     this.drawCursorInfo();
+    Bugs.draw(g);
     if (this.bigMap) this.drawBigMap(W, H);
   },
 
@@ -78,12 +79,20 @@ const Hud = {
     const r = (keys, label, opt = {}) => rows.push({ keys, label, ...opt });
     const flash = Math.sin(Game.time * 14) > 0;
     const k = World.shopkeeper;
+    if (Bugs.list.some((b) => b.state !== 'leave')) r(['Click'], 'Swat the bugs!', { hot: true, flash: Bugs.list.some((b) => b.state === 'land') && flash });
+    if (Gun.out) {
+      r(['Click'], 'Shoot  (' + (Game.ammo || 0) + ' shells)', { hot: true });
+      r(['WASD'], 'Walk');
+      r(['G'], 'Put the shotgun away');
+      return rows;
+    }
     switch (st) {
       case 'idle':
         r(['WASD'], 'Walk  (Shift to run)');
         r(['Hold L'], 'Cast — let go at the peak', { hot: World.isWater(Input.mouse.wx, Input.mouse.wy) });
         if (U.dist(Player.x, Player.y, k.x, k.y) < 3) r(['E'], 'Tackle shack', { hot: true });
         else if (Npcs.near(Player.x, Player.y, 2.5)) r(['E'], 'Chat', { hot: true });
+        r(['G'], 'Pull out the shotgun…');
         r(['J'], 'Journal   ·   M  Map');
         break;
       case 'charging':
@@ -155,6 +164,7 @@ const Hud = {
   },
 
   click(x, y) {
+    if (Bugs.swat(x, y)) return true;
     for (const s of this.slots || []) {
       if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) { Fishing.selectLure(s.id); return true; }
     }
@@ -224,6 +234,12 @@ const Hud = {
 
   drawStatePanel(cx, by) {
     const F = Fishing, L = LURE_BY_ID[F.lureId];
+    if (Gun.out) {
+      const w = 340;
+      this.panel(cx - w / 2, by - 40, w, 36);
+      this.text('SHOTGUN  ·  ' + (Game.ammo || 0) + ' shells  ·  click to blast', cx, by - 17, '#e2584d', 14, 'center', true);
+      return;
+    }
     const tips = {
     };
     if (F.state === 'fight') return this.drawFight(cx, by);

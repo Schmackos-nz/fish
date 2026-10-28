@@ -22,6 +22,7 @@ const SAY = {
   playerBig: ['Hah! Beginner\'s luck!', 'Now THAT\'s a fish!', 'Where\'d you hook that?!', 'Alright, alright… nice one.'],
   playerSmall: ['Throw that minnow back!', 'Cute. I use those for bait.', 'Hey, a fish is a fish!', 'It\'ll grow… in about five years.'],
   playerPrized: ['IS THAT GOLD?! Where\'d you hook that?!', 'No way. NO WAY. A prized one!'],
+  gun: ['WHAT are you DOING?!', 'That is NOT how fishing works!', 'Is that even legal?!', 'Somebody call the warden!', 'CHEATER!', 'You\'ve scared off every fish in the lake!', 'My ears! MY EARS!'],
   playerLoss: ['Ooh, tough break!', 'Should\'ve loosened your drag!', 'Happens to the best of us… mostly you, though.'],
 };
 
@@ -246,6 +247,14 @@ const Npcs = {
     if (!n || n.state === 'fight') return;
     const lines = f.prized ? SAY.playerPrized : f.kg >= Math.max(1.5, n.rec.best) ? SAY.playerBig : f.kg < 0.4 ? SAY.playerSmall : null;
     if (lines) this.say(n, U.pick(Math.random, lines), 3.5);
+  },
+
+  onGunshot(x, y) {
+    for (const n of this.list) {
+      if (U.dist(n.x, n.y, x, y) > 28) continue;
+      if (n.state !== 'fight') { n.face = Math.atan2(y - n.y, x - n.x); this.say(n, U.pick(Math.random, SAY.gun), 3, Math.random() < 0.3 ? 'brag' : undefined); }
+      if (n.fish) { n.fish = null; n.state = 'cast'; n.t = 3; } // the shot spooked their fish off the line
+    }
   },
 
   onPlayerLoss() {

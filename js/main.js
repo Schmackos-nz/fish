@@ -59,6 +59,7 @@ const Game = {
     this.drag = 1.75; this.creel = []; this.creelMax = 8; this.journal = {};
     this.stats = { caught: 0, released: 0 };
     this.npcRecords = {};
+    this.ammo = 12;
     Object.assign(this.env, { hour: 6, day: 1, weather: WEATHERS[0], weatherT: 3 });
   },
 
@@ -67,7 +68,7 @@ const Game = {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         seed: this.seed, money: this.money, lures: this.lures, owned: this.owned, drag: this.drag,
         gear: { rod: this.gear.rod.id, reel: this.gear.reel.id, line: this.gear.line.id },
-        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords,
+        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords, ammo: this.ammo,
         px: Player.x, py: Player.y, hour: this.env.hour, day: this.env.day, weather: this.env.weather.id,
       }));
     } catch (e) { /* storage unavailable: play on without saving */ }
@@ -79,6 +80,7 @@ const Game = {
       if (!s) return null;
       this.newGame(s.seed);
       this.npcRecords = s.npcRecords || {};
+      this.ammo = s.ammo === undefined ? 12 : s.ammo;
       Object.assign(this, { money: s.money, lures: s.lures, owned: s.owned, drag: s.drag, creel: s.creel, creelMax: s.creelMax, journal: s.journal, stats: s.stats });
       this.gear = {
         rod: RODS.find((r) => r.id === s.gear.rod) || RODS[0],
@@ -128,6 +130,7 @@ function buildWorld(seed, savedPos) {
   Art.buildMinimap();
   Scene3D.build();
   Fish.reset(); Fishing.reset();
+  Gun.out = false; Gun.floaters = []; Bugs.list = [];
   Npcs.init();
   if (savedPos && !World.blocked(savedPos.x, savedPos.y)) Player.place(savedPos.x, savedPos.y);
   else Player.place(World.spawn.x, World.spawn.y);
@@ -156,6 +159,7 @@ function handleGlobalKeys() {
   if (Input.pressed('KeyJ')) Menus.toggleJournal();
   if (Input.pressed('KeyM')) Hud.bigMap = !Hud.bigMap;
   if (Input.pressed('KeyH')) Hud.toggleControls();
+  if (Input.pressed('KeyG') && !Menus.open) Gun.toggle();
   if (Menus.open) return;
   for (const L of LURES) if (Input.pressed('Digit' + L.key)) Fishing.selectLure(L.id);
   const k = World.shopkeeper;
@@ -186,6 +190,8 @@ function frame(now) {
       Fishing.update(dt);
       Fish.update(dt, Player, Fishing.lure, Game.env);
       Npcs.update(dt);
+      Gun.update(dt);
+      Bugs.update(dt);
     }
     Hud.update(dt);
     // Frame the action: drift the camera toward the lure or the hooked fish.
@@ -196,6 +202,7 @@ function frame(now) {
     Scene3D.updateEnv(Game.env, dt);
     Actors.update(dt, Game.env);
     Npcs.render();
+    Gun.render(dt);
     Scene3D.render(Game.time);
     Hud.draw();
     saveT += dt;
@@ -209,6 +216,7 @@ window.addEventListener('load', () => {
   const canvas = document.getElementById('game');
   Scene3D.init(canvas);
   Actors.init();
+  Gun.init();
   Hud.init();
   Input.init(document.getElementById('hud'));
   let hasSave = false;

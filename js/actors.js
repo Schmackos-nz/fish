@@ -211,21 +211,26 @@ const Actors = {
     const { hand, tip, ctrl } = this.rodPoints(p, base);
     this.rod.geometry.setFromPoints(new THREE.QuadraticBezierCurve3(hand, ctrl, tip).getPoints(12));
     this.rod.material.color.set(Game.gear.rod.color);
+    this.rod.visible = !Gun.out; // rod goes on your back while the shotgun's out
     this.tipScene = tip;
 
-    // Aim ring: faint at full range while ready, live while loading the rod.
-    const aiming = Fishing.state === 'charging' || (Fishing.state === 'idle' && !Menus.open && World.isWater(Input.mouse.wx, Input.mouse.wy));
+    // Aim ring: red crosshair for the shotgun, gold landing marker for casts.
+    const charging = Fishing.state === 'charging';
+    const aiming = !Menus.open && (Gun.out || charging || (Fishing.state === 'idle' && World.isWater(Input.mouse.wx, Input.mouse.wy)));
     this.aimRing.visible = aiming;
     if (aiming) {
-      const ca = Math.atan2(Input.mouse.wy - p.y, Input.mouse.wx - p.x);
-      const charging = Fishing.state === 'charging';
-      const d = Fishing.castDistance(charging ? Fishing.power : 1);
-      const ax = Fishing.tip.x + Math.cos(ca) * d, ay = Fishing.tip.y + Math.sin(ca) * d;
+      let ax, ay;
+      if (Gun.out) ({ x: ax, y: ay } = Gun.aimPoint());
+      else {
+        const ca = Math.atan2(Input.mouse.wy - p.y, Input.mouse.wx - p.x);
+        const d = Fishing.castDistance(charging ? Fishing.power : 1);
+        ax = Fishing.tip.x + Math.cos(ca) * d; ay = Fishing.tip.y + Math.sin(ca) * d;
+      }
       this.aimRing.position.set(ax, Math.max(0, Scene3D.groundH(ax, ay)) + 0.04, ay);
-      const s = 1 + Math.sin(Game.time * 6) * 0.08;
+      const s = Gun.out ? 1.6 : 1 + Math.sin(Game.time * 6) * 0.08;
       this.aimRing.scale.set(s, 1, s);
-      this.aimRing.material.color.set(charging && Fishing.power > 0.9 ? 0x8fd16a : 0xf2c14e);
-      this.aimRing.material.opacity = charging ? 0.9 : 0.4;
+      this.aimRing.material.color.set(Gun.out ? 0xe2584d : charging && Fishing.power > 0.9 ? 0x8fd16a : 0xf2c14e);
+      this.aimRing.material.opacity = Gun.out || charging ? 0.9 : 0.4;
     }
 
     // Line + lure
@@ -254,6 +259,9 @@ const Actors = {
       const g = this.lures[Fishing.lureId];
       g.visible = true; g.position.copy(tip).y -= 0.3;
     }
+
+    if (Gun.out) { this.line.visible = false; for (const id in this.lures) this.lures[id].visible = false; }
+    else this.line.visible = true;
 
     // Fish under the surface.
     let n = 0;

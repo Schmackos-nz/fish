@@ -33,6 +33,15 @@ const Sfx = {
     bp.type = 'bandpass'; bp.frequency.value = 1400; bp.Q.value = 2;
     this.dragNode.connect(bp).connect(this.dragGain).connect(this.master);
     this.dragNode.start(); lfo.start();
+    // Insect whine: a wobbling saw through a narrow band-pass.
+    this.buzzGain = this.ctx.createGain(); this.buzzGain.gain.value = 0;
+    this.buzzOsc = this.ctx.createOscillator(); this.buzzOsc.type = 'sawtooth'; this.buzzOsc.frequency.value = 650;
+    const bl = this.ctx.createOscillator(), blg = this.ctx.createGain();
+    bl.frequency.value = 9; blg.gain.value = 40;
+    bl.connect(blg).connect(this.buzzOsc.frequency);
+    const bbp = this.ctx.createBiquadFilter(); bbp.type = 'bandpass'; bbp.frequency.value = 900; bbp.Q.value = 3;
+    this.buzzOsc.connect(bbp).connect(this.buzzGain).connect(this.master);
+    this.buzzOsc.start(); bl.start();
   },
 
   loopNoise(freq, q, type) {
@@ -89,6 +98,14 @@ const Sfx = {
     [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => this.tone(f, 0.25, 0.18, 'triangle'), i * 110));
   },
   fail() { this.tone(330, 0.25, 0.2, 'triangle', 160); },
+
+  shot() { this.tone(70, 0.35, 0.6, 'triangle', 35); this.burst(0.45, 3000, 0.7, 'lowpass', 0.7, 150); this.burst(0.08, 6000, 0.4, 'highpass'); },
+  slap(v) { this.burst(0.07, 1800, 0.25 * v + 0.1, 'bandpass', 1.2); this.tone(180, 0.05, 0.15 * v, 'square', 90); },
+  setBuzz(level, pitch) {
+    if (!this.ctx) return;
+    this.buzzGain.gain.setTargetAtTime(level * level * 0.05, this.ctx.currentTime, 0.08);
+    this.buzzOsc.frequency.setTargetAtTime(pitch, this.ctx.currentTime, 0.2);
+  },
 
   setDrag(level) {
     if (!this.ctx) return;

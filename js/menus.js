@@ -63,7 +63,7 @@ const Menus = {
     const el = document.getElementById('journal');
     const known = SPECIES.filter((s) => Game.journal[s.id]).length;
     el.innerHTML = `<button class="close" id="jClose">✕</button><h2>Angler's Journal</h2>
-      <div class="desc">${known}/${SPECIES.length} species · ${Game.stats.caught} caught · ${Game.stats.released} released</div>
+      <div class="desc">${known}/${SPECIES.length} species · ${Game.stats.caught} caught · ${Game.stats.released} released · ${Game.stats.shot || 0} shot (shame) · ${Game.stats.swatted || 0} bugs swatted</div>
       <h3>Valley anglers — biggest fish</h3>
       ${this.leaderboard()}
       <h3>Species</h3>
@@ -118,6 +118,8 @@ const Menus = {
       <h3>Lures</h3>
       ${LURES.map((L) => `<div class="row"><div><b>${L.key}. ${L.name}</b> <span class="desc">(have ${Game.lures[L.id] || 0})</span><div class="desc">${L.tip}</div></div>
         <button data-lure="${L.id}" ${Game.money < L.price ? 'disabled' : ''}>${L.pack > 1 ? L.pack + ' for ' : ''}${U.fmtMoney(L.price)}</button></div>`).join('')}
+      <h3>Shotgun shells</h3><div class="row"><div><b>Box of 10 shells</b> <span class="desc">(have ${Game.ammo || 0})</span><div class="desc">"I'm not going to ask what these are for."</div></div>
+        <button id="ammoBtn" ${Game.money < 12 ? 'disabled' : ''}>$12</button></div>
       <h3>Rods</h3>${gearRows(RODS, 'rod')}
       <h3>Reels</h3>${gearRows(REELS, 'reel')}
       <h3>Line</h3>${gearRows(LINES, 'line')}
@@ -125,6 +127,7 @@ const Menus = {
         <button id="creelBtn" ${Game.money < 150 * Game.creelMax / 5 ? 'disabled' : ''}>${U.fmtMoney(150 * Game.creelMax / 5)}</button></div>`;
     el.querySelector('#sClose').onclick = () => this.close();
     el.querySelector('#sellBtn').onclick = () => { Game.money += creelVal; Game.creel = []; Sfx.coin(); this.renderShop(); Game.save(); };
+    el.querySelector('#ammoBtn').onclick = () => { Game.money -= 12; Game.ammo = (Game.ammo || 0) + 10; Sfx.coin(); this.renderShop(); Game.save(); };
     el.querySelector('#creelBtn').onclick = () => { Game.money -= 150 * Game.creelMax / 5; Game.creelMax += 5; Sfx.coin(); this.renderShop(); Game.save(); };
     el.querySelectorAll('[data-lure]').forEach((b) => b.onclick = () => {
       const L = LURE_BY_ID[b.dataset.lure];

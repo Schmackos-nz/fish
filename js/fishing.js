@@ -62,7 +62,7 @@ const Fishing = {
       case 'idle':
         this.bend = U.lerp(this.bend, 0, dt * 6);
         // Press and hold to load the rod; the bail flips open by itself.
-        if (Input.mousePressed) {
+        if (Input.mousePressed && !Gun.out) {
           if (!this.canCastWith(this.lureId)) { this.say('Out of that lure — pick another from the lure bar.', '#e2584d'); break; }
           this.bailOpen = true; Sfx.bail();
           this.state = 'charging'; this.chargeT = 0;
@@ -88,7 +88,8 @@ const Fishing = {
     const pw = this.power;
     const perfect = pw > 0.9;
     const dist = this.castDistance(pw);
-    const err = perfect ? 0 : (Math.random() - 0.5) * (1 - pw) * 0.5;
+    // Itchy bites spoil your aim.
+    const err = (perfect ? 0 : (Math.random() - 0.5) * (1 - pw) * 0.5) + (Math.random() - 0.5) * Bugs.itch * 0.6;
     const ang = Math.atan2(Input.mouse.wy - p.y, Input.mouse.wx - p.x) + err;
     const ft = 0.45 + dist * 0.055;
     let tx = this.tip.x + Math.cos(ang) * dist + Game.env.wind.x * ft * 1.2;
