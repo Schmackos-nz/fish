@@ -66,6 +66,7 @@ const Wardens = {
 
   update(dt) {
     for (const w of this.list) {
+      if (w.state === 'ko') continue; // handled by Wanted
       w.t += dt;
       w.bubbleT = Math.max(0, w.bubbleT - dt);
       w.checkCool = Math.max(0, w.checkCool - dt);

@@ -131,9 +131,9 @@ const Gun = {
     if (Interior.active) { Hud.toast('Not indoors!', UI.bad, 1.2); return; }
     // Never at people. Not even the ones on lilos.
     let a = this.aimPoint();
-    const lilo = Floaters.near(a.x, a.y, 3.5);
-    if (lilo || U.dist(a.x, a.y, World.tim.x, World.tim.y) < 2.5 || Swimmers.near(a.x, a.y, 3.5) || Npcs.near(a.x, a.y, 2.5) || U.dist(a.x, a.y, World.shopkeeper.x, World.shopkeeper.y) < 2.5
-      || U.dist(a.x, a.y, World.ranger.x, World.ranger.y) < 2.5 || Wardens.list.some((w) => U.dist(a.x, a.y, w.x, w.y) < 2.5)) {
+    const lilo = Floaters.near(a.x, a.y, 1.6);
+    if (lilo || U.dist(a.x, a.y, World.tim.x, World.tim.y) < 2.5 || Swimmers.near(a.x, a.y, 1.6) || U.dist(a.x, a.y, World.shopkeeper.x, World.shopkeeper.y) < 2.5
+      || U.dist(a.x, a.y, World.ranger.x, World.ranger.y) < 2.5) {
       Hud.toast('Whoa — there are people there. Not doing that.', '#f2c14e', 1.8);
       if (lilo) Floaters.say(lilo, 'DON\'T SHOOT!!', 2);
       return;
@@ -155,7 +155,9 @@ const Gun = {
       new THREE.Vector3(a.x, Math.max(0, Scene3D.groundH(a.x, a.y)) + 0.05, a.y)]);
     t.userData.t = 0; t.visible = true;
 
-    if (Animals.shotAt(a.x, a.y, a.scoped)) {
+    if (Wanted.hitPerson(a.x, a.y, a.scoped)) {
+      Hud.ripple(a.x, a.y, 0.3);
+    } else if (Animals.shotAt(a.x, a.y, a.scoped)) {
       Sfx.thunk();
     } else if (World.isWater(a.x, a.y)) {
       Hud.ripple(a.x, a.y, 1.1); Sfx.splash(0.6);
@@ -176,6 +178,7 @@ const Gun = {
     Wardens.onGunshot();
     Floaters.onGunshot();
     Animals.onGunshot(a.x, a.y);
+    Wanted.onGunshot(a.x, a.y);
     Game.save();
   },
 

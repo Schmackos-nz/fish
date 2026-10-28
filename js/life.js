@@ -297,7 +297,7 @@ const Interact = {
       add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
       Weed.interactions(add);
       const n = Npcs.near(P.x, P.y, 2.5);
-      if (n && !['fight', 'show', 'brawl', 'home', 'bush'].includes(n.state)) {
+      if (n && !['fight', 'show', 'brawl', 'home', 'bush', 'ko', 'armed'].includes(n.state)) {
         add(n.x, n.y, 2.5, Game.weed > 0 ? 'Offer ' + n.name + ' a bag' : 'Chat to ' + n.name, () => (Game.weed > 0 ? Weed.deal(n) : Npcs.talk(n)));
       }
     }

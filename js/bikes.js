@@ -131,6 +131,7 @@ const Bikes = {
   // ---------- local riders ----------
   update(dt) {
     for (const r of this.riders) {
+      if (r.ko > 0) { r.ko -= dt; continue; } // knocked off their bike
       r.bubbleT = Math.max(0, r.bubbleT - dt);
       if (!r.target || U.dist(r.x, r.y, r.target.x, r.target.y) < 2) r.target = this.pickTarget(r);
       const want = Math.atan2(r.target.y - r.y, r.target.x - r.x);

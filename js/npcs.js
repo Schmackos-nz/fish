@@ -110,6 +110,7 @@ const Npcs = {
   // ---------- simulation ----------
   update(dt) {
     for (const n of this.list) {
+      if (n.state === 'ko' || n.state === 'armed') continue; // handled by Wanted
       n.t -= dt;
       n.bubbleT = Math.max(0, n.bubbleT - dt);
       if (n.poseT !== undefined) { n.poseT -= dt; if (n.poseT <= 0) { n.pose = 'normal'; n.poseT = undefined; } }
@@ -251,6 +252,8 @@ const Npcs = {
   landFish(n, close) {
     const f = n.fish;
     n.fish = null; n.held = f; n.state = 'show'; n.t = 3;
+    n.creel = n.creel || [];
+    if (n.creel.length < 6) n.creel.push({ id: f.sp.id, kg: f.kg, cm: f.cm, value: Menus.value(f.sp, f.kg, f.prized) });
     n.rec.count++;
     if (f.kg > n.rec.best) { n.rec.best = f.kg; n.rec.sp = f.sp.id; }
     Game.npcRecords[n.name] = n.rec;
@@ -382,7 +385,7 @@ const Npcs = {
       n.shadow.position.set(n.x, Math.max(base, 0.01) + 0.015, n.y);
 
       // Rod: up and bent during a fight, laid back mid-cast, hidden while walking or posing.
-      const showRod = !walking && n.pose === 'normal' && n.state !== 'brawl';
+      const showRod = !walking && n.pose === 'normal' && !['brawl', 'ko', 'armed'].includes(n.state);
       n.rod.visible = n.line.visible = showRod;
       const hand = Models.handPos(n.rig);
       const fighting = n.state === 'fight';

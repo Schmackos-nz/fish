@@ -150,6 +150,7 @@ const Hud = {
     Bugs.draw(g);
     Tools.drawOverlay(this);
     Gun.drawScope(this);
+    Wanted.drawHud(this);
     if (this.bigMap) this.drawBigMap(W, H);
   },
 
@@ -188,6 +189,7 @@ const Hud = {
     const r = (keys, label, opt = {}) => rows.push({ keys, label, ...opt });
     const flash = Math.sin(Game.time * 14) > 0;
     const k = World.shopkeeper;
+    if (Wanted.level > 0) r(['★'.repeat(Wanted.level)], Wanted.hidden ? 'Hidden — stay put till it cools' : 'Wanted! Hide in a bush, or crouch in a forest', { hot: true, flash: Wanted.seen && flash });
     if (Wardens.anyChasing()) r(['Shift'], 'Warden on your tail — run! (Q to roll)', { hot: true, flash });
     else if (Permits.fishingIllegally()) r(['!'], 'No permit for this water — wardens patrol', { hot: true });
     if (Bugs.list.some((b) => Bugs.swattable(b))) r(['Click'], 'Swat the bug on you', { hot: true, flash: Bugs.list.some((b) => b.state === 'land') && flash });
@@ -314,6 +316,12 @@ const Hud = {
     g.beginPath(); g.arc(cx, cy, R, 0, 7); g.clip();
     g.imageSmoothingEnabled = false;
     g.drawImage(Art.minimap, Player.x - R / s, Player.y - R / s, R * 2 / s, R * 2 / s, cx - R, cy - R, R * 2, R * 2);
+    for (const u of Wanted.units) {
+      if (u.ko) continue;
+      const nx = cx + (u.x - Player.x) * s, ny = cy + (u.y - Player.y) * s;
+      g.fillStyle = u.army ? '#7A8A3A' : (Math.sin(Game.time * 12) > 0 ? '#E2584D' : '#3A6AD2');
+      g.beginPath(); g.arc(nx, ny, 3.5, 0, 7); g.fill();
+    }
     for (const wd of Wardens.list) {
       if (U.dist(wd.x, wd.y, Player.x, Player.y) > 48) continue;
       const nx = cx + (wd.x - Player.x) * s, ny = cy + (wd.y - Player.y) * s;

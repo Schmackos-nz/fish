@@ -145,6 +145,7 @@ function buildWorld(seed, savedPos) {
   Swimmers.init();
   Couples.init();
   Tim.init(); Tim.greeted = false;
+  Wanted.init();
   Weed.init();
   Travel.list = null;
   Floaters.init();
@@ -376,6 +377,7 @@ function frame(now) {
       Couples.update(dt);
       Tim.update(dt);
       Bikes.update(dt);
+      Wanted.update(dt);
     }
     Hud.update(dt);
     // Frame the action: drift the camera toward the lure or the hooked fish.
@@ -405,6 +407,7 @@ function frame(now) {
     Couples.render(dt);
     Tim.render();
     Bikes.render();
+    Wanted.render(dt);
     Scene3D.render(Game.time);
     Hud.draw();
     saveT += dt;
