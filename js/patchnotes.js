@@ -1,0 +1,84 @@
+// Patch notes, newest first. The first entry is the current build (shown on the title screen).
+'use strict';
+
+const PATCH_NOTES = [
+  { v: '1.0', name: 'Weekend Warriors', date: '29 Oct 2026', notes: [
+    ['new', 'Weekend contests: alternate fishing and hunting weekends. Enter with Tim, heaviest catch from Saturday dawn to Monday dawn wins cash and a trophy'],
+    ['new', 'Go-karts: the Go-Kart 90 and Racer Kart, sold by Revs alongside the dirt bikes'],
+    ['new', 'Number plates and rider permits for every ride. Fuelling a stolen ride sets off the pump camera, and wardens check plates on sight'],
+    ['new', 'Wind sock beside the minimap, showing which way and how hard it\'s blowing'],
+    ['new', 'Sleep in your rented cottage to skip to the next morning'],
+    ['changed', 'Wanted stars are now a big banner at the top of the screen'],
+    ['changed', 'Riders and drivers keep both hands on the bars or the wheel'],
+    ['changed', 'Sunbathers are fully au naturel (censored), and sunbathers and swimmers carry their gear home when they leave the water'],
+    ['changed', 'The clock now shows the day of the week'],
+  ] },
+  { v: '0.9', name: 'Into the Woods', date: '29 Oct 2026', notes: [
+    ['new', 'Axe (key 5): fell trees for firewood. They grow back after a week'],
+    ['new', 'Campfires: build one anywhere to cook, rest by and feed with logs. Rain puts them out faster'],
+    ['new', 'Mobile support: landscape fullscreen with a thumbstick, touch buttons and a phone-sized HUD'],
+    ['new', 'Add to Home Screen for a full-screen app on phones'],
+  ] },
+  { v: '0.8', name: 'Arms Race', date: '28 Oct 2026', notes: [
+    ['new', 'Pistol and pump shotgun at Hettie\'s; SMG and rocket launcher under Dusty\'s counter'],
+    ['new', 'Each gun has its own model and ammo. Press 2 again to cycle through the guns you own'],
+    ['fixed', 'Houses, shops and camps no longer generate in (or right on the edge of) water'],
+  ] },
+  { v: '0.7', name: 'Grand Trout Auto', date: '28 Oct 2026', notes: [
+    ['new', 'Wanted levels: police, then the army. Hide in bushes or crouch in the forest to lose them'],
+    ['new', 'Health, food and energy bars. Punch with empty hands'],
+    ['new', 'Gas station with pumps. Bikes need fuel, and the local bikers stop to gas up and take smoko'],
+    ['new', 'Steal parked dirt bikes, and walk into unlocked houses'],
+    ['changed', 'Renamed to Grand Trout Auto VI (Early Access)'],
+    ['changed', 'Your arm follows the fishing rod. Mozzies stay home when it rains'],
+  ] },
+  { v: '0.6', name: 'Braaap', date: '28 Oct 2026', notes: [
+    ['new', 'Dirt bikes to buy and ride, plus local trail riders'],
+    ['new', 'Original country-style theme tune on the main menu'],
+    ['changed', 'The whole world is redrawn as a flat, ink-outlined cartoon, with real 3D trees, people and animals'],
+    ['changed', 'A proper cartoon title screen'],
+    ['fixed', 'Bridges now always run land to land, some with hand rails'],
+    ['fixed', 'The droning "portal" sound near buildings (it was a bike engine)'],
+  ] },
+  { v: '0.5', name: 'Small Town Life', date: '28 Oct 2026', notes: [
+    ['new', 'Enterable shops with their keepers inside, laid out along a main street with door rings and signs'],
+    ['new', 'Rent a cottage, store your gear, cook your catch and keep fed'],
+    ['new', 'Quick travel, NPC homes, and anglers who brawl over stolen spots'],
+    ['new', 'Tim the guide, swimmers, fair-weather beachgoers and some… busy bushes'],
+    ['changed', 'The dodge roll is now a slide (crouch while running)'],
+    ['fixed', 'Squeeze past trees instead of getting stuck, and quieter mosquitoes'],
+  ] },
+  { v: '0.4', name: 'Law of the Lake', date: '28 Oct 2026', notes: [
+    ['new', 'Area fishing permits from Ranger Dale, patrolling wardens, size limits and jail'],
+    ['new', 'The reel is a real control: grab it and wind, with tension, drag and bail gauges'],
+    ['changed', 'The shotgun is now a scoped hunting rifle. Tools sit in your hands'],
+    ['changed', 'Polished HUD and title screen, with round cartoon characters'],
+  ] },
+  { v: '0.3', name: 'Unsporting Conduct', date: '28 Oct 2026', notes: [
+    ['new', 'A gun for "fishing", and biting bugs to swat'],
+    ['new', 'Sunbathers drifting about on lilos'],
+    ['new', 'Wading, wider footbridges, and deer and boar to hunt'],
+    ['new', 'Jump, crouch and an action bar for your tools'],
+  ] },
+  { v: '0.2', name: 'Tall Tales', date: '28 Oct 2026', notes: [
+    ['new', 'NPC anglers who really catch fish and tell you it was THIS big'],
+    ['new', 'Prized golden fish with a shareable catch photo'],
+    ['changed', 'Simpler mouse-first controls. No walking while your line is out'],
+  ] },
+  { v: '0.1', name: 'First Cast', date: '28 Oct 2026', notes: [
+    ['new', 'A big open valley of rivers, streams and lakes to explore in 2.5D'],
+    ['new', 'Hands-on fishing: cast, work the lure, set the hook and fight the fish'],
+  ] },
+];
+
+const PatchNotes = {
+  current() { return PATCH_NOTES[0]; },
+  html() {
+    const tag = { new: 'New', changed: 'Changed', fixed: 'Fixed' };
+    return PATCH_NOTES.map((p, i) => `
+      <article class="pn${i === 0 ? ' pn-cur' : ''}">
+        <header><span class="pn-v">v${p.v}</span><b>${p.name}</b>${i === 0 ? '<span class="pn-badge">Current</span>' : ''}<span class="pn-date">${p.date}</span></header>
+        <ul>${p.notes.map(([k, t]) => `<li><span class="pn-tag pn-${k}">${tag[k]}</span><span>${t}</span></li>`).join('')}</ul>
+      </article>`).join('');
+  },
+};

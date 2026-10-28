@@ -270,7 +270,7 @@ function openModal(id) {
 }
 function closeModals() {
   let any = false;
-  for (const id of ['help', 'settings']) { if (!$(id).classList.contains('hidden')) any = true; $(id).classList.add('hidden'); }
+  for (const id of ['help', 'settings', 'notes']) { if (!$(id).classList.contains('hidden')) any = true; $(id).classList.add('hidden'); }
   return any;
 }
 
@@ -283,13 +283,15 @@ function wireScreens() {
     $('newBtn').classList.add('danger');
   };
   $('helpBtn').onclick = () => openModal('help');
+  $('verBtn').querySelector('b').textContent = 'v' + PatchNotes.current().v;
+  $('verBtn').onclick = () => { $('notesBody').innerHTML = PatchNotes.html(); openModal('notes'); };
   $('settingsBtn').onclick = () => openModal('settings');
   $('pHelpBtn').onclick = () => openModal('help');
   $('pSettingsBtn').onclick = () => openModal('settings');
   $('resumeBtn').onclick = resume;
   $('quitBtn').onclick = () => { Game.save(); showTitle(); };
   document.querySelectorAll('[data-close]').forEach((b) => { b.onclick = () => $(b.dataset.close).classList.add('hidden'); });
-  for (const id of ['help', 'settings']) $(id).addEventListener('mousedown', (e) => { if (e.target.id === id) $(id).classList.add('hidden'); });
+  for (const id of ['help', 'settings', 'notes']) $(id).addEventListener('mousedown', (e) => { if (e.target.id === id) $(id).classList.add('hidden'); });
   $('setVolume').oninput = (e) => { Settings.volume = +e.target.value; Settings.apply(); Settings.save(); };
   $('setZoom').oninput = (e) => { Settings.zoom = +e.target.value; if (Game.mode !== 'title') Scene3D.camDist = Settings.zoom; Settings.save(); };
   $('setMusic').onclick = () => {
