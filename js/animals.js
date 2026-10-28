@@ -162,6 +162,7 @@ const Animals = {
       return true;
     }
     best.state = 'dead'; best.deadT = 45; best.speed = 0;
+    best.kg = best.type === 'boar' ? 45 + Math.random() * 75 : best.buck ? 65 + Math.random() * 55 : 35 + Math.random() * 35;
     const name = best.type === 'boar' ? 'wild boar' : best.buck ? 'stag' : 'deer';
     Hud.toast('Bagged a ' + name + '! Walk over to collect it.', '#8fd16a', 2.4);
     return true;
@@ -174,6 +175,7 @@ const Animals = {
   collect(an) {
     const val = an.type === 'boar' ? 35 + Math.round(Math.random() * 25) : 45 + Math.round(Math.random() * 35) + (an.buck ? 30 : 0);
     Game.money += val;
+    if (an.kg) Contest.onKill('You', an.kg, an.type === 'boar' ? 'Wild boar' : an.buck ? 'Stag' : 'Deer');
     const key = an.type === 'boar' ? 'boar' : 'deer';
     Game.stats[key] = (Game.stats[key] || 0) + 1;
     Sfx.coin();

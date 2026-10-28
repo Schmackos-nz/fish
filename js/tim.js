@@ -86,7 +86,7 @@ const Tim = {
       <div class="desc">"${next ? next.tip : 'You\'ve done the lot! The valley\'s yours, mate. Go chase Old Silverjaw.'}"</div>
       <h3>Your goals</h3>
       ${goals.map((g) => `<div class="row"><div>${g.done ? '<b style="color:var(--good)">✓</b>' : '<b style="color:var(--dim)">○</b>'} ${g.done ? '<span class="desc" style="text-decoration:line-through">' + g.text + '</span>' : '<b>' + g.text + '</b>'}</div></div>`).join('')}
-      <h3>Today's conditions</h3><div class="desc">${this.weatherTip()}</div>`);
+      <h3>Today's conditions</h3><div class="desc">${this.weatherTip()}</div>${Contest.timHtml()}`, (el) => { const b = el.querySelector('[data-enter]'); if (b) b.onclick = () => { Contest.enter(); this.open(); }; });
     this.say(next ? 'Here\'s what I\'d do next…' : 'Legend!', 2.5);
   },
 };

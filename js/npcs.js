@@ -256,6 +256,7 @@ const Npcs = {
     if (n.creel.length < 6) n.creel.push({ id: f.sp.id, kg: f.kg, cm: f.cm, value: Menus.value(f.sp, f.kg, f.prized) });
     n.rec.count++;
     if (f.kg > n.rec.best) { n.rec.best = f.kg; n.rec.sp = f.sp.id; }
+    Contest.onFish(n.name, f.kg, f.sp.name);
     Game.npcRecords[n.name] = n.rec;
     const dist = U.dist(n.x, n.y, Player.x, Player.y);
     if (close) {

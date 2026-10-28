@@ -100,12 +100,23 @@ const Life = {
   },
 
   sleep() {
-    const h = Game.env.hour;
-    const hours = h < 6 ? 6 - h : 30 - h;
-    this.passHours(hours, 0);
-    Game.energy = 100; Wanted.health = 100; Game.food = Math.max(0, Game.food - 10);
-    Hud.toast('You slept until 6:00. Fully rested.', UI.good, 2.4);
-    Game.save();
+    if (Wanted.level > 0) { Hud.toast('Can\'t sleep with the cops after you! Lose them first.', UI.bad, 2); return; }
+    if (this.sleeping) return;
+    this.sleeping = true;
+    const fade = document.getElementById('fade');
+    fade.textContent = 'Zzz…'; fade.classList.add('on');
+    setTimeout(() => {
+      const h = Game.env.hour;
+      const hours = h < 6 ? 6 - h : 30 - h;
+      this.passHours(hours, 0);
+      Game.energy = 100; Wanted.health = 100; Game.food = Math.max(0, Game.food - 10);
+      Game.save();
+      fade.textContent = WEEKDAYS[(Game.env.day - 1) % 7] + ' · Day ' + Game.env.day + ' · 6:00';
+      setTimeout(() => {
+        fade.classList.remove('on'); this.sleeping = false;
+        Hud.toast('Good morning! You slept through to 6:00 — fully rested.', UI.good, 2.6);
+      }, 1100);
+    }, 900);
   },
 
   cook(i, recipe) {
@@ -126,8 +137,11 @@ const Life = {
   // Furniture in someone else's house does different things.
   foreignHouse() { const r = Interior.active; return r && r.b.type === 'house' && !(Game.home && Game.home.id === r.b.id) ? r.b : null; },
   furnLabel(f) {
-    if (!this.foreignHouse()) return f.label;
+    if (!this.foreignHouse()) return this.ownLabel(f);
     return { bed: 'Their bed', stove: 'Cook on their stove', chest: 'Rummage through their chest' }[f.kind] || f.label;
+  },
+  ownLabel(f) {
+    return f.kind === 'bed' ? 'Sleep until morning' : f.label;
   },
 
   enterHouse(b) {

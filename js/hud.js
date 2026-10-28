@@ -148,6 +148,8 @@ const Hud = {
     if (Mobile.active) this.drawVitals(20, 20 + sh + 12 + 100);
     else this.drawControls(20, 20 + sh + 12);
     this.drawMinimap(W - 20 - 82, 20 + 82);
+    drawWindSock(this, W - 20 - 164 - 44, 52);
+    Contest.drawHud(this, W - 20 - 82, 222);
     // Bottom stack: tools, then lures (rod only), then the context panel.
     const barY = H - 20 - 64;
     Tools.drawBar(this, W / 2, barY);
@@ -167,7 +169,7 @@ const Hud = {
     const hh = Math.floor(e.hour), mm = Math.floor((e.hour % 1) * 60);
     this.icon(e.daylight > 0.3 ? 'sun' : 'moon', x + 26, y + 28);
     this.text(String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0'), x + 46, y + 34, UI.ink, 20, 700);
-    this.text('Day ' + e.day + ' · ' + TIME_NAMES[e.phase], x + w - 16, y + 27, UI.muted, 12, 'right', 500);
+    this.text(WEEKDAYS[(e.day - 1) % 7] + ' · Day ' + e.day + ' · ' + TIME_NAMES[e.phase], x + w - 16, y + 27, UI.muted, 12, 'right', 500);
     this.text(e.weather.name + ' · ' + Math.hypot(e.wind.x, e.wind.y).toFixed(1) + ' m/s wind', x + w - 16, y + 42, UI.dim, 11, 'right');
     this.g.fillStyle = UI.line; this.g.fillRect(x + 16, y + 54, w - 32, 1);
     this.icon('coin', x + 26, y + 76);

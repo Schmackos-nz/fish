@@ -117,6 +117,9 @@
   body.touch #title footer span:last-child { display: none; }
   body.touch canvas#hud { cursor: default; }
   body.touch #toast { top: 58px; }
+  #fade { position: fixed; inset: 0; z-index: 40; background: #000; opacity: 0; pointer-events: none; transition: opacity .8s;
+    display: grid; place-items: center; color: #F3EAD6; font: 400 34px "Lilita One", sans-serif; letter-spacing: 1px; }
+  #fade.on { opacity: 1; pointer-events: auto; }
   body.wanted #toast { top: 118px; }
   body.touch.wanted #toast { top: 150px; }
   /* Short landscape screens: shrink the title and menus to fit. */
@@ -219,6 +222,7 @@
 <canvas id="game"></canvas>
 <canvas id="hud"></canvas>
 <div id="toast"></div>
+<div id="fade"></div>
 
 <div id="title">
   <div class="title-wrap">
@@ -343,43 +347,44 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=52"></script>
-<script src="js/data.js?v=52"></script>
-<script src="js/audio.js?v=52"></script>
-<script src="js/music.js?v=52"></script>
-<script src="js/world.js?v=52"></script>
-<script src="js/scene-sprites.js?v=52"></script>
-<script src="js/toon.js?v=52"></script>
-<script src="js/scene.js?v=52"></script>
-<script src="js/folk.js?v=52"></script>
-<script src="js/models.js?v=52"></script>
-<script src="js/actors.js?v=52"></script>
-<script src="js/fish.js?v=52"></script>
-<script src="js/fishing.js?v=52"></script>
-<script src="js/fight.js?v=52"></script>
-<script src="js/player.js?v=52"></script>
-<script src="js/npcs.js?v=52"></script>
-<script src="js/gun.js?v=52"></script>
-<script src="js/arsenal.js?v=52"></script>
-<script src="js/camp.js?v=52"></script>
-<script src="js/bugs.js?v=52"></script>
-<script src="js/floaters.js?v=52"></script>
-<script src="js/animals.js?v=52"></script>
-<script src="js/wardens.js?v=52"></script>
-<script src="js/interiors.js?v=52"></script>
-<script src="js/life.js?v=52"></script>
-<script src="js/weed.js?v=52"></script>
-<script src="js/markers.js?v=52"></script>
-<script src="js/swimmers.js?v=52"></script>
-<script src="js/couples.js?v=52"></script>
-<script src="js/tim.js?v=52"></script>
-<script src="js/bikes.js?v=52"></script>
-<script src="js/wanted.js?v=52"></script>
-<script src="js/tools.js?v=52"></script>
-<script src="js/hud.js?v=52"></script>
-<script src="js/share.js?v=52"></script>
-<script src="js/menus.js?v=52"></script>
-<script src="js/mobile.js?v=52"></script>
-<script src="js/main.js?v=52"></script>
+<script src="js/util.js?v=53"></script>
+<script src="js/data.js?v=53"></script>
+<script src="js/audio.js?v=53"></script>
+<script src="js/music.js?v=53"></script>
+<script src="js/world.js?v=53"></script>
+<script src="js/scene-sprites.js?v=53"></script>
+<script src="js/toon.js?v=53"></script>
+<script src="js/scene.js?v=53"></script>
+<script src="js/folk.js?v=53"></script>
+<script src="js/models.js?v=53"></script>
+<script src="js/actors.js?v=53"></script>
+<script src="js/fish.js?v=53"></script>
+<script src="js/fishing.js?v=53"></script>
+<script src="js/fight.js?v=53"></script>
+<script src="js/player.js?v=53"></script>
+<script src="js/npcs.js?v=53"></script>
+<script src="js/gun.js?v=53"></script>
+<script src="js/arsenal.js?v=53"></script>
+<script src="js/camp.js?v=53"></script>
+<script src="js/contest.js?v=53"></script>
+<script src="js/bugs.js?v=53"></script>
+<script src="js/floaters.js?v=53"></script>
+<script src="js/animals.js?v=53"></script>
+<script src="js/wardens.js?v=53"></script>
+<script src="js/interiors.js?v=53"></script>
+<script src="js/life.js?v=53"></script>
+<script src="js/weed.js?v=53"></script>
+<script src="js/markers.js?v=53"></script>
+<script src="js/swimmers.js?v=53"></script>
+<script src="js/couples.js?v=53"></script>
+<script src="js/tim.js?v=53"></script>
+<script src="js/bikes.js?v=53"></script>
+<script src="js/wanted.js?v=53"></script>
+<script src="js/tools.js?v=53"></script>
+<script src="js/hud.js?v=53"></script>
+<script src="js/share.js?v=53"></script>
+<script src="js/menus.js?v=53"></script>
+<script src="js/mobile.js?v=53"></script>
+<script src="js/main.js?v=53"></script>
 </body>
 </html>

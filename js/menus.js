@@ -24,6 +24,7 @@ const Menus = {
     Game.journal[sp.id] = j;
     Game.stats.caught++;
     Npcs.onPlayerCatch(f);
+    Contest.onFish('You', f.kg, sp.name);
     const el = document.getElementById('catch');
     const full = Game.creel.length >= Game.creelMax;
     el.innerHTML = `
