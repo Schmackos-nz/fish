@@ -33,7 +33,7 @@ const Fight = {
     else if (this.mode === 'side') this.swim = away + (Math.random() < 0.5 ? 1 : -1) * (1.2 + Math.random() * 0.4);
     else if (this.mode === 'sulk') this.swim = away + (Math.random() - 0.5) * 2.5;
     else if (this.mode === 'tire') this.swim = away + Math.PI + (Math.random() - 0.5);
-    else if (this.mode === 'jump') { this.jumpWarn = 0.8; this.modeT = 2.2; Fishing.say('It\'s coming up — LET GO of the mouse!', '#f2c14e', 1.2); }
+    else if (this.mode === 'jump') { this.jumpWarn = 0.8; this.modeT = 2.2; Fishing.say('It\'s coming up — LET GO of the reel!', '#f2c14e', 1.2); }
   },
 
   effort() { return { run: 1, side: 0.85, sulk: 0.55, jump: 0.7, tire: 0.2 }[this.mode]; },
@@ -42,13 +42,10 @@ const Fight = {
     const f = this.fish, sp = f.sp, gear = Game.gear, l = Fishing.lure;
     this.time += dt;
     // ----- angler input -----
-    // The rod points where the mouse is: aim it away from the fish's run for side strain.
-    const toFish = Math.atan2(f.y - Player.y, f.x - Player.x);
-    const toMouse = Math.atan2(Input.mouse.wy - Player.y, Input.mouse.wx - Player.x);
-    const side = U.clamp(U.angDiff(toFish, toMouse) / 0.9, -1, 1);
+    // A/D lean the rod against the fish's run; cranking keeps the rod up, letting go of the reel drops it.
+    const side = (Input.keys.has('KeyD') || Input.keys.has('ArrowRight') ? 1 : 0) - (Input.keys.has('KeyA') || Input.keys.has('ArrowLeft') ? 1 : 0);
     this.rodSide = U.lerp(this.rodSide, side, Math.min(1, dt * 4));
-    // Holding the button = reeling with the rod up; letting go drops the rod (bow to a jump).
-    const lift = Input.mouse.down ? 0.85 : 0.1;
+    const lift = Input.reelGrab ? 0.85 : 0.1;
     this.rodLift = U.lerp(this.rodLift, lift, Math.min(1, dt * 6));
     if (Input.pressed('KeyQ') || Input.wheel > 0) this.setDrag(Game.drag - 0.25);
     if (Input.pressed('KeyE') || Input.wheel < 0) this.setDrag(Game.drag + 0.25);
@@ -87,6 +84,11 @@ const Fight = {
 
     // ----- line mechanics -----
     const lineIn = turns * gear.reel.gear * LINE_PER_TURN;
+    // Bail open mid-fight: the fish takes line freely until you crank it shut.
+    if (Fishing.bailOpen) {
+      if (lineIn > 0) { Fishing.bailOpen = false; Sfx.bail(); }
+      else Fishing.lineOut = Math.max(Fishing.lineOut, d + 0.05);
+    }
     const outward = Math.max(0, vx * ux + vy * uy);
     const taut = d >= Fishing.lineOut - 0.05;
     let T = 0;
@@ -141,7 +143,7 @@ const Fight = {
       if (this.slackT > 1.2 && Math.random() < dt * 0.6 * (1.25 - this.hookHold)) return this.thrown('Slack line — the hook fell out.');
     } else this.slackT = 0;
     if (f.airborne && f.airT < dt * 1.5 && this.rodLift > 0.45 && Math.random() < 0.55 * this.rodLift * (1.3 - this.hookHold)) {
-      return this.thrown('It threw the hook mid-jump! (Let go of the mouse when it jumps.)');
+      return this.thrown('It threw the hook mid-jump! (Let go of the reel when it jumps.)');
     }
 
     // Tiring: hard pressure, side strain and drag work all count.

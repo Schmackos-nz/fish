@@ -142,7 +142,7 @@ const Hud = {
     // Lures can only change with the line in, so the picker steps aside while you fish.
     if (Tools.current === 'rod' && Fishing.state === 'idle') { this.drawLureBar(W / 2, top - 50); top -= 62; } else this.slots = [];
     this.drawStatePanel(W / 2, top);
-    if (Tools.current === 'rod' || Fishing.state !== 'idle') this.drawReel(W - 20 - 84, H - 20 - 84);
+    if (Tools.current === 'rod' || Fishing.state !== 'idle') this.drawReel(W - 146, H - 176); else this.reel = null;
     Bugs.draw(g);
     Tools.drawOverlay(this);
     if (this.bigMap) this.drawBigMap(W, H);
@@ -202,21 +202,23 @@ const Hud = {
       case 'flying': r(['…'], 'Line out'); break;
       case 'line':
         if (F.engaged && F.engaged.state === 'strike') r(['Click'], 'Set the hook!', { hot: true, flash });
-        r(['Hold'], 'Reel · spin the mouse for speed', { held: Input.mouse.down });
+        r(['Reel'], 'Grab the handle, drag it round ↻', { held: Input.reelGrab, hot: !Input.reelGrab });
         r(['Right'], 'Twitch the lure', { held: Input.mouse.rdown });
+        r(['Bail'], 'Click the lever to let line run free');
         r(['Space'], 'Reel all the way in');
         break;
       case 'snagged':
-        if (F.snag && F.snag.where === 'floater') { r(['Hold'], 'Reel the sunbather in'); r(['Space'], 'Cut the line'); break; }
+        if (F.snag && F.snag.where === 'floater') { r(['Reel'], 'Crank the sunbather in'); r(['Space'], 'Cut the line'); break; }
         r(['Click'], 'Tug it free', { hot: true });
+        r(['Reel'], 'Crank hard to break it off');
         r(['Space'], 'Cut the line');
         break;
       case 'fight': {
         const jump = Fight.mode === 'jump' || (Fight.fish && Fight.fish.airborne);
-        if (jump) r(['Release'], 'It\'s jumping!', { hot: true, flash });
-        else r(['Hold'], 'Reel with the rod up', { held: Input.mouse.down });
-        r(['Mouse'], 'Aim the rod away from runs');
-        r(['Wheel'], 'Drag — ease off if it screams', { hot: Fight.tension > Game.gear.line.strength * 0.8, flash: Fight.tension > Game.gear.line.strength * 0.9 && flash });
+        if (jump) r(['Let go'], 'Release the reel — it\'s jumping!', { hot: true, flash });
+        else r(['Reel'], 'Crank the handle — rod comes up', { held: Input.reelGrab });
+        r(['A / D'], 'Lean the rod against its run', { held: Input.keys.has('KeyA') || Input.keys.has('KeyD') });
+        r(['Wheel'], 'Drag − / + (or the reel buttons)', { hot: Fight.tension > Game.gear.line.strength * 0.8, flash: Fight.tension > Game.gear.line.strength * 0.9 && flash });
         break;
       }
     }
@@ -269,6 +271,15 @@ const Hud = {
   click(x, y) {
     if (Bugs.swat(x, y)) return true;
     const hit = (s) => x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h;
+    if (this.reel) {
+      if (this.bailBtn && hit(this.bailBtn)) { Fishing.toggleBail(); return true; }
+      for (const b of this.dragBtns || []) if (hit(b)) { Fight.setDrag(Game.drag + b.d); return true; }
+      if (U.dist(x, y, this.reel.cx, this.reel.cy) < this.reel.r) {
+        // Grab the reel: any point on its face starts the turn from where you clicked.
+        if (CRANK_STATES.has(Fishing.state)) { Input.reelGrab = true; Input.reelAng = Math.atan2(y - this.reel.cy, x - this.reel.cx); Input.mouse.down = true; }
+        return true;
+      }
+    }
     for (const s of this.toolSlots) if (hit(s)) { Tools.select(s.id); return true; }
     for (const s of this.slots) if (hit(s)) { Fishing.selectLure(s.id); return true; }
     return false;
@@ -328,40 +339,111 @@ const Hud = {
     g.beginPath(); g.arc(x + Player.x * k, y + Player.y * k, 6, 0, 7); g.stroke(); g.fill();
   },
 
-  // The spinning reel: hold to crank, spin the mouse for speed.
+  // The reel: grab the handle and drag it round. Flanked by line tension (left) and drag (right).
   drawReel(cx, cy) {
-    const g = this.g, F = Fishing, spin = F.omega;
+    const g = this.g, F = Fishing, spin = F.omega, R = 96;
+    const active = CRANK_STATES.has(F.state);
+    this.reel = { cx, cy, r: R };
+    // Body
     g.save();
-    g.shadowColor = 'rgba(0,0,0,0.4)'; g.shadowBlur = 18; g.shadowOffsetY = 6;
-    g.fillStyle = UI.card; g.beginPath(); g.arc(cx, cy, 84, 0, 7); g.fill();
+    g.shadowColor = 'rgba(0,0,0,0.45)'; g.shadowBlur = 22; g.shadowOffsetY = 8;
+    g.fillStyle = UI.card; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();
     g.restore();
-    g.strokeStyle = UI.line; g.lineWidth = 1; g.beginPath(); g.arc(cx, cy, 84, 0, 7); g.stroke();
-    // Speed gauge ring
+    g.strokeStyle = Input.reelGrab ? UI.accent : UI.line; g.lineWidth = Input.reelGrab ? 2 : 1;
+    g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();
+    // Speed ring (green band = a spinner's sweet spot)
     const a0 = Math.PI * 0.75, span = Math.PI * 1.5;
-    g.lineCap = 'round'; g.lineWidth = 6;
-    g.strokeStyle = 'rgba(255,255,255,0.08)'; g.beginPath(); g.arc(cx, cy, 72, a0, a0 + span); g.stroke();
-    g.strokeStyle = 'rgba(125,195,131,0.35)'; g.beginPath(); g.arc(cx, cy, 72, a0 + span * 0.25, a0 + span * 0.7); g.stroke();
-    const sweet = spin >= 1.0 && spin <= 2.8;
-    g.strokeStyle = spin < 0.1 ? 'transparent' : sweet ? UI.good : spin > 2.8 ? UI.bad : UI.accent;
-    g.beginPath(); g.arc(cx, cy, 72, a0, a0 + span * U.clamp(spin / 4, 0, 1)); g.stroke();
+    g.lineCap = 'round'; g.lineWidth = 5;
+    g.strokeStyle = 'rgba(255,255,255,0.07)'; g.beginPath(); g.arc(cx, cy, R - 10, a0, a0 + span); g.stroke();
+    g.strokeStyle = 'rgba(125,195,131,0.3)'; g.beginPath(); g.arc(cx, cy, R - 10, a0 + span * 0.25, a0 + span * 0.7); g.stroke();
+    if (spin > 0.1) {
+      g.strokeStyle = spin >= 1 && spin <= 2.8 ? UI.good : spin > 2.8 ? UI.bad : UI.accent;
+      g.beginPath(); g.arc(cx, cy, R - 10, a0, a0 + span * U.clamp(spin / 4, 0, 1)); g.stroke();
+    }
     g.lineCap = 'butt';
-    // Spool
-    g.fillStyle = '#1d2629'; g.beginPath(); g.arc(cx, cy, 50, 0, 7); g.fill();
+    // Spool and rotor
+    g.fillStyle = '#1d2629'; g.beginPath(); g.arc(cx, cy, 52, 0, 7); g.fill();
     const fill = U.clamp(1 - F.lineOut / 60, 0.25, 1);
     g.fillStyle = Game.gear.line.id.startsWith('braid') ? '#58A85C' : '#D9D6CC';
-    g.beginPath(); g.arc(cx, cy, 24 + 22 * fill, 0, 7); g.fill();
-    g.fillStyle = '#3A4548'; g.beginPath(); g.arc(cx, cy, 20, 0, 7); g.fill();
-    // Bail
-    g.strokeStyle = F.bailOpen ? UI.bad : 'rgba(255,255,255,0.55)'; g.lineWidth = 3;
-    g.beginPath(); g.arc(cx, cy, 57, F.bailOpen ? -2.6 : -0.6, F.bailOpen ? -1.9 : 2.6); g.stroke();
-    // Handle
-    const a = F.handle, hx = cx + Math.cos(a) * 40, hy = cy + Math.sin(a) * 40;
-    g.strokeStyle = UI.accent; g.lineWidth = 5; g.lineCap = 'round';
+    g.beginPath(); g.arc(cx, cy, 24 + 24 * fill, 0, 7); g.fill();
+    g.strokeStyle = 'rgba(0,0,0,0.18)'; g.lineWidth = 1;
+    for (let r = 28; r < 24 + 24 * fill; r += 4) { g.beginPath(); g.arc(cx, cy, r, 0, 7); g.stroke(); }
+    g.fillStyle = '#3A4548'; g.beginPath(); g.arc(cx, cy, 18, 0, 7); g.fill();
+    // Bail arm drawn on the reel face
+    g.strokeStyle = F.bailOpen ? UI.bad : 'rgba(255,255,255,0.6)'; g.lineWidth = 4; g.lineCap = 'round';
+    g.beginPath(); g.arc(cx, cy, 58, F.bailOpen ? -2.7 : -0.5, F.bailOpen ? -1.8 : 2.6); g.stroke();
+    // Handle: arm + big knob you grab
+    const ha = Input.reelGrab ? Input.reelAng : F.handle;
+    const hx = cx + Math.cos(ha) * 66, hy = cy + Math.sin(ha) * 66;
+    g.strokeStyle = '#C9A86A'; g.lineWidth = 7;
     g.beginPath(); g.moveTo(cx, cy); g.lineTo(hx, hy); g.stroke(); g.lineCap = 'butt';
-    g.fillStyle = '#F2E3B8'; g.beginPath(); g.arc(hx, hy, 7, 0, 7); g.fill();
-    this.text(spin.toFixed(1), cx, cy + 66, UI.ink, 15, 'center', 700);
-    this.text('turns / s', cx, cy + 79, UI.dim, 9, 'center');
-    this.pill(F.lineOut.toFixed(1) + ' m out', cx, cy - 98, UI.muted, 10);
+    g.fillStyle = '#5A4A32'; g.beginPath(); g.arc(cx, cy, 8, 0, 7); g.fill();
+    g.save();
+    if (Input.reelGrab) { g.shadowColor = UI.accent; g.shadowBlur = 16; }
+    g.fillStyle = Input.reelGrab ? UI.accent : '#F2E3B8'; g.beginPath(); g.arc(hx, hy, 14, 0, 7); g.fill();
+    g.restore();
+    g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1.5; g.beginPath(); g.arc(hx, hy, 14, 0, 7); g.stroke();
+    // Prompt: a circling arrow until you grab it
+    if (active && !Input.reelGrab) {
+      const t = Game.time * 2;
+      g.strokeStyle = 'rgba(227,169,69,0.55)'; g.lineWidth = 2; g.setLineDash([6, 6]); g.lineDashOffset = -t * 8;
+      g.beginPath(); g.arc(cx, cy, 66, 0, 7); g.stroke(); g.setLineDash([]);
+      this.pill('Drag the handle ↻', cx, cy - R - 26, UI.accent, 11);
+    } else {
+      this.text(spin.toFixed(1) + ' turns/s', cx, cy + R - 20, UI.muted, 10, 'center', 600);
+    }
+    this.pill(F.lineOut.toFixed(1) + ' m out', cx, cy - R - 2, UI.muted, 10);
+
+    // ---- Line tension (left) ----
+    const tx = cx - R - 30, ty = cy - R + 6, th = R * 2 - 12, tw = 14, strength = Game.gear.line.strength;
+    let tension = 0, slack = false;
+    if (F.state === 'fight') tension = Fight.tension;
+    else if (F.state === 'snagged' && F.snag) tension = F.snag.tension;
+    else if (F.state === 'line' && F.lure && !F.bailOpen) {
+      const d = U.dist(F.tip.x, F.tip.y, F.lure.x, F.lure.y);
+      slack = F.lineOut - d > 0.6;
+      tension = slack ? 0 : 0.15 + F.lure.speed * 0.35;
+    }
+    const max = strength * 1.2;
+    const grd = g.createLinearGradient(0, ty + th, 0, ty);
+    grd.addColorStop(0, 'rgba(125,195,131,0.22)'); grd.addColorStop(0.6, 'rgba(227,169,69,0.25)'); grd.addColorStop(0.85, 'rgba(226,103,90,0.4)');
+    g.fillStyle = grd; g.beginPath(); g.roundRect(tx, ty, tw, th, 7); g.fill();
+    g.strokeStyle = UI.line; g.beginPath(); g.roundRect(tx + 0.5, ty + 0.5, tw - 1, th - 1, 7); g.stroke();
+    const tf = U.clamp(tension / max, 0, 1), danger = tension / strength;
+    if (tf > 0.01) {
+      g.fillStyle = danger > 0.85 ? UI.bad : danger > 0.6 ? UI.accent : UI.good;
+      g.beginPath(); g.roundRect(tx, ty + th * (1 - tf), tw, Math.max(th * tf, 8), 7); g.fill();
+    }
+    const markY = (v) => ty + th * (1 - U.clamp(v / max, 0, 1));
+    g.fillStyle = UI.water; g.fillRect(tx - 4, markY(Game.drag) - 1, tw + 8, 2);
+    g.fillStyle = UI.bad; g.fillRect(tx - 4, markY(strength) - 1, tw + 8, 2);
+    this.label('Tension', tx + tw / 2, ty + th + 18, 'center');
+    this.text(F.bailOpen ? 'free' : slack ? 'slack' : tension.toFixed(1) + 'kg', tx + tw / 2, ty - 8, F.bailOpen || slack ? UI.accent : danger > 0.85 ? UI.bad : UI.ink, 10, 'center', 600);
+
+    // ---- Drag (right) with -/+ ----
+    const dx = cx + R + 16, dw = 14, dy = cy - R + 30, dh = R * 2 - 60;
+    this.dragBtns = [{ x: dx - 4, y: cy - R + 2, w: 22, h: 22, d: 0.25 }, { x: dx - 4, y: cy + R - 24, w: 22, h: 22, d: -0.25 }];
+    g.fillStyle = 'rgba(255,255,255,0.07)'; g.beginPath(); g.roundRect(dx, dy, dw, dh, 7); g.fill();
+    const df = U.clamp(Game.drag / Game.gear.reel.maxDrag, 0, 1);
+    g.fillStyle = UI.water; g.beginPath(); g.roundRect(dx, dy + dh * (1 - df), dw, Math.max(dh * df, 8), 7); g.fill();
+    for (const b of this.dragBtns) {
+      g.fillStyle = 'rgba(255,255,255,0.08)'; g.beginPath(); g.roundRect(b.x, b.y, b.w, b.h, 6); g.fill();
+      g.strokeStyle = UI.line; g.beginPath(); g.roundRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1, 6); g.stroke();
+      this.text(b.d > 0 ? '+' : '−', b.x + b.w / 2, b.y + 16, UI.ink, 15, 'center', 700);
+    }
+    this.label('Drag', dx + dw / 2, ty + th + 18, 'center');
+    this.text(Game.drag.toFixed(2) + 'kg', dx + dw / 2, cy - R - 6, UI.water, 10, 'center', 600);
+
+    // ---- Bail lever ----
+    const bw = 116, bh = 26, bx = cx - bw / 2, by = cy + R + 16;
+    this.bailBtn = { x: bx, y: by, w: bw, h: bh };
+    g.fillStyle = F.bailOpen ? 'rgba(226,103,90,0.18)' : 'rgba(255,255,255,0.07)';
+    g.beginPath(); g.roundRect(bx, by, bw, bh, 13); g.fill();
+    g.strokeStyle = F.bailOpen ? 'rgba(226,103,90,0.6)' : UI.line; g.beginPath(); g.roundRect(bx + 0.5, by + 0.5, bw - 1, bh - 1, 13); g.stroke();
+    // little toggle knob
+    const kx = F.bailOpen ? bx + bw - 15 : bx + 15;
+    g.fillStyle = F.bailOpen ? UI.bad : UI.muted; g.beginPath(); g.arc(kx, by + bh / 2, 7, 0, 7); g.fill();
+    this.text(F.bailOpen ? 'Bail open' : 'Bail closed', F.bailOpen ? bx + 46 : bx + bw / 2 + 10, by + 17, F.bailOpen ? UI.bad : UI.ink, 11, 'center', 600);
   },
 
   // Context panel above the hotbars.
@@ -403,40 +485,27 @@ const Hud = {
   },
 
   drawFight(cx, bottom) {
-    const Fi = Fight, f = Fi.fish, line = Game.gear.line, g = this.g;
+    const Fi = Fight, f = Fi.fish, g = this.g;
     if (!f) return;
-    const w = 440, h = 132, x = cx - w / 2, y = bottom - h;
+    const w = 400, h = 104, x = cx - w / 2, y = bottom - h;
     const jumping = f.airborne || Fi.mode === 'jump';
     this.card(x, y, w, h, jumping ? { stroke: UI.accent } : {});
     this.text('Fish on', x + 18, y + 28, UI.ink, 17, 700);
-    const mode = f.airborne ? 'Jumping!' : { run: 'Running hard', side: 'Bolting sideways', sulk: 'Sulking deep', jump: 'Coming up…', tire: 'Tiring' }[Fi.mode];
+    const mode = f.airborne ? 'Jumping — let go!' : { run: 'Running hard', side: 'Bolting sideways', sulk: 'Sulking deep', jump: 'Coming up…', tire: 'Tiring' }[Fi.mode];
     g.font = '600 11px ' + UI.font;
     const mw = g.measureText(mode).width + 18;
     g.fillStyle = jumping ? UI.accent : UI.accentSoft; g.beginPath(); g.roundRect(x + 96, y + 14, mw, 20, 10); g.fill();
     this.text(mode, x + 96 + mw / 2, y + 28, jumping ? '#141a1c' : UI.accent, 11, 'center', 600);
-    this.text('Drag ' + Game.drag.toFixed(2) + ' kg', x + w - 18, y + 28, UI.water, 12, 'right', 600);
-    // Tension gauge: zones, live fill, drag and breaking-strain markers.
-    const gx = x + 18, gw = w - 36, gy = y + 52, max = line.strength * 1.2;
-    this.label('Line tension', gx, gy - 8);
-    this.text(Fi.tension.toFixed(1) + ' / ' + line.strength + ' kg', gx + gw, gy - 8, Fi.slip > 0.5 ? UI.bad : UI.muted, 11, 'right', 600);
-    const grd = g.createLinearGradient(gx, 0, gx + gw, 0);
-    grd.addColorStop(0, 'rgba(125,195,131,0.25)'); grd.addColorStop(0.6, 'rgba(227,169,69,0.25)'); grd.addColorStop(0.83, 'rgba(226,103,90,0.35)');
-    g.fillStyle = grd; g.beginPath(); g.roundRect(gx, gy, gw, 14, 7); g.fill();
-    const danger = Fi.tension / line.strength;
-    const tw = gw * U.clamp(Fi.tension / max, 0, 1);
-    if (tw > 1) { g.fillStyle = danger > 0.85 ? UI.bad : danger > 0.6 ? UI.accent : UI.good; g.beginPath(); g.roundRect(gx, gy, Math.max(tw, 14), 14, 7); g.fill(); }
-    const mark = (v, col) => { const mx = gx + gw * U.clamp(v / max, 0, 1); g.fillStyle = col; g.fillRect(mx - 1, gy - 4, 2, 22); };
-    mark(Game.drag, UI.water); mark(line.strength, UI.bad);
-    // Fish stamina
-    this.label('Fish strength', gx, gy + 36);
-    this.bar(gx + 104, gy + 28, gw - 104, 10, f.stamina, f.stamina < 0.32 ? UI.good : UI.accent);
+    if (Fi.slip > 0.5) this.text('Drag screaming!', x + w - 18, y + 28, UI.bad, 12, 'right', 700);
+    this.label('Fish strength', x + 18, y + 58);
+    this.bar(x + 122, y + 50, w - 140, 10, f.stamina, f.stamina < 0.32 ? UI.good : UI.accent);
     // Rod position
-    const rx = gx + 30, ry = y + h - 22;
-    g.strokeStyle = UI.line; g.lineWidth = 1; g.beginPath(); g.roundRect(rx - 30, ry - 14, 60, 28, 6); g.stroke();
+    const rx = x + 48, ry = y + h - 22;
+    g.strokeStyle = UI.line; g.lineWidth = 1; g.beginPath(); g.roundRect(rx - 30, ry - 12, 60, 24, 6); g.stroke();
     g.fillStyle = Fi.rodLift < 0.25 ? UI.accent : UI.ink;
-    g.beginPath(); g.arc(rx + Fi.rodSide * 24, ry + 10 - Fi.rodLift * 20, 4.5, 0, 7); g.fill();
-    if (Fi.slackT > 0.6) this.text('Slack line — reel!', gx + 76, ry + 5, UI.bad, 13, 'left', 700);
-    else this.text('Rod position · hold to raise, release to drop', gx + 76, ry + 5, UI.dim, 11);
+    g.beginPath(); g.arc(rx + Fi.rodSide * 24, ry + 8 - Fi.rodLift * 16, 4.5, 0, 7); g.fill();
+    if (Fi.slackT > 0.6) this.text('Slack line — crank!', x + 96, ry + 5, UI.bad, 13, 'left', 700);
+    else this.text('Rod · A/D lean · crank lifts, let go drops', x + 96, ry + 5, UI.dim, 11);
   },
 
   drawWorldLabels() {

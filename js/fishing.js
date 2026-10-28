@@ -34,6 +34,14 @@ const Fishing = {
     return Game.gear.rod.cast * dmul * (0.12 + 0.88 * p);
   },
 
+  // The bail lever: open lets line run free, the first crank snaps it shut.
+  toggleBail() {
+    if (this.state !== 'line' && this.state !== 'fight') { Hud.toast('The bail flips by itself when you cast.', UI.muted, 1.4); return; }
+    this.bailOpen = !this.bailOpen;
+    Sfx.bail();
+    Hud.toast(this.bailOpen ? 'Bail open — line runs free. Crank to close it.' : 'Bail closed.', UI.muted, 1.6);
+  },
+
   canCastWith(id) { return (Game.lures[id] || 0) > 0; },
 
   selectLure(id) {
@@ -132,6 +140,7 @@ const Fishing = {
       Sfx.splash(heavy); Hud.ripple(l.x, l.y, heavy);
       Fish.spookNear(l.x, l.y, 0.6 + heavy * 0.9);
       if (L.id === 'worm') this.say('Now wait… click when the bobber goes UNDER.', '#f3ead6', 2);
+      else if (!Hud.reelTold) { Hud.reelTold = true; this.say('Grab the reel handle (bottom right) and drag it round clockwise to reel in', UI.accent, 4); }
     } else {
       l.onLand = true;
       const o = World.objAt(l.x, l.y);
@@ -167,11 +176,12 @@ const Fishing = {
     const l = this.lure, L = LURE_BY_ID[l.id];
     const px = l.x, py = l.y;
     this.updateDrift(dt);
+    if (this.bailOpen && lineIn > 0) { this.bailOpen = false; Sfx.bail(); lineIn = 0; }
 
     // Click when it strikes. Reeling straight through the strike sets the hook too.
     const striking = this.engaged && this.engaged.state === 'strike';
     if (striking && (Input.mousePressed || Input.pressed('Space'))) { this.hookset(1); if (this.state !== 'line') return; }
-    else if (striking && Input.mouse.down && Game.time - this.strikeAt > 0.3) { this.hookset(0.85); if (this.state !== 'line') return; }
+    else if (striking && Input.reelGrab && this.omega > 0.4 && Game.time - this.strikeAt > 0.3) { this.hookset(0.85); if (this.state !== 'line') return; }
     else if (Input.mousePressed && Game.time - this.nibbleAt < 0.6) this.strikeEarly();
     else if (Input.pressed('Space')) { this.reelInFast(); return; }
 

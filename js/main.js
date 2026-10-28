@@ -6,7 +6,7 @@ const CRANK_STATES = new Set(['line', 'fight', 'snagged']);
 
 const Input = {
   keys: new Set(), down: new Set(), mouse: { sx: 0, sy: 0, wx: 0, wy: 0, down: false, rdown: false },
-  mousePressed: false, rPressed: false, wheel: 0, crank: 0, crankAcc: 0, lastHeading: null, segX: 0, segY: 0,
+  mousePressed: false, rPressed: false, wheel: 0, crank: 0, crankAcc: 0, reelGrab: false, reelAng: 0,
   pressed(code) { return this.down.has(code); },
   endFrame() { this.down.clear(); this.mousePressed = false; this.rPressed = false; this.wheel = 0; },
 
@@ -17,29 +17,26 @@ const Input = {
       this.keys.add(e.code);
     });
     addEventListener('keyup', (e) => this.keys.delete(e.code));
-    addEventListener('blur', () => { this.keys.clear(); this.mouse.down = false; });
+    addEventListener('blur', () => { this.keys.clear(); this.mouse.down = false; this.reelGrab = false; });
     target.addEventListener('contextmenu', (e) => e.preventDefault());
     target.addEventListener('mousedown', (e) => {
       if (e.button === 0 && Hud.click(e.clientX, e.clientY)) return; // HUD buttons eat the click
-      if (e.button === 0) { this.mouse.down = true; this.mousePressed = true; this.lastHeading = null; this.segX = this.segY = 0; }
+      if (e.button === 0) { this.mouse.down = true; this.mousePressed = true; }
       if (e.button === 2) { this.mouse.rdown = true; this.rPressed = true; }
     });
     addEventListener('mouseup', (e) => {
-      if (e.button === 0) { this.mouse.down = false; this.lastHeading = null; }
+      if (e.button === 0) { this.mouse.down = false; this.reelGrab = false; }
       if (e.button === 2) this.mouse.rdown = false;
     });
     addEventListener('mousemove', (e) => {
       this.mouse.sx = e.clientX; this.mouse.sy = e.clientY;
-      if (!this.mouse.down) return;
-      // Circling the mouse turns the reel: track how the movement heading rotates.
-      this.segX += e.movementX; this.segY += e.movementY;
-      if (Math.hypot(this.segX, this.segY) < 7) return;
-      const h = Math.atan2(this.segY, this.segX);
-      if (this.lastHeading !== null) {
-        const d = U.angDiff(this.lastHeading, h);
-        if (Math.abs(d) < 1.3) this.crankAcc += d;
-      }
-      this.lastHeading = h; this.segX = this.segY = 0;
+      // Dragging the grabbed handle round the reel's centre turns it, one-to-one.
+      if (!this.reelGrab || !Hud.reel) return;
+      const dx = e.clientX - Hud.reel.cx, dy = e.clientY - Hud.reel.cy;
+      if (Math.hypot(dx, dy) < 14) return; // too close to the axle to read an angle
+      const a = Math.atan2(dy, dx), d = U.angDiff(this.reelAng, a);
+      if (Math.abs(d) < 1.5) this.crankAcc += d;
+      this.reelAng = a;
     });
     target.addEventListener('wheel', (e) => { this.wheel += Math.sign(e.deltaY); e.preventDefault(); }, { passive: false });
   },
@@ -312,8 +309,8 @@ function frame(now) {
   } else {
     const w = Scene3D.screenToWorld(Input.mouse.sx, Input.mouse.sy);
     Input.mouse.wx = w.x; Input.mouse.wy = w.y;
-    // Holding the left button turns the reel steadily; spinning the mouse while holding reels faster.
-    const crank = Input.mouse.down ? Math.PI * 2 * 1.5 * dt + Math.max(0, Input.crankAcc) * 0.7 : 0;
+    // Only the handle turns the reel; the anti-reverse ignores counter-clockwise turns.
+    const crank = Input.reelGrab ? Math.max(0, Input.crankAcc) : 0;
     Input.crank = CRANK_STATES.has(Fishing.state) && !Menus.open ? crank : 0;
     Input.crankAcc = 0;
     handleGlobalKeys();
@@ -337,6 +334,7 @@ function frame(now) {
     const tgt = Fight.fish || Fishing.lure;
     if (tgt && Fishing.state !== 'flying') { fx = U.lerp(Player.x, tgt.x, 0.38); fy = U.lerp(Player.y, tgt.y, 0.38); }
     if (Tools.looking) { fx = Tools.look.x; fy = Tools.look.y; }
+    else if (Fishing.state !== 'idle') fy += 3; // lift the angler above the fishing panels
     Scene3D.updateCamera(dt, { x: fx, y: fy });
     Scene3D.updateEnv(Game.env, dt);
     Actors.update(dt, Game.env);
