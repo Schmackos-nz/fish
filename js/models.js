@@ -122,6 +122,7 @@ const Models = {
 
   // s: { moving, phase, pose: normal|grip|brag|hold|ride|slide, crouch, t }
   pose(rig, s) {
+    rig.armL.scale.y = rig.armR.scale.y = 1;
     const sw = s.moving ? Math.sin(s.phase * 9) * 0.65 : 0;
     rig.legL.rotation.set(0, 0, sw); rig.legR.rotation.set(0, 0, -sw);
     rig.armL.rotation.set(0, 0, -sw * 0.8); rig.armR.rotation.set(0, 0, sw * 0.8);
@@ -137,6 +138,10 @@ const Models = {
       rig.legL.rotation.set(0.25, 0, 1.35); rig.legR.rotation.set(-0.25, 0, 1.35);
       rig.armR.rotation.set(-0.35, 0, 1.15); rig.armL.rotation.set(0.35, 0, 1.15);
       rig.upper.rotation.z = -0.3; rig.yaw.position.y = 0;
+    } else if (p === 'kart') {
+      // Sat low with legs out in front.
+      rig.legL.rotation.set(0.12, 0, 1.5); rig.legR.rotation.set(-0.12, 0, 1.5);
+      rig.upper.rotation.z = 0.12; rig.yaw.position.y = 0;
     } else if (p === 'slide') {
       rig.legL.rotation.set(0, 0, 1.1); rig.legR.rotation.set(0, 0, 0.9);
       rig.upper.rotation.z = 0.45; rig.armL.rotation.set(1.2, 0, 0); rig.armR.rotation.set(-1.2, 0, 0);
@@ -154,6 +159,22 @@ const Models = {
     rig.armR.parent.getWorldQuaternion(q).invert();
     dir.applyQuaternion(q);
     rig.armR.quaternion.setFromUnitVectors(down, dir);
+  },
+
+  // Put an arm's hand on a world point: point the arm at it and stretch (cartoonishly) to reach.
+  reach(rig, arm, target) {
+    const v = this._v || (this._v = new THREE.Vector3()), q = this._q || (this._q = new THREE.Quaternion()), h = this._h || (this._h = new THREE.Vector3());
+    const down = this._down || (this._down = new THREE.Vector3(0, -1, 0));
+    arm.scale.y = 1; arm.quaternion.identity();
+    rig.root.updateMatrixWorld(true);
+    arm.getWorldPosition(v);
+    arm.children[arm.children.length - 1].getWorldPosition(h); // the hand marker
+    const len = v.distanceTo(h) || 0.3, d = v.distanceTo(target);
+    const dir = target.clone().sub(v).normalize();
+    arm.parent.getWorldQuaternion(q).invert();
+    dir.applyQuaternion(q);
+    arm.quaternion.setFromUnitVectors(down, dir);
+    arm.scale.y = U.clamp(d / len, 0.6, 1.6);
   },
 
   // A fishing rod as a real tapered-looking tube along a curve (rebuilt each frame; it's tiny).

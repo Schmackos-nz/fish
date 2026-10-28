@@ -5,18 +5,69 @@ const BIKES = [
   { id: 'trail', name: 'Trail 125', price: 300, top: 11, accel: 9, color: 0xD23A3A, desc: 'Light and forgiving. Perfect first bike.' },
   { id: 'enduro', name: 'Enduro 250', price: 650, top: 14, accel: 12, color: 0x3A8AD2, desc: 'Torquey all-rounder for the backcountry.' },
   { id: 'moto', name: 'Moto 450', price: 1200, top: 17, accel: 15, color: 0xF2C14E, desc: 'Absolutely unnecessary. Absolutely brilliant.' },
+  { id: 'kart', name: 'Go-Kart 90', kind: 'kart', price: 420, top: 10, accel: 11, color: 0x3AB06A, desc: 'Low, loud and stupidly fun. Hates deep puddles.' },
+  { id: 'racer', name: 'Racer Kart', kind: 'kart', price: 950, top: 13.5, accel: 14, color: 0xE2584D, desc: 'Sticks to the trails like it owes them money.' },
 ];
+// Where the rider sits and where their hands go, in the vehicle's frame (+x forward).
+const SEATING = {
+  bike: { seatX: -0.18, seatY: 0.52, grip: { x: 0.34, y: 1.02, z: 0.27 }, wade: 0.45, jump: 1.3, pose: 'ride' },
+  kart: { seatX: -0.22, seatY: 0.06, grip: { x: 0.2, y: 0.56, z: 0.13 }, wade: 0.22, jump: 0.6, pose: 'kart' },
+};
+const RIDER_NAMES = ['Dazza', 'Shazza', 'Kev', 'Bazza'];
+const newPlate = () => String.fromCharCode(65 + ((Math.random() * 26) | 0), 65 + ((Math.random() * 26) | 0)) + '-' + (1000 + ((Math.random() * 9000) | 0));
 const BIKE_BY_ID = Object.fromEntries(BIKES.map((b) => [b.id, b]));
+const seatOf = (id) => SEATING[(BIKE_BY_ID[id] || BIKES[0]).kind || 'bike'];
 const BIKER_PALS = [
   { hat: '#E2584D', hatStyle: 'helmet', visor: '#222', shirt: '#2A2A2E', vest: '#E2584D', pants: '#3A3A4A', skin: '#E2B08A', mitt: '#2A2A2E' },
   { hat: '#3A8AD2', hatStyle: 'helmet', visor: '#222', shirt: '#F4F0E6', vest: '#3A8AD2', pants: '#2A2A3A', skin: '#C08A60', mitt: '#2A2A2E' },
   { hat: '#7DC383', hatStyle: 'helmet', visor: '#222', shirt: '#2A3A2A', vest: '#7DC383', pants: '#3A3A3A', skin: '#F0C8A0', mitt: '#2A2A2E' },
+  { hat: '#F2C14E', hatStyle: 'helmet', visor: '#222', shirt: '#E2584D', vest: '#F2C14E', pants: '#2A2A3A', skin: '#D9A07A', mitt: '#2A2A2E' },
 ];
 const REVS_PAL = { hat: '#2A2A2E', hatStyle: 'cap', shirt: '#2A2A2E', vest: '#6A4A2A', pants: '#2A3A5A', skin: '#D9A07A', beard: '#3A2A1A', hair: '#3A2A1A' };
 const BIKER_SAY = ['BRAAAP!', 'Wheelie time!', 'Outta the way!', 'Yeeehaw!'];
 
 const Bikes = {
   group: null, riders: [], mine: null, riding: false, vel: { x: 0, y: 0 }, warnedFuel: false, crashT: 0,
+
+  // The right model for a vehicle id.
+  modelFor(id) { const v = BIKE_BY_ID[id]; return v.kind === 'kart' ? this.kart(v.color) : this.model(v.color); },
+
+  // A go-kart pointing along +x: tube frame, fat tyres, bucket seat, wheel on a column.
+  kart(color) {
+    const g = new THREE.Group();
+    const black = new THREE.MeshLambertMaterial({ color: 0x1A1A1C }), paint = new THREE.MeshLambertMaterial({ color }), steel = new THREE.MeshLambertMaterial({ color: 0x8A9096 });
+    for (const [x, z, r] of [[0.48, 0.42, 0.15], [0.48, -0.42, 0.15], [-0.45, 0.45, 0.18], [-0.45, -0.45, 0.18]]) {
+      const t = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 0.18, 14), black); t.rotation.x = Math.PI / 2; t.position.set(x, r, z); g.add(t);
+      const h = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.45, r * 0.45, 0.19, 8), steel); h.rotation.x = Math.PI / 2; h.position.set(x, r, z); g.add(h);
+    }
+    const tray = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.06, 0.62), steel); tray.position.y = 0.14; g.add(tray);
+    const nose = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.14, 0.66), paint); nose.position.set(0.62, 0.18, 0); nose.rotation.z = -0.2; g.add(nose);
+    for (const z of [-0.36, 0.36]) { const pod = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.12, 0.12), paint); pod.position.set(0, 0.2, z); g.add(pod); }
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.08, 0.36), black); seat.position.set(-0.22, 0.2, 0); g.add(seat);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.36, 0.36), black); back.position.set(-0.4, 0.36, 0); back.rotation.z = 0.25; g.add(back);
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.42, 6), steel); col.position.set(0.3, 0.36, 0); col.rotation.z = 0.75; g.add(col);
+    const wheel = new THREE.Mesh(new THREE.TorusGeometry(0.13, 0.025, 6, 16), black); wheel.position.set(0.2, 0.54, 0); wheel.rotation.set(0, Math.PI / 2, 0); wheel.rotateX(-0.6); g.add(wheel);
+    const engine = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.2, 0.2), steel); engine.position.set(-0.55, 0.26, -0.18); g.add(engine);
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.12, 0.22), new THREE.MeshLambertMaterial({ color: 0xF4F0E6 })); plate.position.set(-0.62, 0.3, 0.12); g.add(plate);
+    Toon.apply(g);
+    return g;
+  },
+
+  // World point of a rider's left (-1) or right (+1) hand on the bars/wheel.
+  gripWorld(id, x, y, ang, h, side, out = new THREE.Vector3()) {
+    const G = seatOf(id).grip, c = Math.cos(ang), s = Math.sin(ang), lz = G.z * side;
+    return out.set(x + G.x * c - lz * s, h + G.y, y + G.x * s + lz * c);
+  },
+  // Both hands onto the controls.
+  holdBars(rig, id, x, y, ang, h) {
+    const v = this._gv || (this._gv = new THREE.Vector3());
+    Models.reach(rig, rig.armL, this.gripWorld(id, x, y, ang, h, -1, v));
+    Models.reach(rig, rig.armR, this.gripWorld(id, x, y, ang, h, 1, v));
+  },
+
+  // Every vehicle has a plate registered to whoever bought it. Riding needs a permit for that plate.
+  ownsIt() { return !!Game.bike && Game.bike.owner === 'you'; },
+  permitted() { return !!Game.bike && (Game.vpermits || []).includes(Game.bike.plate); },
 
   // A dirt bike model pointing along +x.
   model(color) {
@@ -33,7 +84,8 @@ const Bikes = {
     const tank = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.22, 0.28), paint); tank.position.set(0.12, 0.74, 0); g.add(tank);
     const seat = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.09, 0.24), black); seat.position.set(-0.28, 0.8, 0); g.add(seat);
     const fork = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.72, 0.06), steel); fork.position.set(0.5, 0.64, 0); fork.rotation.z = 0.32; g.add(fork);
-    const bars = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.62, 6), black); bars.rotation.x = Math.PI / 2; bars.position.set(0.4, 1.0, 0); g.add(bars);
+    const bars = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.62, 6), black); bars.rotation.x = Math.PI / 2; bars.position.set(0.36, 1.0, 0); g.add(bars);
+    for (const z of [-0.27, 0.27]) { const gr = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 6), black); gr.rotation.x = Math.PI / 2; gr.position.set(0.36, 1.0, z); g.add(gr); }
     const plate = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.2, 0.2), new THREE.MeshLambertMaterial({ color: 0xF4F0E6 })); plate.position.set(0.58, 0.86, 0); g.add(plate);
     const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.55, 8), steel); pipe.rotation.z = Math.PI / 2 - 0.25; pipe.position.set(-0.35, 0.5, 0.14); g.add(pipe);
     Toon.apply(g);
@@ -52,19 +104,23 @@ const Bikes = {
     this.riders = BIKER_PALS.map((pal, k) => {
       const i = paths.length ? paths[(Math.random() * paths.length) | 0] : World.idx(World.town.x, World.town.y + 10);
       const r = { state: 'ride', fuel: 40 + Math.random() * 60, px: 0, py: 0, walkT: 0, x: i % World.W + 0.5, y: ((i / World.W) | 0) + 0.5, ang: Math.random() * 6.28, speed: 8 + Math.random() * 3, target: null, wheelie: 0, bubbleT: 0, bubble: null, pal };
-      r.bikeId = BIKES[k % BIKES.length].id;
-      r.bike = this.model(BIKE_BY_ID[r.bikeId].color);
+      r.bikeId = ['trail', 'enduro', 'moto', 'kart'][k % 4];
+      r.name = RIDER_NAMES[k % RIDER_NAMES.length]; r.plate = newPlate(); r.owner = r.name;
+      r.bike = this.modelFor(r.bikeId);
       r.mesh = Models.person(pal);
       this.group.add(r.bike, r.mesh);
       return r;
     });
+    // Older saves: give your vehicle a plate and its permit.
+    if (Game.bike && !Game.bike.plate) { Game.bike.plate = newPlate(); Game.bike.owner = 'you'; (Game.vpermits = Game.vpermits || []).push(Game.bike.plate); }
     this.syncMine();
+    this.lawT = 0;
   },
 
   // (Re)build the mesh for the bike you own.
   syncMine() {
     if (this.mine) this.group.remove(this.mine);
-    this.mine = Game.bike ? this.model(BIKE_BY_ID[Game.bike.id].color) : null;
+    this.mine = Game.bike ? this.modelFor(Game.bike.id) : null;
     if (this.mine) this.group.add(this.mine);
   },
 
@@ -77,6 +133,12 @@ const Bikes = {
     if (afford <= 0) { Hud.toast('No money for fuel.', UI.bad, 1.4); return; }
     Game.money -= afford; Game.fuel = Math.min(100, Game.fuel + afford / 0.2);
     Sfx.burst(1.2, 900, 0.15, 'lowpass'); Sfx.coin();
+    // The pump camera reads the plate. A vehicle that isn't registered to you gets reported.
+    if (!this.ownsIt()) {
+      Wanted.crime(2);
+      Hud.toast('BEEP. Plate ' + Game.bike.plate + ' is registered to ' + Game.bike.owner + ' — reported STOLEN. Police are on the way!', UI.bad, 3.4);
+      Game.save(); return;
+    }
     Hud.toast('Filled up — ' + U.fmtMoney(afford) + (afford < cost ? ' (all you had)' : ''), UI.good, 1.8);
     Game.save();
   },
@@ -88,22 +150,22 @@ const Bikes = {
   // Nick a parked bike. The owner takes yours (if you had one) or chases you on foot.
   steal(r) {
     const old = Game.bike ? { ...Game.bike } : null;
-    Game.bike = { id: r.bikeId, x: r.x, y: r.y, ang: r.ang };
+    Game.bike = { id: r.bikeId, x: r.x, y: r.y, ang: r.ang, plate: r.plate, owner: r.owner };
     Game.fuel = Math.max(10, Math.min(100, r.fuel));
     this.syncMine();
     this.group.remove(r.bike);
     r.state = 'stranded'; r.stateT = old ? 60 : 45; r.chaseT = 10; r.foot = null;
-    if (old) { r.bikeId = old.id; r.bike = this.model(BIKE_BY_ID[old.id].color); this.group.add(r.bike); r.x = old.x; r.y = old.y; r.ang = old.ang || 0; r.noBike = false; }
+    if (old) { r.bikeId = old.id; r.plate = old.plate; r.owner = old.owner; r.bike = this.modelFor(old.id); this.group.add(r.bike); r.x = old.x; r.y = old.y; r.ang = old.ang || 0; r.noBike = false; }
     else { r.noBike = true; }
     r.bubble = old ? 'OI! THAT\'S MY BIKE! …Fine, I\'ll take YOURS!' : 'OI! THAT\'S MY BIKE!'; r.bubbleT = 3;
     Wanted.crime(1);
-    Hud.toast('You stole a ' + BIKE_BY_ID[Game.bike.id].name + '! The owner saw everything.', UI.bad, 2.6);
+    Hud.toast('You stole ' + r.name + '\'s ' + BIKE_BY_ID[Game.bike.id].name + ' (plate ' + r.plate + '). No permit for it — avoid the law, and don\'t fill it up!', UI.bad, 3.2);
     this.mount();
     Game.save();
   },
 
 
-  blocked(x, y) { return World.blocked(x, y) || World.depthAt(x, y) > 0.45; },
+  blocked(x, y, id) { return World.blocked(x, y) || World.depthAt(x, y) > (id ? seatOf(id).wade : 0.45); },
 
   // ---------- your bike ----------
   near() { return Game.bike && !this.riding && !Interior.active && U.dist(Player.x, Player.y, Game.bike.x, Game.bike.y) < 2; },
@@ -114,7 +176,7 @@ const Bikes = {
     this.prevTool = Tools.current; Tools.current = 'hands'; Gun.out = false;
     Player.place(Game.bike.x, Game.bike.y); Player.crouch = false;
     Sfx.tone(90, 0.4, 0.3, 'sawtooth', 140);
-    Hud.toast('Vroom. WASD to ride, Space to jump, E to get off.', UI.ink, 2.4);
+    Hud.toast(this.permitted() ? 'Vroom. WASD to ride, Space to jump, E to get off.' : 'No permit for plate ' + Game.bike.plate + '! Keep away from wardens and police.', this.permitted() ? UI.ink : UI.bad, 2.4);
   },
 
   dismount() {
@@ -142,21 +204,32 @@ const Bikes = {
     const speed = Math.hypot(this.vel.x, this.vel.y);
     Game.fuel = Math.max(0, Game.fuel - speed * dt * 0.02);
     const nx = Player.x + this.vel.x * dt, ny = Player.y + this.vel.y * dt;
-    if (!this.blocked(nx, Player.y)) Player.x = nx; else this.crash(speed);
-    if (!this.blocked(Player.x, ny)) Player.y = ny; else this.crash(speed);
+    if (!this.blocked(nx, Player.y, b.id)) Player.x = nx; else this.crash(speed);
+    if (!this.blocked(Player.x, ny, b.id)) Player.y = ny; else this.crash(speed);
     if (speed > 0.3) Player.face = Math.atan2(this.vel.y, this.vel.x);
     Player.moving = speed > 0.3; Player.running = false; Player.walkT += dt * 0.2;
     Player.wading = World.isWater(Player.x, Player.y) && !Player.airborne;
     if (Player.wading && speed > 1 && Math.random() < dt * 6) Hud.ripple(Player.x, Player.y, 0.7);
     // Jumps go further on a bike.
-    if (Input.pressed('Space') && !Player.airborne) { Player.jumpT = JUMP_TIME * 1.3; Sfx.whoosh(0.3); }
+    const J = seatOf(b.id).jump;
+    if (Input.pressed('Space') && !Player.airborne) { Player.jumpT = JUMP_TIME * J; Sfx.whoosh(0.3); }
     if (Player.jumpT > 0) {
       Player.jumpT = Math.max(0, Player.jumpT - dt);
-      Player.z = Math.sin((1 - Player.jumpT / (JUMP_TIME * 1.3)) * Math.PI) * 1.0;
+      Player.z = Math.sin((1 - Player.jumpT / (JUMP_TIME * J)) * Math.PI) * J * 0.77;
       if (Player.jumpT === 0) { Player.z = 0; Sfx.thunk(); }
     }
     Game.bike.x = Player.x; Game.bike.y = Player.y;
     this.crashT = Math.max(0, this.crashT - dt);
+    // Wardens and police check plates: riding without a permit is an offence.
+    this.lawT = Math.max(0, (this.lawT || 0) - dt);
+    if (!this.permitted() && this.lawT <= 0) {
+      const eyes = [...Wardens.list, ...Wanted.units.filter((u) => !u.ko)];
+      const cop = eyes.find((w) => U.dist(w.x, w.y, Player.x, Player.y) < 11);
+      if (cop) {
+        this.lawT = 25; Wanted.crime(1);
+        Hud.toast('"Oi! Plate ' + Game.bike.plate + ' — that\'s not your ' + b.name + '!" Unlicensed rider spotted!', UI.bad, 2.8);
+      }
+    }
   },
 
   crash(speed) {
@@ -183,7 +256,7 @@ const Bikes = {
       const want = Math.atan2(r.target.y - r.y, r.target.x - r.x);
       r.ang += U.clamp(U.angDiff(r.ang, want), -2.5 * dt, 2.5 * dt);
       const nx = r.x + Math.cos(r.ang) * r.speed * dt, ny = r.y + Math.sin(r.ang) * r.speed * dt;
-      if (this.blocked(nx, ny)) { r.ang += Math.PI * (0.5 + Math.random() * 0.4); r.target = this.pickTarget(r); }
+      if (this.blocked(nx, ny, r.bikeId)) { r.ang += Math.PI * (0.5 + Math.random() * 0.4); r.target = this.pickTarget(r); }
       else { r.x = nx; r.y = ny; }
       // Showing off.
       if (r.wheelie > 0) r.wheelie -= dt; else if (Math.random() < dt * 0.08) r.wheelie = 1.5;
@@ -231,8 +304,8 @@ const Bikes = {
       } else r.onFootMoving = false;
       if (r.noBike && r.stateT <= 0) {
         // A mate dropped off a new bike.
-        r.bikeId = BIKES[(Math.random() * BIKES.length) | 0].id;
-        r.bike = this.model(BIKE_BY_ID[r.bikeId].color); this.group.add(r.bike);
+        r.bikeId = BIKES[(Math.random() * BIKES.length) | 0].id; r.plate = newPlate(); r.owner = r.name;
+        r.bike = this.modelFor(r.bikeId); this.group.add(r.bike);
         r.x = r.px; r.y = r.py; r.noBike = false; r.state = 'ride'; r.fuel = 100; r.target = this.pickTarget(r);
       }
       return true;
@@ -280,9 +353,11 @@ const Bikes = {
           if (r.walkFace !== undefined) r.mesh.userData.rig.yaw.rotation.y = -r.walkFace;
           Models.pose(r.mesh.userData.rig, { moving: r.onFootMoving, phase: r.walkT, t: Game.time });
         } else {
-          r.mesh.position.set(r.x - Math.cos(r.ang) * 0.25, h + 0.52 + pitch * 0.3, r.y - Math.sin(r.ang) * 0.25);
-          r.mesh.userData.rig.yaw.rotation.y = -r.ang;
-          Models.pose(r.mesh.userData.rig, { pose: 'ride', t: Game.time });
+          const S = seatOf(r.bikeId), rig = r.mesh.userData.rig;
+          r.mesh.position.set(r.x + Math.cos(r.ang) * S.seatX, h + S.seatY + pitch * 0.3, r.y + Math.sin(r.ang) * S.seatX);
+          rig.yaw.rotation.y = -r.ang;
+          Models.pose(rig, { pose: S.pose, t: Game.time });
+          this.holdBars(rig, r.bikeId, r.x, r.y, r.ang, h + pitch * 0.45);
         }
       }
       const lv = (d < 28 ? (1 - d / 28) ** 2 : 0) * (Interior.active || this.onFoot(r) ? 0 : 0.7); // locals fade fast with distance
@@ -294,7 +369,7 @@ const Bikes = {
       this.mine.visible = !Interior.active && U.dist(mx, my, Player.x, Player.y) < 70;
       const ang = this.riding ? Player.face : (Game.bike.ang || 0);
       this.mine.position.set(mx, base(mx, my) + (this.riding ? Player.z : 0), my);
-      this.mine.rotation.set(0, -ang, this.riding ? -Math.hypot(this.vel.x, this.vel.y) * 0.004 : 0);
+      this.mine.rotation.set(0, -ang, this.riding && seatOf(Game.bike.id).pose === 'ride' ? -Math.hypot(this.vel.x, this.vel.y) * 0.004 : 0);
       if (this.riding) {
         const sp = Math.hypot(this.vel.x, this.vel.y);
         const lv = 0.55 + sp / 30;
@@ -315,23 +390,29 @@ const Bikes = {
 
   // ---------- the dealership ----------
   openShop() {
-    const own = Game.bike ? BIKE_BY_ID[Game.bike.id] : null, trade = own ? Math.round(own.price / 2) : 0;
-    Life.panel(`<h2>Dirt Cheap Bikes</h2><div class="desc">"Mate. MATE. Have you seen the Moto 450? Fish are slow. Be fast." — Revs · You have <b style="color:var(--accent)">${U.fmtMoney(Game.money)}</b></div>
-      <h3>Bikes</h3>${BIKES.map((b) => {
-        const net = b.price - trade, mine = own && own.id === b.id;
-        return `<div class="row"><div><b>${b.name}</b> <span class="desc">· top speed ${b.top} m/s</span><div class="desc">${b.desc}</div></div>
-          ${mine ? '<span class="owned">✓ Yours</span>' : `<button class="primary" data-bike="${b.id}" ${Game.money < net ? 'disabled' : ''}>${own ? 'Trade up ' + U.fmtMoney(net) : 'Buy ' + U.fmtMoney(b.price)}</button>`}</div>`;
-      }).join('')}
-      <h3>Fuel</h3><div class="desc">Tank ${Math.round(Game.fuel)}% — fill up at the gas station at the bottom of the main street.</div>
-      ${own ? '' : '<div class="desc" style="margin-top:12px">Your bike gets parked out front. Press E beside it to ride.</div>'}`, (el) => {
+    const own = this.ownsIt() ? BIKE_BY_ID[Game.bike.id] : null, trade = own ? Math.round(own.price / 2) : 0;
+    const row = (b) => {
+      const net = b.price - trade, mine = own && own.id === b.id;
+      return `<div class="row"><div><b>${b.name}</b> <span class="desc">· top speed ${b.top} m/s</span><div class="desc">${b.desc}</div></div>
+        ${mine ? '<span class="owned">✓ Yours</span>' : `<button class="primary" data-bike="${b.id}" ${Game.money < net ? 'disabled' : ''}>${own ? 'Trade up ' + U.fmtMoney(net) : 'Buy ' + U.fmtMoney(b.price)}</button>`}</div>`;
+    };
+    const reg = Game.bike ? `<div class="row"><div><b>${BIKE_BY_ID[Game.bike.id].name} · plate ${Game.bike.plate}</b><div class="desc">Registered to ${this.ownsIt() ? 'you' : Game.bike.owner}${this.permitted() ? ' · rider permit ✓' : ' · <span style="color:var(--bad)">no permit — this one\'s hot</span>'}</div></div></div>` : '';
+    Life.panel(`<h2>Dirt Cheap Bikes &amp; Karts</h2><div class="desc">"Mate. MATE. Every ride comes registered, plated and with a rider permit for that exact machine. Fish are slow. Be fast." — Revs · You have <b style="color:var(--accent)">${U.fmtMoney(Game.money)}</b></div>
+      ${reg ? '<h3>Your ride</h3>' + reg : ''}
+      <h3>Dirt bikes</h3>${BIKES.filter((b) => !b.kind).map(row).join('')}
+      <h3>Go-karts</h3>${BIKES.filter((b) => b.kind === 'kart').map(row).join('')}
+      <h3>Fuel &amp; the law</h3><div class="desc">Tank ${Math.round(Game.fuel)}% — fill up at the gas station at the bottom of the main street. The pump camera reads plates: a ride that isn't registered to you gets reported, and wardens check permits on sight.</div>
+      ${Game.bike && !this.ownsIt() ? '<div class="desc" style="margin-top:8px">No trade-ins on stolen goods — buying a new ride leaves that one where it is.</div>' : ''}`, (el) => {
       el.querySelectorAll('[data-bike]').forEach((btn) => { btn.onclick = () => {
         const b = BIKE_BY_ID[btn.dataset.bike];
         Game.money -= b.price - trade;
         const shop = World.buildings.find((x) => x.type === 'bikes'), d = World.doorOf(shop);
-        Game.bike = { id: b.id, x: d.x - 2.6, y: d.y + 1.6, ang: Math.PI / 2 };
+        if (own) Game.vpermits = (Game.vpermits || []).filter((p) => p !== Game.bike.plate); // traded in
+        Game.bike = { id: b.id, x: d.x - 2.6, y: d.y + 1.6, ang: Math.PI / 2, plate: newPlate(), owner: 'you' };
+        (Game.vpermits = Game.vpermits || []).push(Game.bike.plate);
         Game.fuel = Math.max(Game.fuel, 60);
         this.syncMine(); Sfx.coin();
-        Hud.toast('The ' + b.name + ' is parked out front. Ride safe!', UI.good, 2.6);
+        Hud.toast('The ' + b.name + ' (plate ' + Game.bike.plate + ') is parked out front, permit in your pocket. Ride safe!', UI.good, 3);
         Game.save(); this.openShop();
       }; });
     });

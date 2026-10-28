@@ -310,18 +310,32 @@ const Wanted = {
       gr.addColorStop(0, 'rgba(200,20,20,0)'); gr.addColorStop(1, 'rgba(200,20,20,' + U.clamp(k, 0, 0.6).toFixed(2) + ')');
       g.fillStyle = gr; g.fillRect(0, 0, W, H);
     }
-    // Wanted stars under the minimap.
-    if (this.level > 0 || this.health < 100) {
-      const cx = W - 102, y = 236;
-      if (this.level > 0) {
-        const flash = this.seen && Math.sin(Game.time * 10) > 0;
-        for (let i = 0; i < 5; i++) {
-          const on = i < this.level;
-          hud.text('★', cx - 48 + i * 24, y, on ? (flash ? '#FFFFFF' : '#FFD447') : 'rgba(255,255,255,0.18)', 24, 'center', 700);
-        }
-        hud.pill(this.hidden ? '🌿 Hidden' : this.seen ? 'Spotted!' : 'Searching…', cx, y + 20, this.hidden ? UI.good : this.seen ? UI.bad : UI.accent, 11);
+    // Wanted level: its own big star banner, top middle.
+    if (this.level > 0) {
+      const flash = this.seen && Math.sin(Game.time * 10) > 0, size = 46, gap = 50;
+      const cx = W / 2, y = (Mobile.active ? 64 / hud.k : 0) + 58;
+      g.save();
+      g.font = '400 ' + size + 'px "Lilita One", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineJoin = 'round'; g.lineWidth = 7; g.strokeStyle = '#1a1410';
+      for (let i = 0; i < 5; i++) {
+        const x = cx + (i - 2) * gap, on = i < this.level;
+        const pop = on && i === this.level - 1 ? 1 + Math.max(0, (this.popT || 0)) * 0.6 : 1;
+        g.save(); g.translate(x, y); g.scale(pop, pop);
+        g.strokeText('★', 0, 0);
+        g.fillStyle = on ? (flash ? '#FFFFFF' : '#FFD447') : 'rgba(255,255,255,0.22)';
+        g.fillText('★', 0, 0);
+        g.restore();
       }
+      g.restore();
+      hud.pill(this.hidden ? '🌿 Hidden — stay put' : this.seen ? 'SPOTTED!' : 'Searching…', cx, y + 40, this.hidden ? UI.good : this.seen ? UI.bad : UI.accent, 12);
     }
+    this.popT = Math.max(0, (this.popT || 0) - 1 / 60 * 2);
+    if (this.level !== this.lastLevel) { if (this.level > (this.lastLevel || 0)) this.popT = 0.5; this.lastLevel = this.level; }
+    document.body.classList.toggle('wanted', this.level > 0);
+  },
+
+  // Things pinned to the world (drawn before the HUD is scaled for phones).
+  drawWorld(hud) {
     for (const n of Npcs.list) {
       if (n.state !== 'ko' || U.dist(n.x, n.y, Player.x, Player.y) > 25) continue;
       const [sx, sy, ok] = Scene3D.project(n.x, n.y, Scene3D.standH(n.x, n.y) + 0.6);

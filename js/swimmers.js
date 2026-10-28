@@ -86,6 +86,7 @@ const Swimmers = {
       s.bubbleT = Math.max(0, s.bubbleT - dt);
       s.flee = Math.max(0, s.flee - dt);
       // Only out when it's sunny; otherwise they swim for the nearest bank and call it a day.
+      if (s.state === 'walk') { if (walkHome(s, dt)) s.state = 'gone'; continue; }
       if (s.state === 'gone') {
         s.hidden = true;
         if (nice && Math.random() < dt * 0.05) {
@@ -104,7 +105,7 @@ const Swimmers = {
       }
       if (s.state === 'leaving') {
         if (nice) s.state = 'swim';
-        else { s.tx = s.shore.x; s.ty = s.shore.y; if (U.dist(s.x, s.y, s.shore.x, s.shore.y) < 0.9) { s.state = 'gone'; continue; } }
+        else { s.tx = s.shore.x; s.ty = s.shore.y; if (U.dist(s.x, s.y, s.shore.x, s.shore.y) < 0.9) { s.state = 'walk'; s.home = null; continue; } }
       }
       // Pick a new spot in the same lake every so often.
       if (s.state === 'swim' && (U.dist(s.x, s.y, s.tx, s.ty) < 0.6 || Math.random() < dt * 0.04)) {
@@ -119,7 +120,7 @@ const Swimmers = {
       if (s.flee > 0) { a = Math.atan2(s.y - Player.y, s.x - Player.x); s.heading = a; }
       const sp = s.speed * (s.flee > 0 ? 2.2 : s.state === 'leaving' ? 1.8 : 1) * dt;
       const nx = s.x + Math.cos(a) * sp, ny = s.y + Math.sin(a) * sp;
-      if (World.depthAt(nx, ny) > (s.state === 'leaving' ? 0.05 : 0.8)) { s.x = nx; s.y = ny; } else if (s.state === 'leaving') s.state = 'gone'; else { s.tx = s.x; s.ty = s.y; }
+      if (World.depthAt(nx, ny) > (s.state === 'leaving' ? 0.05 : 0.8)) { s.x = nx; s.y = ny; } else if (s.state === 'leaving') { s.state = 'walk'; s.home = null; } else { s.tx = s.x; s.ty = s.y; }
       if (Math.abs(Math.cos(a)) > 0.2) s.face = Math.cos(a) > 0 ? 1 : -1;
       s.stroke += dt * (s.flee > 0 ? 7 : 3.5);
       if (Math.random() < dt * 0.8 && U.dist(s.x, s.y, Player.x, Player.y) < 40) Hud.ripple(s.x - Math.cos(a) * 0.4, s.y - Math.sin(a) * 0.4, 0.5);
@@ -133,8 +134,14 @@ const Swimmers = {
     for (const s of this.list) {
       s.mesh.visible = !s.hidden && !Interior.active && U.dist(s.x, s.y, Player.x, Player.y) < 55;
       if (!s.mesh.visible) continue;
-      // Front crawl: lying forward in the water, head up, arms windmilling.
       const rig = s.mesh.userData.rig;
+      if (s.state === 'walk') {
+        Models.pose(rig, { moving: true, phase: s.walkPhase, t: Game.time });
+        rig.yaw.rotation.y = -s.heading;
+        s.mesh.position.set(s.x, Scene3D.standH(s.x, s.y), s.y);
+        continue;
+      }
+      // Front crawl: lying forward in the water, head up, arms windmilling.
       Models.pose(rig, { t: Game.time });
       rig.yaw.rotation.y = -s.heading;
       rig.upper.rotation.z = -1.15;
@@ -147,7 +154,7 @@ const Swimmers = {
   drawBubbles(hud) {
     for (const s of this.list) {
       if (s.hidden || s.bubbleT <= 0 || U.dist(s.x, s.y, Player.x, Player.y) > 30) continue;
-      const [sx, sy, ok] = Scene3D.project(s.x, s.y, 0.9);
+      const [sx, sy, ok] = Scene3D.project(s.x, s.y, s.state === 'walk' ? Scene3D.standH(s.x, s.y) + 1.8 : 0.9);
       if (ok) hud.pill(s.bubble, sx, sy, UI.ink, 12);
     }
   },

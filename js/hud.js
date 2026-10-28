@@ -127,6 +127,7 @@ const Hud = {
     g.setTransform(d, 0, 0, d, 0, 0);
     this.drawWorldLabels();
     Npcs.drawBubbles(this);
+    Floaters.drawCensors(this);
     Floaters.drawBubbles(this);
     Swimmers.drawBubbles(this);
     Couples.drawCensor(this);
@@ -138,6 +139,7 @@ const Hud = {
     Bugs.draw(g);
     Tools.drawOverlay(this);
     Gun.drawScope(this);
+    Wanted.drawWorld(this);
     // Panels are laid out on a virtual screen, scaled down to fit phones.
     const k = this.k = Mobile.hudScale();
     g.setTransform(d * k, 0, 0, d * k, 0, 0);
@@ -516,7 +518,7 @@ const Hud = {
     const F = Fishing, L = LURE_BY_ID[F.lureId], g = this.g;
     if (Bikes.riding) {
       const sp = Math.hypot(Bikes.vel.x, Bikes.vel.y);
-      this.pill(BIKE_BY_ID[Game.bike.id].name + '  ·  ' + Math.round(sp * 3.6) + ' km/h  ·  fuel ' + Math.round(Game.fuel) + '%', cx, bottom - 14, Game.fuel < 15 ? UI.bad : UI.ink, 13);
+      this.pill(BIKE_BY_ID[Game.bike.id].name + '  ·  ' + Game.bike.plate + (Bikes.permitted() ? '' : ' (NO PERMIT)') + '  ·  ' + Math.round(sp * 3.6) + ' km/h  ·  fuel ' + Math.round(Game.fuel) + '%', cx, bottom - 14, Game.fuel < 15 || !Bikes.permitted() ? UI.bad : UI.ink, 13);
       return;
     }
     if (Gun.out) {

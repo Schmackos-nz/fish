@@ -154,17 +154,19 @@ const Actors = {
     const holding = Tools.current === 'rod' || Tools.current === 'gun' || Tools.current === 'axe';
     const riding = Bikes.riding;
     let px = p.x, py = p.y, y = base + p.z;
-    if (riding) { const a = p.face; px -= Math.cos(a) * 0.25; py -= Math.sin(a) * 0.25; y += 0.52; } // on the seat
+    const S = riding ? seatOf(Game.bike.id) : null;
+    if (riding) { const a = p.face; px += Math.cos(a) * S.seatX; py += Math.sin(a) * S.seatX; y += S.seatY; } // on the seat
     this.player.position.set(px, y, py);
     this.rig.yaw.rotation.y = -p.face;
     Models.pose(this.rig, {
       moving: p.moving && !riding && !p.rolling, phase: p.walkT, t: Game.time, crouch: p.crouch && !p.rolling,
-      pose: riding ? 'ride' : p.rolling ? 'slide' : holding ? 'grip' : 'normal',
+      pose: riding ? S.pose : p.rolling ? 'slide' : holding ? 'grip' : 'normal',
     });
     if (Tools.punchT > 0) { // jab: right arm shoots straight out and back
       const k = Math.sin((1 - Tools.punchT / 0.4) * Math.PI);
       this.rig.armR.rotation.set(0, 0, 0.3 + k * 1.35); this.rig.upper.rotation.y = -k * 0.35;
     } else this.rig.upper.rotation.y = 0;
+    if (riding) Bikes.holdBars(this.rig, Game.bike.id, p.x, p.y, p.face, base + p.z);
     this.handWorld = Models.handPos(this.rig, this.handWorld || new THREE.Vector3());
     // While wading the shadow becomes a foam ring at the waterline.
     this.playerShadow.position.set(p.x, p.wading ? 0.03 : Math.max(base, 0.01) + 0.015, p.y);
