@@ -9,9 +9,10 @@ const Gun = {
 
   init() {
     this.mesh = this.buildRifle();
+    setTimeout(() => Arsenal.build(), 0); // after Models is ready
     this.mesh.visible = false;
     Scene3D.scene.add(this.mesh);
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 8; i++) {
       const t = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xfff2c8, transparent: true }));
       t.frustumCulled = false; t.visible = false; t.userData.t = 1;
       Scene3D.scene.add(t); this.tracers.push(t);
@@ -105,7 +106,7 @@ const Gun = {
     this.kick = Math.max(0, this.kick - dt * 4);
     this.flashT = Math.max(0, this.flashT - dt);
     // Right mouse: look down the scope. The view glides toward wherever you point.
-    this.scoped = this.out && Input.mouse.rdown && !Menus.open && Fishing.state === 'idle';
+    this.scoped = this.out && Arsenal.weapon().scope && Input.mouse.rdown && !Menus.open && Fishing.state === 'idle';
     if (this.scoped) {
       if (!this.wasScoped) { this.look.x = Player.x + Math.cos(Player.face) * 8; this.look.y = Player.y + Math.sin(Player.face) * 8; Sfx.click(); }
       const m = Input.mouse;
@@ -116,7 +117,7 @@ const Gun = {
     }
     this.wasScoped = this.scoped;
     this.zoom = U.lerp(this.zoom, this.scoped ? 1 : 0, Math.min(1, dt * 8));
-    if (this.out && Input.mousePressed && !Menus.open) this.shoot();
+    if (this.out && !Menus.open && (Input.mousePressed || (Arsenal.weapon().auto && Input.mouse.down))) this.shoot();
     for (let i = this.floaters.length - 1; i >= 0; i--) {
       const f = this.floaters[i];
       f.t += dt;
@@ -138,39 +139,29 @@ const Gun = {
       if (lilo) Floaters.say(lilo, 'DON\'T SHOOT!!', 2);
       return;
     }
-    if ((Game.ammo || 0) <= 0) { Sfx.click(); Hud.toast('*click* Out of rounds — Hettie sells them, reluctantly.', '#f2c14e', 2); return; }
-    Game.ammo--;
-    this.cooldown = 1.1; this.flashT = 0.06; this.kick = 1; // bolt action: work the bolt between shots
-    // From the hip the round goes roughly where you point; through the scope it goes exactly there.
-    if (!a.scoped) {
-      const spread = 0.4 + U.dist(Player.x, Player.y, a.x, a.y) * 0.06;
-      a = { ...a, x: a.x + (Math.random() - 0.5) * spread * 2, y: a.y + (Math.random() - 0.5) * spread * 2 };
-    }
-    Sfx.shot();
-    setTimeout(() => Sfx.burst(0.9, 900, 0.12, 'lowpass', 0.5, 300), 260); // echo off the valley
-    setTimeout(() => Sfx.click(), 650); // bolt
-    const t = this.tracers.find((x) => x.userData.t >= 1) || this.tracers[0];
+    const W = Arsenal.weapon();
+    if (Arsenal.ammo(W.ammo) <= 0) { Sfx.click(); Hud.toast('*click* Out of ' + AMMO[W.ammo].name.toLowerCase() + '.', '#f2c14e', 2); this.cooldown = 0.4; return; }
+    Arsenal.useAmmo(W.ammo);
+    this.cooldown = W.cd; this.flashT = 0.06; this.kick = W.id === 'smg' ? 0.35 : W.id === 'pistol' ? 0.6 : 1;
+    // Hip range depends on the gun; the scope (rifle) lets you reach further.
+    if (!a.scoped && U.dist(Player.x, Player.y, a.x, a.y) > W.range) a = { ...a, x: Player.x + Math.cos(a.ang) * W.range, y: Player.y + Math.sin(a.ang) * W.range };
+    if (W.id === 'launcher') { Sfx.whoosh(1); } else { Sfx.shot(); setTimeout(() => Sfx.burst(0.9, 900, 0.12, 'lowpass', 0.5, 300), 260); }
+    if (W.id === 'rifle') setTimeout(() => Sfx.click(), 650); // bolt
+    if (W.id === 'shotgun') setTimeout(() => { Sfx.click(); Sfx.click(); }, 450); // pump
     const base = Scene3D.standH(Player.x, Player.y) + 0.62;
-    t.geometry.setFromPoints([new THREE.Vector3(Player.x + Math.cos(a.ang) * 1.1, base, Player.y + Math.sin(a.ang) * 1.1),
-      new THREE.Vector3(a.x, Math.max(0, Scene3D.groundH(a.x, a.y)) + 0.05, a.y)]);
-    t.userData.t = 0; t.visible = true;
-
-    if (Wanted.hitPerson(a.x, a.y, a.scoped)) {
-      Hud.ripple(a.x, a.y, 0.3);
-    } else if (Animals.shotAt(a.x, a.y, a.scoped)) {
-      Sfx.thunk();
-    } else if (World.isWater(a.x, a.y)) {
-      Hud.ripple(a.x, a.y, 1.1); Sfx.splash(0.6);
-      // A single round: it has to actually hit the fish. Deep fish are mostly safe.
-      let hit = null, best = 1e9;
-      for (const f of Fish.list) {
-        if (f.state === 'hooked') continue;
-        const d = U.dist(f.x, f.y, a.x, a.y);
-        if (d < 0.35 + f.cm / 200 && d < best && Math.random() < U.clamp(1.2 - f.z * 0.4, 0.05, 1)) { best = d; hit = f; }
+    for (let k = 0; k < W.pellets; k++) {
+      let p = a;
+      if (!a.scoped) {
+        const d = U.dist(Player.x, Player.y, a.x, a.y), spread = W.spread * (W.pellets > 1 ? 0.35 + d * 0.09 : 0.4 + d * 0.06);
+        p = { ...a, x: a.x + (Math.random() - 0.5) * spread * 2, y: a.y + (Math.random() - 0.5) * spread * 2 };
       }
-      if (hit) this.kill(hit);
-      else Hud.toast(['Missed!', 'Just water.', 'The fish are laughing at you.'][(Math.random() * 3) | 0], '#a99f8a', 1.2);
-    } else { Sfx.plop(); Hud.ripple(a.x, a.y, 0.3); }
+      const t = this.tracers.find((x) => x.userData.t >= 1) || this.tracers[k % this.tracers.length];
+      t.geometry.setFromPoints([new THREE.Vector3(Player.x + Math.cos(a.ang) * 1.1, base, Player.y + Math.sin(a.ang) * 1.1),
+        new THREE.Vector3(p.x, Math.max(0, Scene3D.groundH(p.x, p.y)) + 0.05, p.y)]);
+      t.userData.t = 0; t.visible = true;
+      if (W.blast) { setTimeout(() => Arsenal.explode(p.x, p.y, W.blast), 220); continue; }
+      this.impact(p, a.scoped, W.pellets > 1);
+    }
     // Every fish in earshot bolts, and everyone else has opinions.
     Fish.spookNear(a.x, a.y, 16);
     Fish.list.forEach((f) => { if (U.dist(f.x, f.y, a.x, a.y) < 16) f.cool = 20; });
@@ -180,6 +171,26 @@ const Gun = {
     Animals.onGunshot(a.x, a.y);
     Wanted.onGunshot(a.x, a.y);
     Game.save();
+  },
+
+  // One bullet (or pellet) landing.
+  impact(a, scoped, pellet) {
+    if (Wanted.hitPerson(a.x, a.y, scoped)) {
+      Hud.ripple(a.x, a.y, 0.3);
+    } else if (Animals.shotAt(a.x, a.y, scoped)) {
+      Sfx.thunk();
+    } else if (World.isWater(a.x, a.y)) {
+      Hud.ripple(a.x, a.y, pellet ? 0.5 : 1.1); if (!pellet) Sfx.splash(0.6);
+      // It has to actually hit the fish. Deep fish are mostly safe.
+      let hit = null, best = 1e9;
+      for (const f of Fish.list) {
+        if (f.state === 'hooked') continue;
+        const d = U.dist(f.x, f.y, a.x, a.y);
+        if (d < 0.35 + f.cm / 200 && d < best && Math.random() < U.clamp(1.2 - f.z * 0.4, 0.05, 1)) { best = d; hit = f; }
+      }
+      if (hit) this.kill(hit);
+      else if (!pellet) Hud.toast(['Missed!', 'Just water.', 'The fish are laughing at you.'][(Math.random() * 3) | 0], '#a99f8a', 1.2);
+    } else { if (!pellet) Sfx.plop(); Hud.ripple(a.x, a.y, 0.3); }
   },
 
   kill(f) {
@@ -195,7 +206,9 @@ const Gun = {
 
   render(dt) {
     const p = Player;
-    this.mesh.visible = this.out;
+    for (const id in Arsenal.models) Arsenal.models[id].visible = false;
+    const cur = Arsenal.models[Arsenal.weapon().id] || this.mesh;
+    cur.visible = this.out;
     if (this.out) {
       const a = this.aimPoint().ang;
       const base = Scene3D.standH(p.x, p.y);
@@ -203,8 +216,8 @@ const Gun = {
       const back = this.kick * 0.18;
       const h = Actors.handWorld || new THREE.Vector3(p.x, base + 0.3, p.y);
       // Trigger sits in the hand (grip is 0.125 behind the receiver origin).
-      this.mesh.position.set(h.x + Math.cos(a) * (0.125 - back), h.y + this.zoom * 0.15 + this.kick * 0.04, h.z + Math.sin(a) * (0.125 - back));
-      this.mesh.rotation.set(0, -a, this.kick * 0.25);
+      cur.position.set(h.x + Math.cos(a) * (0.125 - back), h.y + this.zoom * 0.15 + this.kick * 0.04, h.z + Math.sin(a) * (0.125 - back));
+      cur.rotation.set(0, -a, this.kick * 0.25);
       this.flash.visible = this.flashT > 0;
     }
     for (const t of this.tracers) {

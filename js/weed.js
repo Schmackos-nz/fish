@@ -146,7 +146,9 @@ const Weed = {
     Life.panel(`<h2>Dusty's</h2><div class="desc">"Psst. Hey, angler. Plant these next to a bush, give 'em a day and a half, and the fishermen'll pay good money. Just… keep it away from the wardens, yeah?"</div>
       <div class="row" style="margin-top:14px"><div><b>Seeds</b> <span class="desc">(have ${Game.seeds || 0})</span><div class="desc">Each grows into 3–5 bags. Anglers pay $25–45 a bag.</div></div>
       <div><button data-seed="1" ${Game.money < 5 ? 'disabled' : ''}>1 for $5</button> <button class="primary" data-seed="3" ${Game.money < 12 ? 'disabled' : ''}>3 for $12</button></div></div>
+      ${Arsenal.shopHtml('dusty')}
       <div class="desc" style="margin-top:12px">Get caught planting, harvesting, dealing — or carrying it during a creel check — and it's jail and confiscation.</div>`, (el) => {
+      Arsenal.wireShop(el, () => this.openSeeds());
       el.querySelectorAll('[data-seed]').forEach((b) => { b.onclick = () => {
         const n = +b.dataset.seed, cost = n === 3 ? 12 : 5;
         Game.money -= cost; Game.seeds = (Game.seeds || 0) + n; Sfx.coin(); Game.save(); this.openSeeds();

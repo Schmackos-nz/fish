@@ -56,7 +56,7 @@ const Game = {
     this.drag = 1.75; this.creel = []; this.creelMax = 8; this.journal = {};
     this.stats = { caught: 0, released: 0 };
     this.npcRecords = {};
-    this.ammo = 12;
+    this.ammo = 12; this.guns = ['rifle']; this.weapon = 'rifle'; this.ammoX = { light: 0, shells: 0, rockets: 0 };
     this.energy = 100; this.food = 100; this.pantry = [{ name: 'Bread roll', energy: 15 }, { name: 'Bread roll', energy: 15 }];
     this.ingredients = { batter: 0, herbs: 0 }; this.storage = emptyStorage();
     this.bike = null; this.fuel = 0;
@@ -71,7 +71,7 @@ const Game = {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         seed: this.seed, money: this.money, lures: this.lures, owned: this.owned, drag: this.drag,
         gear: { rod: this.gear.rod.id, reel: this.gear.reel.id, line: this.gear.line.id },
-        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords, ammo: this.ammo, spray: this.spray, permits: this.permits, energy: this.energy, food: this.food, pantry: this.pantry, ingredients: this.ingredients, storage: this.storage, home: this.home, rentDebt: this.rentDebt, lastDay: this.lastDay, weed: this.weed, seeds: this.seeds, plants: this.plants, bike: this.bike, fuel: this.fuel,
+        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords, ammo: this.ammo, spray: this.spray, permits: this.permits, guns: this.guns, weapon: this.weapon, ammoX: this.ammoX, energy: this.energy, food: this.food, pantry: this.pantry, ingredients: this.ingredients, storage: this.storage, home: this.home, rentDebt: this.rentDebt, lastDay: this.lastDay, weed: this.weed, seeds: this.seeds, plants: this.plants, bike: this.bike, fuel: this.fuel,
         px: Player.x, py: Player.y, hour: this.env.hour, day: this.env.day, weather: this.env.weather.id,
       }));
     } catch (e) { /* storage unavailable: play on without saving */ }
@@ -87,6 +87,7 @@ const Game = {
       this.spray = s.spray === undefined ? 3 : s.spray;
       this.permits = s.permits || { town: true };
       this.food = s.food === undefined ? (s.energy === undefined ? 100 : s.energy) : s.food; // old saves: energy meant food
+      for (const k of ['guns', 'weapon', 'ammoX']) if (s[k] !== undefined) this[k] = s[k];
       for (const k of ['energy', 'pantry', 'ingredients', 'storage', 'home', 'rentDebt', 'lastDay', 'weed', 'seeds', 'plants', 'bike', 'fuel']) if (s[k] !== undefined) this[k] = s[k];
       Object.assign(this, { money: s.money, lures: s.lures, owned: s.owned, drag: s.drag, creel: s.creel, creelMax: s.creelMax, journal: s.journal, stats: s.stats });
       this.gear = {
@@ -409,6 +410,7 @@ function frame(now) {
     Tim.render();
     Bikes.render();
     Wanted.render(dt);
+    Arsenal.render(dt);
     Scene3D.render(Game.time);
     Hud.draw();
     saveT += dt;

@@ -222,7 +222,12 @@ const Hud = {
       r(['Space'], 'Jump    Shift+C  Slide');
       const tool = Tools.current;
       if (tool === 'rod') { r(['Hold'], 'Cast — release at the peak', { hot: World.isWater(Input.mouse.wx, Input.mouse.wy) }); r(['Tab'], 'Next lure'); }
-      else if (tool === 'gun') { r(['Right'], 'Hold to look down the scope', { held: Gun.scoped, hot: !Gun.scoped }); r(['Click'], (Gun.scoped ? 'Fire' : 'Fire from the hip (wild)') + ' · ' + (Game.ammo || 0) + ' rounds', { hot: Gun.scoped }); }
+      else if (tool === 'gun') {
+        const W = Arsenal.weapon();
+        if (W.scope) r(['Right'], 'Hold to look down the scope', { held: Gun.scoped, hot: !Gun.scoped });
+        r([W.auto ? 'Hold' : 'Click'], 'Fire ' + W.short.toLowerCase() + ' · ' + Arsenal.ammo(W.ammo) + ' left', { hot: true });
+        if (Game.guns.length > 1) r(['2'], 'Next gun');
+      }
       else if (tool === 'spray') r(['Click'], 'Spray · ' + (Game.spray || 0) + ' cans', { hot: Bugs.list.length > 0 });
       else if (tool === 'binos') r(['Hold'], 'Scout for fish & game', { held: Tools.looking });
       else if (tool === 'hands') r(['Click'], 'Punch');
@@ -508,7 +513,8 @@ const Hud = {
       return;
     }
     if (Gun.out) {
-      this.pill('Rifle · ' + (Game.ammo || 0) + ' rounds' + (Gun.scoped ? '' : ' · right-click to scope'), cx, bottom - 14, UI.bad, 13);
+      const W = Arsenal.weapon();
+      this.pill(W.name + ' · ' + Arsenal.ammo(W.ammo) + ' ' + AMMO[W.ammo].name.toLowerCase() + (W.scope && !Gun.scoped ? ' · right-click to scope' : '') + (Game.guns.length > 1 ? ' · 2 to switch' : ''), cx, bottom - 14, UI.bad, 13);
       return;
     }
     if (F.state === 'fight') return this.drawFight(cx, bottom);

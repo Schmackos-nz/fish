@@ -14,15 +14,17 @@ const Tools = {
   select(id) {
     if (Bikes.riding) { Hud.toast('Hands on the bars! Get off first (E).', UI.muted, 1.4); return; }
     if (Fishing.state !== 'idle') { Hud.toast('Reel in first (Space) before you swap tools.', '#f2c14e', 1.6); return; }
+    // Pressing 2 again cycles through your guns; past the last one it goes away.
+    if (id === 'gun' && this.current === 'gun' && Arsenal.cycle()) { Sfx.bail(); Hud.toast(Arsenal.weapon().name + ' · ' + Arsenal.ammo(Arsenal.weapon().ammo) + ' ' + AMMO[Arsenal.weapon().ammo].name.toLowerCase(), UI.ink, 1.4); return; }
     const next = this.current === id ? 'hands' : id; // same key again puts it away
     this.current = next;
     Gun.out = next === 'gun';
     Sfx.bail();
-    const msg = { rod: 'Rod in hand.', gun: 'Rifle out — right-click to use the scope.', spray: 'Bug spray ready — click to spray.', binos: 'Binoculars — hold the mouse to scout.', hands: 'Hands free.' }[next];
+    const msg = { rod: 'Rod in hand.', gun: Arsenal.weapon().name + ' out' + (Arsenal.weapon().scope ? ' — right-click to scope.' : '. Press 2 again to switch guns.'), spray: 'Bug spray ready — click to spray.', binos: 'Binoculars — hold the mouse to scout.', hands: 'Hands free.' }[next];
     Hud.toast(msg, next === 'gun' ? '#e2584d' : '#c8bfae', 1.4);
   },
 
-  count(id) { return id === 'gun' ? Game.ammo || 0 : id === 'spray' ? Game.spray || 0 : null; },
+  count(id) { return id === 'gun' ? Arsenal.ammo(Arsenal.weapon().ammo) : id === 'spray' ? Game.spray || 0 : null; },
 
   // Bare hands: a jab at whoever (or whatever) is right in front of you.
   punch() {
@@ -114,7 +116,7 @@ const Tools = {
       hud.text(t.key, sx + 9, y + 16, sel ? UI.accent : UI.dim, 11, 'left', 700);
       const c = this.count(t.id);
       if (c !== null) hud.text(String(c), sx + sw - 9, y + 16, c ? UI.muted : UI.bad, 11, 'right', 600);
-      hud.text(t.name, sx + sw / 2, y + 56, sel ? UI.ink : UI.muted, 10, 'center', sel ? 600 : 400);
+      hud.text(t.id === 'gun' ? Arsenal.weapon().short : t.name, sx + sw / 2, y + 56, sel ? UI.ink : UI.muted, 10, 'center', sel ? 600 : 400);
       if (t.id === 'spray' && this.repelT > 0) {
         g.fillStyle = 'rgba(125,195,131,0.18)'; g.beginPath(); g.roundRect(sx + 4, y + 4, (sw - 8) * this.repelT / 90, 4, 2); g.fill();
         hud.text(Math.ceil(this.repelT) + 's', sx + sw - 9, y + 42, UI.good, 10, 'right', 600);
