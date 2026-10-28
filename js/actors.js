@@ -14,7 +14,7 @@ const Actors = {
     this.keeper = Models.person(KEEPER_PAL);
     this.keeper.userData.rig.yaw.rotation.y = -Math.PI / 2;
     this.group.add(this.keeper);
-    this.rod = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x3a2a1a }));
+    this.rod = Models.rod(0x3a2a1a);
     this.line = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xf0f0f0, transparent: true, opacity: 0.8 }));
     this.rod.frustumCulled = this.line.frustumCulled = false;
     this.group.add(this.rod, this.line);
@@ -172,8 +172,13 @@ const Actors = {
     Scene3D.lantern.position.set(p.x, base + 1.4, p.y);
 
     // Rod
+    // The holding arm follows the rod: aim it at the rod tip, then re-read where the hand ended up.
+    if (Tools.current === 'rod' && !riding) {
+      Models.aimArm(this.rig, this.rodPoints(p, base).tip, Fishing.state === 'charging' ? 0.05 : 0.35);
+      this.handWorld = Models.handPos(this.rig, this.handWorld);
+    }
     const { hand, tip, ctrl } = this.rodPoints(p, base);
-    this.rod.geometry.setFromPoints(new THREE.QuadraticBezierCurve3(hand, ctrl, tip).getPoints(12));
+    Models.setRod(this.rod, hand, ctrl, tip);
     this.rod.material.color.set(Game.gear.rod.color);
     this.rod.visible = Tools.current === 'rod';
     this.tipScene = tip;

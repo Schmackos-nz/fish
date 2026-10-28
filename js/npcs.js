@@ -358,7 +358,7 @@ const Npcs = {
     n.rig = n.mesh.userData.rig;
     n.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.3, 10), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.25, depthWrite: false }));
     n.shadow.rotation.x = -Math.PI / 2;
-    n.rod = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x4a3a2a }));
+    n.rod = Models.rod(0x4a3a2a);
     n.line = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xeeeeee, transparent: true, opacity: 0.7 }));
     n.rod.frustumCulled = n.line.frustumCulled = false;
     n.bob = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), new THREE.MeshLambertMaterial({ color: 0xe83a3a }));
@@ -392,8 +392,9 @@ const Npcs = {
       const back = n.state === 'cast' && n.t < 0.4 ? -0.6 : 1;
       const tip = new THREE.Vector3(n.x + Math.cos(a) * 1.3 * back, base + (fighting ? 1.9 : 1.3), n.y + Math.sin(a) * 1.3 * back);
       if (fighting) { tip.x += Math.sin(Game.time * 9) * 0.12; tip.y -= 0.3 + Math.sin(Game.time * 13) * 0.1; }
+      if (showRod) { Models.aimArm(n.rig, tip, n.state === 'cast' && n.t < 0.4 ? 0.05 : 0.35); Models.handPos(n.rig, hand); }
       const ctrl = hand.clone().lerp(tip, 0.6); ctrl.y += 0.2;
-      n.rod.geometry.setFromPoints(new THREE.QuadraticBezierCurve3(hand, ctrl, tip).getPoints(8));
+      if (showRod) Models.setRod(n.rod, hand, ctrl, tip, 0.02);
       const end = n.fish ? new THREE.Vector3(n.fish.x, -0.1, n.fish.y) : n.lure ? new THREE.Vector3(n.lure.x, 0.03, n.lure.y) : tip.clone().add(new THREE.Vector3(0, -0.3, 0));
       const mid = tip.clone().lerp(end, 0.5); mid.y -= fighting ? 0.05 : 0.4;
       n.line.geometry.setFromPoints(new THREE.QuadraticBezierCurve3(tip, mid, end).getPoints(12));

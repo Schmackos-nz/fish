@@ -139,6 +139,26 @@ const Models = {
     }
   },
 
+  // Point the holding arm at a world target (e.g. along the fishing rod), keeping a slight bend downward.
+  aimArm(rig, target, droop = 0.3) {
+    const v = this._v || (this._v = new THREE.Vector3()), q = this._q || (this._q = new THREE.Quaternion());
+    const down = this._down || (this._down = new THREE.Vector3(0, -1, 0));
+    rig.root.updateMatrixWorld(true);
+    rig.armR.getWorldPosition(v);
+    const dir = target.clone().sub(v).normalize();
+    dir.y -= droop; dir.normalize();
+    rig.armR.parent.getWorldQuaternion(q).invert();
+    dir.applyQuaternion(q);
+    rig.armR.quaternion.setFromUnitVectors(down, dir);
+  },
+
+  // A fishing rod as a real tapered-looking tube along a curve (rebuilt each frame; it's tiny).
+  rod(color) { return new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshToonMaterial({ color, gradientMap: Toon.gradient() })); },
+  setRod(mesh, a, ctrl, b, r = 0.024) {
+    mesh.geometry.dispose();
+    mesh.geometry = new THREE.TubeGeometry(new THREE.QuadraticBezierCurve3(a, ctrl, b), 10, r, 6, false);
+  },
+
   // World position of the right (holding) hand.
   handPos(rig, out = new THREE.Vector3()) {
     rig.root.updateMatrixWorld(true);
