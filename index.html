@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reelwild</title>
+<style>
+  :root {
+    --panel: rgba(18, 26, 30, 0.88);
+    --panel-edge: #c9a86a;
+    --ink: #f3ead6;
+    --muted: #a99f8a;
+    --good: #8fd16a;
+    --warn: #f2c14e;
+    --bad: #e2584d;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1416; color: var(--ink);
+    font-family: "Trebuchet MS", "Segoe UI", sans-serif; user-select: none; }
+  canvas#game { display: block; width: 100vw; height: 100vh; }
+  canvas#hud { position: absolute; inset: 0; width: 100vw; height: 100vh; cursor: crosshair; }
+  .panel { position: absolute; background: var(--panel); border: 2px solid var(--panel-edge); border-radius: 8px;
+    padding: 14px 18px; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
+  .hidden { display: none !important; }
+  h2 { margin: 0 0 8px; font-size: 20px; color: var(--warn); letter-spacing: 1px; }
+  h3 { margin: 12px 0 6px; font-size: 15px; color: var(--panel-edge); }
+  button { background: #3b4f3a; color: var(--ink); border: 1px solid #7fa06a; border-radius: 5px; padding: 6px 12px;
+    font: inherit; font-size: 13px; cursor: pointer; }
+  button:hover { background: #4f6a4c; }
+  button:disabled { opacity: .45; cursor: default; }
+  #shop, #journal { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(760px, 94vw);
+    max-height: 86vh; overflow-y: auto; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 5px 0;
+    border-bottom: 1px solid rgba(255,255,255,.07); font-size: 13px; }
+  .row .desc { color: var(--muted); font-size: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 8px; }
+  .card { background: rgba(255,255,255,.05); border-radius: 6px; padding: 8px; font-size: 12px; }
+  .card b { font-size: 13px; }
+  .card.unknown { opacity: .4; }
+  #catch { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 340px; text-align: center; }
+  #catch canvas { background: rgba(0,0,0,.25); border-radius: 6px; margin: 6px 0; }
+  #catch .big { font-size: 26px; color: var(--warn); font-weight: bold; }
+  #catch .rec { color: var(--good); font-weight: bold; }
+  #title { inset: 0; position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, rgba(10,30,35,.75), rgba(5,10,12,.96)); text-align: center; }
+  #title h1 { font-size: 64px; margin: 0; color: var(--warn); letter-spacing: 6px; text-shadow: 0 4px 0 #6a4b1c; }
+  #title p { color: var(--muted); max-width: 640px; line-height: 1.5; }
+  #title .keys { text-align: left; font-size: 13px; columns: 2; column-gap: 30px; color: var(--ink); max-width: 700px; }
+  #title .keys div { break-inside: avoid; margin-bottom: 4px; }
+  kbd { background: #2b3638; border: 1px solid #556; border-bottom-width: 2px; border-radius: 3px; padding: 0 5px;
+    font-family: inherit; font-size: 12px; }
+  #toast { position: absolute; left: 50%; top: 14%; transform: translateX(-50%); font-size: 18px; font-weight: bold;
+    text-shadow: 0 2px 4px #000; pointer-events: none; white-space: nowrap; transition: opacity .3s; }
+  .close { position: absolute; right: 10px; top: 8px; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+<canvas id="hud"></canvas>
+<div id="toast"></div>
+
+<div id="title">
+  <h1>REELWILD</h1>
+  <p>A little angler, a big wild valley. Wander the streams, rivers and lakes, read the water, and work
+    every cast — open the bail, load the rod, spin the reel and fight what bites.</p>
+  <div class="keys">
+    <div><kbd>WASD</kbd> walk &nbsp; <kbd>Shift</kbd> run</div>
+    <div><kbd>Space</kbd> open / close the bail</div>
+    <div>Hold <kbd>LMB</kbd> to load the cast, release on the peak</div>
+    <div><kbd>Space</kbd> mid-flight to feather the line &amp; stop short</div>
+    <div>Hold <kbd>LMB</kbd> + <b>spin the mouse in circles</b> to crank</div>
+    <div><kbd>RMB</kbd> twitch / pop the lure</div>
+    <div><kbd>Space</kbd> on the bite to set the hook</div>
+    <div>Fight: <kbd>A</kbd>/<kbd>D</kbd> side-strain, <kbd>S</kbd> drop rod on jumps</div>
+    <div><kbd>Q</kbd>/<kbd>E</kbd> or wheel: drag down / up</div>
+    <div><kbd>F</kbd> net the fish &nbsp; <kbd>R</kbd> pick a wind knot</div>
+    <div><kbd>1</kbd>–<kbd>5</kbd> change lure &nbsp; <kbd>J</kbd> journal</div>
+    <div><kbd>M</kbd> map &nbsp; <kbd>E</kbd> talk at the tackle shack</div>
+  </div>
+  <p><button id="startBtn" style="font-size:18px;padding:10px 30px">Go fishing</button>
+     <button id="newBtn" style="margin-left:8px">New valley</button></p>
+</div>
+
+<div id="shop" class="panel hidden"></div>
+<div id="journal" class="panel hidden"></div>
+<div id="catch" class="panel hidden"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/util.js"></script>
+<script src="js/data.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/world.js"></script>
+<script src="js/scene-sprites.js"></script>
+<script src="js/scene.js"></script>
+<script src="js/actors.js"></script>
+<script src="js/fish.js"></script>
+<script src="js/fishing.js"></script>
+<script src="js/fight.js"></script>
+<script src="js/player.js"></script>
+<script src="js/hud.js"></script>
+<script src="js/menus.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
