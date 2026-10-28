@@ -121,6 +121,8 @@ const World = {
     this.paintLand(rng, moist);
     this.buildTown(rng);
     this.nameWaters(rng);
+    const bad = this.audit();
+    if (bad.length) console.warn('World gen: buildings touching water —', bad.join('; '));
   },
 
   carveBlob(cx, cy, r, kind) {
@@ -296,6 +298,7 @@ const World = {
     const gas = { x: cx + 2, y: cy + 14, w: 4, h: 4, face: 'west', type: 'gas', name: 'Gas Station' };
     // Two pumps on a little forecourt across the street from the kiosk.
     this.pumps = [{ x: cx - 3, y: cy + 15 }, { x: cx - 3, y: cy + 17.5 }];
+    this.fillDry(cx - 6, cy + 10, 14, 12, 0);
     // The bottom of the main street is always dry land (fill in any pond that strayed into it).
     for (let y = cy + 12; y <= cy + 20; y++) for (let x = cx - 6; x <= cx + 7; x++) {
       if (!this.inB(x, y)) continue;
@@ -305,6 +308,7 @@ const World = {
       if (this.tile[i] !== T.FLOOR) this.obj[i] = O.NONE;
     }
     for (const b of [shop, ranger, store, bikes, gas]) {
+      this.fillDry(b.x, b.y, b.w, b.h, 2);
       this.buildings.push(b);
       for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) { this.tile[this.idx(x, y)] = T.FLOOR; this.obj[this.idx(x, y)] = O.NONE; }
     }
@@ -325,6 +329,37 @@ const World = {
     }
   },
 
+  // Any water (or dock) within `m` tiles of the rectangle? Banks slope into the water, so a building
+  // needs a dry margin around it or its corners sink below the surface.
+  waterNear(x, y, w, h, m) {
+    for (let yy = y - m; yy < y + h + m; yy++) for (let xx = x - m; xx < x + w + m; xx++) {
+      if (!this.inB(xx, yy)) return true;
+      const t = this.tile[this.idx(xx, yy)];
+      if (t === T.WATER || t === T.PLANK) return true;
+    }
+    return false;
+  },
+
+  // Turn any water in and around the rectangle into plain grass (for buildings that must go where they go).
+  fillDry(x, y, w, h, m) {
+    for (let yy = y - m; yy < y + h + m; yy++) for (let xx = x - m; xx < x + w + m; xx++) {
+      if (!this.inB(xx, yy)) continue;
+      const i = this.idx(xx, yy);
+      if (this.tile[i] !== T.WATER) continue;
+      this.tile[i] = T.GRASS; this.kind[i] = K.NONE; this.depth[i] = 0; this.flowX[i] = this.flowY[i] = 0; this.obj[i] = O.NONE;
+      if (this.shore) this.shore[i] = 4; // no longer a bank, so bridges don't stretch onto it
+    }
+  },
+
+  // Generation checks: every building (and Dusty's camp) on dry land with a margin. Returns a list of problems.
+  audit() {
+    const bad = [];
+    for (const b of this.buildings) if (this.waterNear(b.x, b.y, b.w, b.h, 1)) bad.push(b.name + ' @' + b.x + ',' + b.y);
+    if (this.dusty && this.waterNear(Math.floor(this.dusty.x) - 1, Math.floor(this.dusty.y) - 1, 3, 3, 1)) bad.push('Dusty camp');
+    for (const p of this.pumps || []) if (this.waterNear(Math.floor(p.x), Math.floor(p.y), 1, 1, 1)) bad.push('pump');
+    return bad;
+  },
+
   // Every tile in the rectangle is dry, buildable land.
   areaFree(x, y, w, h) {
     for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) {
@@ -341,7 +376,7 @@ const World = {
     for (let tries = 0; tries < 5000 && this.houses.length < 14; tries++) {
       const a = rng() * Math.PI * 2, d = 18 + rng() * 85;
       const x = Math.round(this.town.x + Math.cos(a) * d), y = Math.round(this.town.y + Math.sin(a) * d);
-      if (!this.areaFree(x - 1, y - 1, 6, 6)) continue;
+      if (!this.areaFree(x - 1, y - 1, 6, 6) || this.waterNear(x, y, 4, 3, 3)) continue;
       if (this.buildings.some((b) => U.dist(b.x + b.w / 2, b.y + b.h / 2, x + 2, y + 1.5) < 10)) continue;
       for (let yy = y - 1; yy <= y + 4; yy++) for (let xx = x - 1; xx <= x + 4; xx++) {
         const i = this.idx(xx, yy);
@@ -360,11 +395,12 @@ const World = {
     for (let tries = 0; tries < 4000; tries++) {
       const a = rng() * Math.PI * 2, d = 22 + rng() * 22;
       const x = Math.floor(cx + Math.cos(a) * d), y = Math.floor(cy + Math.sin(a) * d);
-      if (!this.areaFree(x - 1, y - 1, 4, 4)) continue;
+      if (!this.areaFree(x - 1, y - 1, 4, 4) || this.waterNear(x - 1, y - 1, 4, 4, 2)) continue;
       for (let yy = y - 1; yy <= y + 2; yy++) for (let xx = x - 1; xx <= x + 2; xx++) this.obj[this.idx(xx, yy)] = O.NONE;
       this.dusty = { x: x + 0.5, y: y + 0.8 };
       return;
     }
+    this.fillDry(cx - 13, cy + 9, 3, 3, 1);
     this.dusty = { x: cx - 12, y: cy + 10 };
   },
 
@@ -451,9 +487,10 @@ const World = {
       if (shoreAt(lx - dx * (1 + e0), ly - dy * (1 + e0)) <= 2 || shoreAt(lx + dx * (n + 1 + e1), ly + dy * (n + 1 + e1)) <= 2) continue;
       // …and never into a building.
       let clear = true;
-      for (let s = -2 - e0; s <= n + 2 + e1 && clear; s++) for (let w = -1; w <= 1; w++) {
+      for (let s = -3 - e0; s <= n + 3 + e1 && clear; s++) for (let w = -2; w <= 2; w++) { // one tile of breathing room
         const bx = lx + dx * s + px * w, by = ly + dy * s + py * w;
-        if (!this.inB(bx, by) || this.tile[this.idx(bx, by)] === T.FLOOR || this.buildingAt(bx + 0.5, by + 0.5)) { clear = false; break; }
+        if (!this.inB(bx, by) || this.tile[this.idx(bx, by)] === T.FLOOR || this.buildingAt(bx + 0.5, by + 0.5)
+          || [...(this.pumps || []), this.dusty].some((q) => q && Math.abs(q.x - bx - 0.5) < 2 && Math.abs(q.y - by - 0.5) < 2)) { clear = false; break; }
       }
       if (!clear) continue;
       for (let s = -2 - e0; s <= n + 2 + e1; s++) for (let w = -1; w <= 1; w++) {
