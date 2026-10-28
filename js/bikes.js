@@ -311,12 +311,19 @@ const Bikes = {
     if (r.state === 'stranded') {
       // Chase the thief for a bit, then make for their old bike (or wait for a lift).
       r.stateT -= dt; r.chaseT -= dt;
-      const goal = r.chaseT > 0 ? { x: Player.x, y: Player.y } : r.noBike ? null : { x: r.x, y: r.y };
+      // Chasing: come up beside you (arm's length, on whichever side they're approaching from), never into you.
+      let goal = null;
+      if (r.chaseT > 0) { const s = Math.atan2(r.py - Player.y, r.px - Player.x); goal = { x: Player.x + Math.cos(s) * 0.95, y: Player.y + Math.sin(s) * 0.95, close: true }; }
+      else if (!r.noBike) goal = { x: r.x, y: r.y };
       if (goal) {
         const a = Math.atan2(goal.y - r.py, goal.x - r.px), sp = r.chaseT > 0 ? 3.2 : 2.2;
-        const nx = r.px + Math.cos(a) * sp * dt, ny = r.py + Math.sin(a) * sp * dt;
+        const gd = U.dist(r.px, r.py, goal.x, goal.y), step = Math.min(sp * dt, goal.close ? Math.max(0, gd - 0.05) : sp * dt);
+        const nx = r.px + Math.cos(a) * step, ny = r.py + Math.sin(a) * step;
         if (!World.blocked(nx, ny)) { r.px = nx; r.py = ny; }
-        r.walkFace = a; r.walkT += dt; r.onFootMoving = true;
+        // Squared up beside you: face you and stop shuffling.
+        const holding = goal.close && gd < 0.2;
+        r.walkFace = holding ? Math.atan2(Player.y - r.py, Player.x - r.px) : a;
+        r.onFootMoving = !holding; if (!holding) r.walkT += dt;
         // Get stuck in: fists up close, and some of them are carrying.
         const pd = U.dist(r.px, r.py, Player.x, Player.y);
         r.hitCD = (r.hitCD || 0) - dt;

@@ -188,6 +188,20 @@ const Jail = {
     const fine = Math.min(Game.money, 30 * days);
     const seized = Game.creel.length, bags = Game.weed || 0;
     Fishing.reelInFast(); Fight.end(); Sfx.setDrag(0);
+    if (Bikes.riding) Bikes.dismount();
+    // A stolen ride gets impounded and handed back to its owner.
+    this.impounded = Game.bike && !Bikes.ownsIt() ? BIKE_BY_ID[Game.bike.id].name : null;
+    if (this.impounded) {
+      const stolen = Game.bike, owner = Bikes.riders.find((r) => r.name === stolen.owner);
+      Game.bike = null; Bikes.syncMine();
+      if (owner) {
+        if (!owner.noBike) Bikes.group.remove(owner.bike);
+        owner.bikeId = stolen.id; owner.plate = stolen.plate; owner.owner = owner.name; owner.hp = 4;
+        owner.bike = Bikes.modelFor(stolen.id); Bikes.group.add(owner.bike);
+        owner.x = owner.px; owner.y = owner.py; owner.noBike = false; owner.state = 'ride'; owner.chaseT = 0; owner.target = Bikes.pickTarget(owner);
+      }
+    }
+    for (const r of Bikes.riders) r.chaseT = 0; // the cops sorted it; nobody's chasing you now
     if (w) { w.state = 'patrol'; w.t = 0; w.checkCool = 200; }
     Game.mode = 'jail';
     const el = document.getElementById('jail');
@@ -216,12 +230,16 @@ const Jail = {
     if (Interior.active) Interior.exit();
     Game.env.day += days; Game.env.hour = 8;
     Game.stats.jailed = (Game.stats.jailed || 0) + 1;
-    Player.place(World.ranger.x + 0.8, World.ranger.y + 1.2);
+    // Out the front door of the Ranger Station (World.ranger is Dale's spot *inside* it).
+    const st = World.buildings.find((b) => b.type === 'ranger'), d = st ? World.doorOf(st) : World.spawn;
+    Player.place(d.x + 0.6, d.y + 0.6);
+    Scene3D.target.set(Player.x, Scene3D.standH(Player.x, Player.y), Player.y);
     Tools.current = 'rod'; Gun.out = false;
     for (const w of Wardens.list) Wardens.relocate(w, 60);
     document.getElementById('jail').classList.add('hidden');
     Game.mode = 'play';
     Game.save();
-    Hud.toast('Released. Ranger Dale sells permits — keep it legal.', UI.accent, 3.5);
+    Hud.toast('Released. Ranger Dale sells permits — keep it legal.' + (this.impounded ? ' The stolen ' + this.impounded + ' went back to its owner.' : ''), UI.accent, 3.5);
+    this.impounded = null;
   },
 };
