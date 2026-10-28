@@ -289,6 +289,13 @@ const World = {
     this.ranger = { x: cabin.x + cabin.w + 0.5, y: cabin.y + cabin.h - 0.5 };
     this.spawn = { x: cx + 0.5, y: cy + 3.5 };
     this.town = { x: cx, y: cy };
+    // General store south of the tackle shack, and a public BBQ by the dock.
+    const store = { x: cx + 2, y: cy + 2, w: 6, h: 4, type: 'store', name: 'General Store' };
+    this.buildings.push(store);
+    for (let y = store.y; y < store.y + store.h; y++) for (let x = store.x; x < store.x + store.w; x++) { this.tile[this.idx(x, y)] = T.FLOOR; this.obj[this.idx(x, y)] = O.NONE; }
+    this.bbq = { x: cx + 2.5, y: sy + 1.5 };
+    this.placeDusty(rng, cx, cy);
+    this.placeHouses(rng);
 
     // Footpaths from town to each lake and out to the rivers.
     for (const l of this.lakes) if (l !== lake && l.kind === K.LAKE) this.carvePath(cx, cy + 6, l.x, l.y);
@@ -297,6 +304,52 @@ const World = {
       this.carvePath(cx, cy + 6, cx + Math.cos(ang) * 110, cy + Math.sin(ang) * 110);
     }
   },
+
+  // Every tile in the rectangle is dry, buildable land.
+  areaFree(x, y, w, h) {
+    for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) {
+      if (!this.inB(xx, yy)) return false;
+      const t = this.tile[this.idx(xx, yy)];
+      if (t === T.WATER || t === T.ROCK || t === T.PLANK || t === T.FLOOR || t === T.PATH) return false;
+    }
+    return true;
+  },
+
+  // Little cottages around the valley: most belong to the anglers, a few are for rent.
+  placeHouses(rng) {
+    this.houses = [];
+    for (let tries = 0; tries < 5000 && this.houses.length < 14; tries++) {
+      const a = rng() * Math.PI * 2, d = 18 + rng() * 85;
+      const x = Math.round(this.town.x + Math.cos(a) * d), y = Math.round(this.town.y + Math.sin(a) * d);
+      if (!this.areaFree(x - 1, y - 1, 6, 6)) continue;
+      if (this.buildings.some((b) => U.dist(b.x + b.w / 2, b.y + b.h / 2, x + 2, y + 1.5) < 10)) continue;
+      for (let yy = y - 1; yy <= y + 4; yy++) for (let xx = x - 1; xx <= x + 4; xx++) {
+        const i = this.idx(xx, yy);
+        this.obj[i] = O.NONE;
+        if (this.tile[i] === T.FOREST || this.tile[i] === T.MEADOW || this.tile[i] === T.MUD) this.tile[i] = T.GRASS;
+      }
+      const b = { x, y, w: 4, h: 3, type: 'house', name: 'Cottage', id: this.houses.length, rent: 25 + Math.floor(rng() * 5) * 5, hue: rng() };
+      this.buildings.push(b); this.houses.push(b);
+    }
+    const vacant = Math.min(4, this.houses.length);
+    this.houses.forEach((b, i) => { b.vacant = i >= this.houses.length - vacant; if (b.vacant) b.name = 'Cottage for rent'; });
+  },
+
+  // A shady character's camp in the woods, not too far from town.
+  placeDusty(rng, cx, cy) {
+    for (let tries = 0; tries < 4000; tries++) {
+      const a = rng() * Math.PI * 2, d = 22 + rng() * 22;
+      const x = Math.floor(cx + Math.cos(a) * d), y = Math.floor(cy + Math.sin(a) * d);
+      if (!this.areaFree(x - 1, y - 1, 4, 4)) continue;
+      for (let yy = y - 1; yy <= y + 2; yy++) for (let xx = x - 1; xx <= x + 2; xx++) this.obj[this.idx(xx, yy)] = O.NONE;
+      this.dusty = { x: x + 0.5, y: y + 0.8 };
+      return;
+    }
+    this.dusty = { x: cx - 12, y: cy + 10 };
+  },
+
+  // Door step in front of a building (doors are on the south face, near the left corner).
+  doorOf(b) { return { x: b.x + 0.9, y: b.y + b.h + 0.55 }; },
 
   carvePath(x0, y0, x1, y1) {
     let x = x0, y = y0, steps = 0;

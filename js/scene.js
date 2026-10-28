@@ -42,6 +42,7 @@ const Scene3D = {
     this.buildProps();
     this.buildPlanks();
     for (const b of World.buildings) this.buildBuilding(b);
+    this.buildCampProps();
     this.buildRain();
   },
 
@@ -73,6 +74,7 @@ const Scene3D = {
 
   // Ground height at a world point (tiles), bilinear between corners.
   groundH(x, y) {
+    if (x < -50) return 0.02; // interiors live off-map
     const W = World.W;
     x = U.clamp(x, 0, World.W - 0.001); y = U.clamp(y, 0, World.H - 0.001);
     const x0 = Math.floor(x), y0 = Math.floor(y), fx = x - x0, fy = y - y0;
@@ -81,6 +83,7 @@ const Scene3D = {
   },
   // Where feet stand: on ground, decking, or wading at the surface.
   standH(x, y) {
+    if (x < -50) return 0.04;
     if (World.tileAt(x, y) === T.PLANK) return 0.28;
     return Math.max(this.groundH(x, y), -0.42);
   },
@@ -253,18 +256,25 @@ const Scene3D = {
   },
 
   buildBuilding(b) {
+    const STYLE = {
+      shop: { wall: 0x8a5a34, roof: 0x3f6e7a, sign: ['TACKLE', '#e9d9a8', '#3a2614'] },
+      ranger: { wall: 0x7a6a48, roof: 0x3f6a3a, sign: ['RANGER', '#2f5a2c', '#f2e6c0'] },
+      store: { wall: 0xe0d6c0, roof: 0xb83a32, sign: ['STORE', '#b83a32', '#fff4e0'] },
+    };
+    const HOUSE_WALLS = [0xe2d3ac, 0xa9c4d2, 0xd7b0a8, 0xbfd0a0, 0xe8dcc8, 0xc8b8d8];
+    const HOUSE_ROOFS = [0x7a3a2a, 0x3f5a7a, 0x5a6a3a, 0x6a4a3a, 0x8a5a2a];
+    const house = b.type === 'house';
+    const st = STYLE[b.type] || { wall: HOUSE_WALLS[Math.floor(b.hue * HOUSE_WALLS.length)], roof: HOUSE_ROOFS[Math.floor(b.hue * 97) % HOUSE_ROOFS.length] };
     const g = new THREE.Group();
-    const wallH = 2.1, shop = b.type === 'shop', ranger = b.type === 'ranger';
+    const wallH = house ? 1.7 : 2.1;
     const base = Math.max(this.groundH(b.x + b.w / 2, b.y + b.h / 2), 0.1);
-    const wall = new THREE.Mesh(new THREE.BoxGeometry(b.w, wallH, b.h - 0.4),
-      new THREE.MeshLambertMaterial({ color: shop ? 0x8a5a34 : ranger ? 0x7a6a48 : 0x6e5136 }));
+    const wall = new THREE.Mesh(new THREE.BoxGeometry(b.w, wallH, b.h - 0.4), new THREE.MeshLambertMaterial({ color: st.wall }));
     wall.position.set(b.w / 2, wallH / 2, b.h / 2 + 0.2);
     g.add(wall);
     // Gable roof as an extruded triangle.
     const shape = new THREE.Shape();
-    shape.moveTo(-0.4, 0); shape.lineTo(b.w + 0.4, 0); shape.lineTo(b.w / 2, 1.5); shape.closePath();
-    const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: b.h + 0.2, bevelEnabled: false }),
-      new THREE.MeshLambertMaterial({ color: shop ? 0x3f6e7a : ranger ? 0x3f6a3a : 0x7a3a2a }));
+    shape.moveTo(-0.4, 0); shape.lineTo(b.w + 0.4, 0); shape.lineTo(b.w / 2, house ? 1.2 : 1.5); shape.closePath();
+    const roof = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: b.h + 0.2, bevelEnabled: false }), new THREE.MeshLambertMaterial({ color: st.roof }));
     roof.position.set(0, wallH, -0.1);
     g.add(roof);
     const door = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 1.3), new THREE.MeshLambertMaterial({ color: 0x3a2614 }));
@@ -273,24 +283,48 @@ const Scene3D = {
     const winMat = new THREE.MeshLambertMaterial({ color: 0xf2d98a, emissive: 0xffb84a, emissiveIntensity: 0 });
     this.windows.push(winMat);
     const win = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.7), winMat);
-    win.position.set(b.w - 1.3, 1.25, b.h + 0.01);
+    win.position.set(b.w - 1.3, house ? 1.0 : 1.25, b.h + 0.01);
     g.add(win);
-    if (shop || ranger) {
+    const signText = st.sign || (b.vacant ? ['FOR RENT', '#f4efe2', '#b83a32'] : null);
+    if (signText) {
       const c = document.createElement('canvas'); c.width = 128; c.height = 32;
       const cx = c.getContext('2d');
-      cx.fillStyle = ranger ? '#2f5a2c' : '#e9d9a8'; cx.fillRect(0, 0, 128, 32);
-      cx.fillStyle = ranger ? '#f2e6c0' : '#3a2614'; cx.font = 'bold 18px sans-serif'; cx.textAlign = 'center';
-      cx.fillText(ranger ? 'RANGER' : 'TACKLE', ranger ? 64 : 56, 23);
-      if (!ranger) {
+      cx.fillStyle = signText[1]; cx.fillRect(0, 0, 128, 32);
+      cx.fillStyle = signText[2]; cx.font = 'bold 18px sans-serif'; cx.textAlign = 'center';
+      cx.fillText(signText[0], b.type === 'shop' ? 56 : 64, 23);
+      if (b.type === 'shop') {
         cx.fillStyle = '#d9a43a'; cx.beginPath(); cx.ellipse(110, 16, 11, 5, 0, 0, 7); cx.fill();
         cx.beginPath(); cx.moveTo(99, 16); cx.lineTo(93, 10); cx.lineTo(93, 22); cx.fill();
       }
-      const sign = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c) }));
-      sign.position.set(b.w / 2, wallH + 0.15, b.h + 0.12);
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(house ? 1.6 : 2.4, house ? 0.4 : 0.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c) }));
+      if (house) {
+        // A little board on a post by the path.
+        const post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 0.08), new THREE.MeshLambertMaterial({ color: 0x5a3d22 }));
+        post.position.set(b.w - 0.5, 0.5, b.h + 0.9); g.add(post);
+        sign.position.set(b.w - 0.5, 1.05, b.h + 0.95);
+      } else sign.position.set(b.w / 2, wallH + 0.15, b.h + 0.12);
       g.add(sign);
     }
     g.position.set(b.x, base, b.y);
     this.world.add(g);
+  },
+
+  // Public BBQ by the dock and Dusty's tent in the woods.
+  buildCampProps() {
+    const dark = new THREE.MeshLambertMaterial({ color: 0x2a2a2e });
+    const q = World.bbq, bbq = new THREE.Group();
+    const grill = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.28, 0.3, 14), dark); grill.position.y = 0.75; bbq.add(grill);
+    const lid = new THREE.Mesh(new THREE.SphereGeometry(0.4, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0x8a2a22 }));
+    lid.position.set(0, 0.9, -0.2); lid.rotation.x = -1.1; bbq.add(lid);
+    for (const [x, z] of [[-0.25, -0.2], [0.25, -0.2], [0, 0.28]]) {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.65, 6), dark); leg.position.set(x, 0.32, z); bbq.add(leg);
+    }
+    bbq.position.set(q.x, this.groundH(q.x, q.y), q.y);
+    this.world.add(bbq);
+    const d = World.dusty;
+    const tent = new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.3, 4), new THREE.MeshLambertMaterial({ color: 0x6a7a3a }));
+    tent.rotation.y = Math.PI / 4; tent.position.set(d.x + 1.4, this.groundH(d.x, d.y) + 0.65, d.y - 0.8);
+    this.world.add(tent);
   },
 
   buildRain() {
@@ -315,8 +349,12 @@ const Scene3D = {
     this.lantern.intensity = (1 - day) * 1.6;
     this.waterMat.uniforms.uLight.value = 0.35 + 0.65 * day * w + (1 - day) * 0.1;
     for (const m of this.windows) m.emissiveIntensity = (1 - day) * 1.2;
+    // Indoors: a warm lamp and no sky.
+    const inside = typeof Interior !== 'undefined' && Interior.active;
+    if (inside) { this.scene.background = new THREE.Color(0x15110e); Interior.lamp.position.set(inside.x0 + inside.w / 2, 2.4, inside.y0 + inside.h / 2); }
+    if (typeof Interior !== 'undefined' && Interior.lamp) Interior.lamp.intensity = inside ? 1.4 : 0;
     // Rain follows the camera target.
-    this.rain.visible = env.weather.id === 'rain';
+    this.rain.visible = env.weather.id === 'rain' && !inside;
     if (this.rain.visible) {
       const a = this.rain.geometry.attributes.position.array;
       this.rain.userData.drops.forEach((d, i) => {

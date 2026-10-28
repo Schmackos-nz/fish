@@ -120,6 +120,10 @@
   .switch.on { background: var(--accent); }
   .switch.on::after { transform: translateX(20px); }
   #pause .sheet { width: 340px; text-align: center; }
+  #misc { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(680px, 94vw); max-height: 88vh; overflow-y: auto; }
+  #misc .row button { margin-left: 4px; }
+  #fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .35s; z-index: 8; }
+  #fade.show { opacity: 1; transition: none; }
   #permits { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(720px, 94vw); max-height: 88vh; overflow-y: auto; }
   .owned { color: var(--good); font-weight: 600; font-size: 13px; }
   #catch .legal { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
@@ -170,7 +174,9 @@
       <div><span>Run</span><span><kbd>Shift</kbd></span></div>
       <div><span>Crouch (sneak)</span><span><kbd>C</kbd></span></div>
       <div><span>Jump · Dodge roll</span><span><kbd>Space</kbd> <kbd>Q</kbd></span></div>
-      <div><span>Talk · Shop · Permits</span><span><kbd>E</kbd></span></div>
+      <div><span>Doors · talk · shops · cook</span><span><kbd>E</kbd></span></div>
+      <div><span>Bag · eat food</span><span><kbd>I</kbd></span></div>
+      <div><span>Quick travel</span><span>Click places on the map (<kbd>M</kbd>)</span></div>
     </section>
     <section><h4>Fishing</h4>
       <div><span>Cast</span><span>Hold, release at peak</span></div>
@@ -193,6 +199,13 @@
       <div><span>Swat a bug</span><span>Click it</span></div>
       <div><span>Journal · Map</span><span><kbd>J</kbd> <kbd>M</kbd></span></div>
       <div><span>Pause</span><span><kbd>Esc</kbd></span></div>
+    </section>
+    <section><h4>Living here</h4>
+      <div><span>Energy</span><span>Eat to keep it up</span></div>
+      <div><span>Food</span><span>General Store · cook fish</span></div>
+      <div><span>Cook</span><span>BBQ by the dock · home stove</span></div>
+      <div><span>Rent a cottage</span><span>Bed · stove · storage</span></div>
+      <div><span>Miss rent</span><span>Evicted, storage lost</span></div>
     </section>
     <section><h4>The law</h4>
       <div><span>Buy area permits</span><span>Ranger Dale</span></div>
@@ -229,6 +242,8 @@
 <div id="catch" class="panel hidden"></div>
 <div id="share" class="panel hidden"></div>
 <div id="permits" class="panel hidden"></div>
+<div id="misc" class="panel hidden"></div>
+<div id="fade"></div>
 
 <div id="jail" class="modal hidden"><div class="sheet jail-sheet">
   <div class="bars"></div>
@@ -243,28 +258,31 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=16"></script>
-<script src="js/data.js?v=16"></script>
-<script src="js/audio.js?v=16"></script>
-<script src="js/world.js?v=16"></script>
-<script src="js/scene-sprites.js?v=16"></script>
-<script src="js/scene.js?v=16"></script>
-<script src="js/folk.js?v=16"></script>
-<script src="js/actors.js?v=16"></script>
-<script src="js/fish.js?v=16"></script>
-<script src="js/fishing.js?v=16"></script>
-<script src="js/fight.js?v=16"></script>
-<script src="js/player.js?v=16"></script>
-<script src="js/npcs.js?v=16"></script>
-<script src="js/gun.js?v=16"></script>
-<script src="js/bugs.js?v=16"></script>
-<script src="js/floaters.js?v=16"></script>
-<script src="js/animals.js?v=16"></script>
-<script src="js/wardens.js?v=16"></script>
-<script src="js/tools.js?v=16"></script>
-<script src="js/hud.js?v=16"></script>
-<script src="js/share.js?v=16"></script>
-<script src="js/menus.js?v=16"></script>
-<script src="js/main.js?v=16"></script>
+<script src="js/util.js?v=18"></script>
+<script src="js/data.js?v=18"></script>
+<script src="js/audio.js?v=18"></script>
+<script src="js/world.js?v=18"></script>
+<script src="js/scene-sprites.js?v=18"></script>
+<script src="js/scene.js?v=18"></script>
+<script src="js/folk.js?v=18"></script>
+<script src="js/actors.js?v=18"></script>
+<script src="js/fish.js?v=18"></script>
+<script src="js/fishing.js?v=18"></script>
+<script src="js/fight.js?v=18"></script>
+<script src="js/player.js?v=18"></script>
+<script src="js/npcs.js?v=18"></script>
+<script src="js/gun.js?v=18"></script>
+<script src="js/bugs.js?v=18"></script>
+<script src="js/floaters.js?v=18"></script>
+<script src="js/animals.js?v=18"></script>
+<script src="js/wardens.js?v=18"></script>
+<script src="js/interiors.js?v=18"></script>
+<script src="js/life.js?v=18"></script>
+<script src="js/weed.js?v=18"></script>
+<script src="js/tools.js?v=18"></script>
+<script src="js/hud.js?v=18"></script>
+<script src="js/share.js?v=18"></script>
+<script src="js/menus.js?v=18"></script>
+<script src="js/main.js?v=18"></script>
 </body>
 </html>

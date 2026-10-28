@@ -70,7 +70,7 @@ const Fishing = {
       case 'idle':
         this.bend = U.lerp(this.bend, 0, dt * 6);
         // Press and hold to load the rod; the bail flips open by itself.
-        if (Input.mousePressed && Tools.current === 'rod') {
+        if (Input.mousePressed && Tools.current === 'rod' && !Interior.active) {
           if (!this.canCastWith(this.lureId)) { this.say('Out of that lure — pick another from the lure bar.', '#e2584d'); break; }
           this.bailOpen = true; Sfx.bail();
           this.state = 'charging'; this.chargeT = 0;
@@ -79,7 +79,7 @@ const Fishing = {
       case 'charging': {
         this.chargeT += dt;
         const ph = (this.chargeT / 1.3) % 2;
-        this.power = ph < 1 ? ph : 2 - ph;
+        this.power = (ph < 1 ? ph : 2 - ph) * Life.maxPower();
         this.bend = -this.power;
         if (!Input.mouse.down) this.release();
         break;

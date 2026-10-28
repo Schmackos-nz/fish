@@ -57,6 +57,9 @@ const Game = {
     this.stats = { caught: 0, released: 0 };
     this.npcRecords = {};
     this.ammo = 12;
+    this.energy = 100; this.pantry = [{ name: 'Bread roll', energy: 15 }, { name: 'Bread roll', energy: 15 }];
+    this.ingredients = { batter: 0, herbs: 0 }; this.storage = emptyStorage();
+    this.home = null; this.rentDebt = 0; this.lastDay = 1; this.weed = 0; this.seeds = 0; this.plants = [];
     this.permits = { town: true }; // the town lake permit comes with the cabin
     this.spray = 3;
     Object.assign(this.env, { hour: 6, day: 1, weather: WEATHERS[0], weatherT: 3 });
@@ -67,7 +70,7 @@ const Game = {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         seed: this.seed, money: this.money, lures: this.lures, owned: this.owned, drag: this.drag,
         gear: { rod: this.gear.rod.id, reel: this.gear.reel.id, line: this.gear.line.id },
-        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords, ammo: this.ammo, spray: this.spray, permits: this.permits,
+        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords, ammo: this.ammo, spray: this.spray, permits: this.permits, energy: this.energy, pantry: this.pantry, ingredients: this.ingredients, storage: this.storage, home: this.home, rentDebt: this.rentDebt, lastDay: this.lastDay, weed: this.weed, seeds: this.seeds, plants: this.plants,
         px: Player.x, py: Player.y, hour: this.env.hour, day: this.env.day, weather: this.env.weather.id,
       }));
     } catch (e) { /* storage unavailable: play on without saving */ }
@@ -82,6 +85,7 @@ const Game = {
       this.ammo = s.ammo === undefined ? 12 : s.ammo;
       this.spray = s.spray === undefined ? 3 : s.spray;
       this.permits = s.permits || { town: true };
+      for (const k of ['energy', 'pantry', 'ingredients', 'storage', 'home', 'rentDebt', 'lastDay', 'weed', 'seeds', 'plants']) if (s[k] !== undefined) this[k] = s[k];
       Object.assign(this, { money: s.money, lures: s.lures, owned: s.owned, drag: s.drag, creel: s.creel, creelMax: s.creelMax, journal: s.journal, stats: s.stats });
       this.gear = {
         rod: RODS.find((r) => r.id === s.gear.rod) || RODS[0],
@@ -134,6 +138,9 @@ function buildWorld(seed, savedPos) {
   Gun.out = false; Gun.floaters = []; Bugs.list = []; Tools.current = 'rod';
   Npcs.init();
   Wardens.init();
+  Interior.init();
+  Weed.init();
+  Travel.list = null;
   Floaters.init();
   Animals.init();
   if (savedPos && !World.blocked(savedPos.x, savedPos.y)) Player.place(savedPos.x, savedPos.y);
@@ -258,6 +265,7 @@ function handleGlobalKeys() {
   }
   if (Menus.open === 'catch') return;
   if (Input.pressed('KeyJ')) Menus.toggleJournal();
+  if (Input.pressed('KeyI')) { if (Menus.open === 'misc') Menus.close(); else if (!Menus.open) Life.openBag(); }
   if (Input.pressed('KeyM')) Hud.bigMap = !Hud.bigMap;
   if (Input.pressed('KeyH')) Hud.toggleControls();
   if (Input.pressed('KeyG') && !Menus.open) Tools.select('gun');
@@ -268,12 +276,7 @@ function handleGlobalKeys() {
   }
   if (Menus.open) return;
   const k = World.shopkeeper;
-  if (Input.pressed('KeyE') && Fishing.state !== 'fight') {
-    const npc = Npcs.near(Player.x, Player.y, 2.5);
-    if (U.dist(Player.x, Player.y, k.x, k.y) < 3) Menus.openShop();
-    else if (U.dist(Player.x, Player.y, World.ranger.x, World.ranger.y) < 3) Menus.openPermits();
-    else if (npc && npc.state !== 'fight' && npc.state !== 'show') Npcs.talk(npc);
-  }
+  if (Input.pressed('KeyE') && Fishing.state !== 'fight') { const act = Interact.best(); if (act) act.run(); }
   if (Fishing.state !== 'fight' && Input.wheel) {
     Scene3D.camDist = U.clamp(Scene3D.camDist + Input.wheel * 1.5, 8, 34);
     Settings.zoom = Scene3D.camDist; Settings.save();
@@ -327,6 +330,8 @@ function frame(now) {
       Bugs.update(dt);
       Floaters.update(dt);
       Animals.update(dt);
+      Interior.update(dt);
+      Life.update(dt);
     }
     Hud.update(dt);
     // Frame the action: drift the camera toward the lure or the hooked fish.
@@ -350,6 +355,7 @@ function frame(now) {
     Gun.render(dt);
     Floaters.render();
     Animals.render();
+    Weed.render();
     Scene3D.render(Game.time);
     Hud.draw();
     saveT += dt;

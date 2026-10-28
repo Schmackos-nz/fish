@@ -5,7 +5,7 @@ const Menus = {
   open: null,
 
   close() {
-    for (const id of ['shop', 'journal', 'catch', 'share', 'permits']) document.getElementById(id).classList.add('hidden');
+    for (const id of ['shop', 'journal', 'catch', 'share', 'permits', 'misc']) document.getElementById(id).classList.add('hidden');
     this.open = null;
   },
 

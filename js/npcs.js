@@ -23,6 +23,12 @@ const SAY = {
   playerSmall: ['Throw that minnow back!', 'Cute. I use those for bait.', 'Hey, a fish is a fish!', 'It\'ll grow… in about five years.'],
   playerPrized: ['IS THAT GOLD?! Where\'d you hook that?!', 'No way. NO WAY. A prized one!'],
   gun: ['WHAT are you DOING?!', 'That is NOT how fishing works!', 'Is that even legal?!', 'Somebody call the warden!', 'CHEATER!', 'You\'ve scared off every fish in the lake!', 'My ears! MY EARS!'],
+  brawl: ['POW!', 'WHACK!', 'OOF!', 'MY SPOT!', 'Take that!', 'Ow, my hat!'],
+  claim: ['Oi! This is MY spot!', 'I was here first!', 'Find your own bank!'],
+  lose: ['Fine! Keep your stupid spot!', 'This isn\'t over!', 'My lawyer will hear about this.'],
+  win: ['And STAY out!', 'Ha! Mine.', 'Nobody steals my spot.'],
+  crowd: ['Bit close, aren\'t you?', 'You\'re crowding my line.', 'Find your own spot, mate!'],
+  shove: ['GET YOUR OWN SPOT!', 'OUT of my water!'],
   playerLoss: ['Ooh, tough break!', 'Should\'ve loosened your drag!', 'Happens to the best of us… mostly you, though.'],
 };
 
@@ -53,7 +59,9 @@ const Npcs = {
         state: 'cast', t: 0.5 + rng() * 2, casts: 3 + ((rng() * 4) | 0), lure: null, fish: null, held: null,
         bubble: null, bubbleT: 0, pose: 'normal', walkT: 0, idleT: 10 + rng() * 20,
         rec: (Game.npcRecords && Game.npcRecords[name]) || { count: 0, best: 0, sp: null },
+        home: (World.houses || []).filter((h) => !h.vacant)[i] || null,
       };
+      if (n.home) { n.home.owner = name; n.home.name = name + '\'s house'; }
       this.buildMeshes(n);
       this.list.push(n);
     });
@@ -106,7 +114,16 @@ const Npcs = {
       n.bubbleT = Math.max(0, n.bubbleT - dt);
       if (n.poseT !== undefined) { n.poseT -= dt; if (n.poseT <= 0) { n.pose = 'normal'; n.poseT = undefined; } }
       const close = U.dist(n.x, n.y, Player.x, Player.y) < 18;
+      // Evenings they head home to bed; mornings they're back out.
+      const night = Game.mode !== 'title' && (Game.env.hour >= 21 || Game.env.hour < 5);
+      if (night && n.home && !n.goingHome && ['wait', 'cast', 'walk', 'chat'].includes(n.state)) {
+        n.goingHome = true; n.lure = null; n.fish = null;
+        const d = World.doorOf(n.home);
+        n.spot = { x: d.x, y: d.y, ang: Math.PI / 2 }; n.state = 'walk'; n.walkT = 0;
+      }
+      if (n.state === 'home') { if (!night) { n.goingHome = false; n.state = 'cast'; n.casts = 0; n.t = Math.random() * 15; } continue; }
       switch (n.state) {
+        case 'brawl': this.brawlTick(n, dt, close); break;
         case 'walk': this.walk(n, dt); break;
         case 'cast': if (n.t <= 0) this.cast(n); break;
         case 'wait': this.waitBite(n, dt, close); break;
@@ -126,7 +143,14 @@ const Npcs = {
   walk(n, dt) {
     const s = n.spot;
     const d = U.dist(n.x, n.y, s.x, s.y);
-    if (d < 0.3) { n.state = 'cast'; n.t = 1 + Math.random(); n.face = s.ang; n.casts = 3 + ((Math.random() * 4) | 0); return; }
+    if (d < 0.3) {
+      if (n.goingHome) { n.state = 'home'; return; }
+      n.state = 'cast'; n.t = 1 + Math.random(); n.face = s.ang; n.casts = 3 + ((Math.random() * 4) | 0);
+      // Someone's already fishing here? Just like real life, it's on.
+      const rival = this.list.find((o) => o !== n && ['wait', 'cast', 'fight'].includes(o.state) && U.dist(o.x, o.y, n.x, n.y) < 3);
+      if (rival) this.brawl(n, rival);
+      return;
+    }
     const ang = Math.atan2(s.y - n.y, s.x - n.x);
     const sp = 2.2 * dt;
     const nx = n.x + Math.cos(ang) * sp, ny = n.y + Math.sin(ang) * sp;
@@ -136,6 +160,7 @@ const Npcs = {
     n.face = ang; n.walkT += dt;
     n.stuck = moved ? 0 : (n.stuck || 0) + dt;
     // Wandering anglers don't pathfind; if they wedge against trees, they pick somewhere else.
+    if ((n.stuck > 1.5 || n.walkT > 40) && n.goingHome) { n.x = s.x; n.y = s.y; n.state = 'home'; return; }
     if (n.stuck > 1.5 || n.walkT > 40) { n.spot = this.nearestSpot(n.x, n.y, n.spot); n.walkT = 0; n.stuck = 0; if (U.dist(n.x, n.y, n.spot.x, n.spot.y) > 30) { n.x = n.spot.x; n.y = n.spot.y; } }
   },
 
@@ -143,7 +168,10 @@ const Npcs = {
     if (n.casts-- <= 0) {
       // Time to move on: another bank within reach.
       const cands = this.spots.filter((s) => { const d = U.dist(n.x, n.y, s.x, s.y); return d > 6 && d < 45 && !this.list.some((o) => o.spot === s); });
-      n.spot = cands.length ? cands[(Math.random() * cands.length) | 0] : n.spot;
+      // Now and then someone fancies a spot that's already taken.
+      const taken = this.list.filter((o) => o !== n && o.state === 'wait' && U.dist(o.x, o.y, n.x, n.y) < 45);
+      if (taken.length && Math.random() < 0.25) { const o = taken[(Math.random() * taken.length) | 0]; n.spot = { x: o.x + 0.2, y: o.y + 0.2, ang: o.face }; }
+      else n.spot = cands.length ? cands[(Math.random() * cands.length) | 0] : n.spot;
       n.state = 'walk'; n.walkT = 0; n.lure = null;
       return;
     }
@@ -167,6 +195,13 @@ const Npcs = {
     const nx = l.x + (n.x - l.x) * k, ny = l.y + (n.y - l.y) * k;
     if (World.isWater(nx, ny)) { l.x = nx; l.y = ny; }
     if (d < 2 || !World.isWater(nx, ny)) { n.state = 'cast'; n.t = 0.8 + Math.random(); return; }
+    // The player fishing right on top of them gets an earful, then a shove.
+    if (Fishing.state !== 'idle' && U.dist(n.x, n.y, Player.x, Player.y) < 3.2) {
+      const before = n.crowdT || 0;
+      n.crowdT = before + dt;
+      if ((before < 2 && n.crowdT >= 2) || (before < 6 && n.crowdT >= 6)) this.say(n, U.pick(Math.random, SAY.crowd), 2.6);
+      if (n.crowdT >= 10) { n.crowdT = 0; this.shove(n); }
+    } else n.crowdT = 0;
     n.idleT -= dt;
     if (n.idleT <= 0) { n.idleT = 25 + Math.random() * 40; if (close) this.say(n, U.pick(Math.random, SAY.idle)); }
     const e = Game.env;
@@ -257,6 +292,43 @@ const Npcs = {
     }
   },
 
+  brawl(a, b) {
+    for (const [n, o] of [[a, b], [b, a]]) {
+      n.state = 'brawl'; n.t = 4; n.foe = o; n.lure = null; n.fish = null; n.bx = n.x; n.by = n.y;
+      n.face = Math.atan2(o.y - n.y, o.x - n.x);
+    }
+    a.brawlLead = true; b.brawlLead = false;
+    this.say(a, U.pick(Math.random, SAY.claim), 2); this.say(b, 'Says WHO?!', 2);
+    if (U.dist(a.x, a.y, Player.x, Player.y) < 40) Hud.toast(a.name + ' and ' + b.name + ' are brawling over a fishing spot!', UI.accent, 2.6);
+  },
+
+  brawlTick(n, dt, close) {
+    n.pose = Math.floor(Game.time * 7 + (n.brawlLead ? 0 : 1)) % 2 ? 'brag' : 'hold'; n.poseT = 0.2;
+    n.x = n.bx + Math.sin(Game.time * 31 + (n.brawlLead ? 0 : 2)) * 0.12;
+    n.y = n.by + Math.cos(Game.time * 27) * 0.06;
+    if (Math.random() < dt * 1.4) { this.say(n, U.pick(Math.random, SAY.brawl), 0.6); if (close) Sfx.slap(0.8); }
+    if (n.t > 0 || !n.brawlLead) return;
+    // Settle it: the loser storms off to find somewhere else.
+    const o = n.foe, [winner, loser] = Math.random() < 0.5 ? [n, o] : [o, n];
+    for (const m of [n, o]) { m.x = m.bx; m.y = m.by; m.pose = 'normal'; m.poseT = undefined; m.foe = null; m.brawlLead = false; }
+    winner.state = 'cast'; winner.t = 1.5; winner.casts = 3;
+    loser.state = 'cast'; loser.t = 0.3; loser.casts = 0;
+    this.say(winner, U.pick(Math.random, SAY.win), 2.6); this.say(loser, U.pick(Math.random, SAY.lose), 3);
+  },
+
+  shove(n) {
+    const a = Math.atan2(Player.y - n.y, Player.x - n.x);
+    for (let k = 0; k < 8; k++) {
+      const nx = Player.x + Math.cos(a) * 0.25, ny = Player.y + Math.sin(a) * 0.25;
+      if (World.blocked(nx, ny)) break;
+      Player.x = nx; Player.y = ny;
+    }
+    if (Fishing.state !== 'fight') Fishing.reelInFast();
+    Bugs.shake = 1; Sfx.slap(1);
+    this.say(n, U.pick(Math.random, SAY.shove), 2.6, 'brag');
+    Hud.toast(n.name + ' shoved you off their spot!', UI.bad, 2);
+  },
+
   onPlayerLoss() {
     const n = this.near(Player.x, Player.y, 16);
     if (n && Math.random() < 0.7) this.say(n, U.pick(Math.random, SAY.playerLoss), 3);
@@ -299,7 +371,7 @@ const Npcs = {
 
   render() {
     for (const n of this.list) {
-      const vis = U.dist(n.x, n.y, Player.x, Player.y) < 45;
+      const vis = n.state !== 'home' && U.dist(n.x, n.y, Player.x, Player.y) < 45;
       for (const m of [n.mesh, n.shadow, n.rod, n.line, n.bob, n.fishMesh, n.heldMesh]) m.visible = vis;
       if (!vis) continue;
       const base = Scene3D.standH(n.x, n.y);
@@ -312,7 +384,7 @@ const Npcs = {
       n.shadow.position.set(n.x, Math.max(base, 0.01) + 0.015, n.y);
 
       // Rod: up and bent during a fight, laid back mid-cast, hidden while walking or posing.
-      const showRod = !walking && n.pose === 'normal';
+      const showRod = !walking && n.pose === 'normal' && n.state !== 'brawl';
       n.rod.visible = n.line.visible = showRod;
       const hand = Folk.handWorld(n.x, n.y, base, dir, n.mesh.scale.x);
       const fighting = n.state === 'fight';

@@ -95,10 +95,11 @@ const Wardens = {
           }
         } else { tx = w.target.x; ty = w.target.y; speed = 2.2; }
         // What can they see?
+        Weed.wardenSweep(w);
         if (pd < sight) {
           const zone = Permits.fishingIllegally();
           if (zone) this.startChase(w, 'Fishing ' + Permits.name(zone) + ' without a permit');
-          else if (w.checkCool <= 0 && Game.creel.length && Fishing.state !== 'fight') { w.state = 'inspect'; w.t = 0; this.say(w, WARDEN_SAY.check); Hud.toast(w.name + ' wants to inspect your creel.', UI.accent, 2.4); }
+          else if (w.checkCool <= 0 && (Game.creel.length || Game.weed > 0) && Fishing.state !== 'fight') { w.state = 'inspect'; w.t = 0; this.say(w, WARDEN_SAY.check); Hud.toast(w.name + ' wants to inspect your creel.', UI.accent, 2.4); }
           else if (w.checkCool <= 0) w.checkCool = 40; // nothing to check; look again later
         }
       } else if (w.state === 'inspect') {
@@ -142,6 +143,7 @@ const Wardens = {
   },
 
   inspect(w) {
+    if (Game.weed > 0) return Jail.sentence(['Possession of marijuana (' + Game.weed + ' bag' + (Game.weed > 1 ? 's' : '') + ')'], w);
     const bad = Permits.undersized();
     if (bad.length) {
       const f = bad[0], sp = SPECIES_BY_ID[f.id];
@@ -183,19 +185,14 @@ const Wardens = {
       if (w.bubbleT > 0) hud.pill(w.bubble, sx, sy - 6, w.state === 'chase' ? UI.bad : UI.ink, 12);
       else hud.pill(w.state === 'chase' ? '! ' + w.name : w.name, sx, sy - 6, w.state === 'chase' ? UI.bad : '#C9B98A', 10);
     }
-    const r = World.ranger;
-    if (U.dist(r.x, r.y, Player.x, Player.y) < 3) {
-      const [sx, sy] = Scene3D.project(r.x, r.y, 1.9);
-      hud.pill('E  ·  Ranger Dale — permits', sx, sy, UI.accent, 12);
-    }
   },
 };
 
 const Jail = {
   sentence(reasons, w) {
-    const days = 1 + reasons.length + (reasons.some((r) => /firearm|Fleeing/.test(r)) ? 1 : 0) + Permits.undersized().length;
+    const days = 1 + reasons.length + (reasons.some((r) => /firearm|Fleeing/.test(r)) ? 1 : 0) + (reasons.some((r) => /marijuana/.test(r)) ? 2 : 0) + Permits.undersized().length;
     const fine = Math.min(Game.money, 30 * days);
-    const seized = Game.creel.length;
+    const seized = Game.creel.length, bags = Game.weed || 0;
     Fishing.reelInFast(); Fight.end(); Sfx.setDrag(0);
     if (w) { w.state = 'patrol'; w.t = 0; w.checkCool = 200; }
     Game.mode = 'jail';
@@ -204,7 +201,7 @@ const Jail = {
     el.querySelector('#jailTerms').innerHTML =
       `<div><span>Sentence</span><b>${days} day${days > 1 ? 's' : ''}</b></div>` +
       `<div><span>Fine</span><b>${U.fmtMoney(fine)}</b></div>` +
-      `<div><span>Catch confiscated</span><b>${seized} fish</b></div>`;
+      `<div><span>Confiscated</span><b>${seized} fish${bags ? ' · ' + bags + ' bags of weed' : ''}${Game.seeds ? ' · ' + Game.seeds + ' seeds' : ''}</b></div>`;
     const btn = el.querySelector('#jailBtn'), bar = el.querySelector('#jailBar');
     bar.style.width = '0%'; btn.disabled = false; btn.textContent = 'Serve your time';
     el.classList.remove('hidden');
@@ -221,7 +218,8 @@ const Jail = {
 
   release(days, fine) {
     Game.money -= fine;
-    Game.creel = [];
+    Game.creel = []; Game.weed = 0; Game.seeds = 0;
+    if (Interior.active) Interior.exit();
     Game.env.day += days; Game.env.hour = 8;
     Game.stats.jailed = (Game.stats.jailed || 0) + 1;
     Player.place(World.ranger.x + 0.8, World.ranger.y + 1.2);

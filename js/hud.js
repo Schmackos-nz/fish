@@ -150,7 +150,7 @@ const Hud = {
   },
 
   drawStatus(x, y) {
-    const e = Game.env, w = 248, h = 118;
+    const e = Game.env, w = 248, h = 140;
     this.card(x, y, w, h);
     const hh = Math.floor(e.hour), mm = Math.floor((e.hour % 1) * 60);
     this.icon(e.daylight > 0.3 ? 'sun' : 'moon', x + 26, y + 28);
@@ -162,13 +162,16 @@ const Hud = {
     this.text(U.fmtMoney(Game.money), x + 42, y + 82, UI.accent, 18, 700);
     this.text(Game.creel.length + ' / ' + Game.creelMax, x + w - 16, y + 81, UI.ink, 13, 'right', 600);
     this.icon('creel', x + w - 64, y + 76);
-    const where = World.waterName(Fishing.lure ? Fishing.lure.x : Player.x, Fishing.lure ? Fishing.lure.y : Player.y) || 'The valley';
+    const where = Interior.active ? Interior.active.b.name : World.waterName(Fishing.lure ? Fishing.lure.x : Player.x, Fishing.lure ? Fishing.lure.y : Player.y) || 'The valley';
     this.icon('pin', x + 26, y + 102, 0.9);
     this.text(where, x + 38, y + 106, UI.water, 12, 500);
     // Permit status for the water you're fishing (or looking at).
     const px = Fishing.lure ? Fishing.lure.x : Input.mouse.wx, py = Fishing.lure ? Fishing.lure.y : Input.mouse.wy;
     const zone = Permits.zoneAt(px, py) || Permits.zoneAt(Player.x, Player.y);
-    if (zone) {
+    // Energy
+    this.label('Energy', x + 16, y + 128);
+    this.bar(x + 80, y + 120, w - 96, 8, Game.energy / 100, Game.energy < 20 ? UI.bad : Game.energy < 45 ? UI.accent : UI.good);
+    if (zone && !Interior.active) {
       const ok = Permits.has(zone);
       this.text(ok ? '✓ Permit' : '✗ No permit', x + w - 16, y + 106, ok ? UI.good : UI.bad, 11, 'right', 600);
     }
@@ -193,9 +196,8 @@ const Hud = {
       else if (tool === 'spray') r(['Click'], 'Spray · ' + (Game.spray || 0) + ' cans', { hot: Bugs.list.length > 0 });
       else if (tool === 'binos') r(['Hold'], 'Scout for fish & game', { held: Tools.looking });
       r(['1–4'], tool === 'hands' ? 'Equip a tool' : 'Switch tool');
-      if (U.dist(Player.x, Player.y, k.x, k.y) < 3) r(['E'], 'Tackle shack', { hot: true });
-      else if (U.dist(Player.x, Player.y, World.ranger.x, World.ranger.y) < 3) r(['E'], 'Ranger Dale — permits', { hot: true });
-      else if (Npcs.near(Player.x, Player.y, 2.5)) r(['E'], 'Chat', { hot: true });
+      if (this.act) r(['E'], this.act.label, { hot: true });
+      r(['I'], 'Bag · eat · energy ' + Math.round(Game.energy));
       return rows;
     }
     switch (st) {
@@ -270,6 +272,10 @@ const Hud = {
   },
 
   click(x, y) {
+    if (this.bigMap) {
+      for (const t of this.travelRects || []) if (x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h) { Travel.go(t.d); return true; }
+      return true;
+    }
     if (Bugs.swat(x, y)) return true;
     const hit = (s) => x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h;
     if (this.reel) {
@@ -288,6 +294,7 @@ const Hud = {
 
   // Round minimap with a compass ring.
   drawMinimap(cx, cy) {
+    if (Interior.active) { this.card(cx - 82, cy - 30, 164, 60, { r: 30 }); this.text('Indoors', cx, cy + 5, UI.muted, 13, 'center', 600); return; }
     const g = this.g, R = 76, s = 1.6;
     g.save();
     g.shadowColor = 'rgba(0,0,0,0.4)'; g.shadowBlur = 18; g.shadowOffsetY = 6;
@@ -329,13 +336,21 @@ const Hud = {
     g.fillStyle = 'rgba(4,7,9,0.6)'; g.fillRect(0, 0, W, H);
     this.card(x - 16, y - 52, size + 32, size + 68, { fill: UI.cardHi, r: 18 });
     this.text('The Valley', x, y - 22, UI.ink, 20, 700);
-    this.text('M or Esc to close', x + size, y - 22, UI.dim, 12, 'right');
+    this.text('Click a place to travel there (costs time) · M to close', x + size, y - 22, UI.dim, 12, 'right');
     g.save(); g.beginPath(); g.roundRect(x, y, size, size, 10); g.clip();
     g.imageSmoothingEnabled = false;
     g.drawImage(Art.minimap, x, y, size, size);
     g.restore();
-    for (const l of World.lakes) if (l.kind === K.LAKE) this.pill(l.name, x + l.x * k, y + (l.y - l.r - 2) * k, UI.ink, 11);
-    this.pill('Tackle shack', x + World.town.x * k, y + (World.town.y + 9) * k, UI.accent, 11);
+    // Quick-travel stops: click one to go there (costs in-game time).
+    this.travelRects = [];
+    for (const d of Travel.dests()) {
+      const px = x + d.x * k, py = y + d.y * k, h = Travel.cost(d), lbl = d.name + ' · ' + (h < 1 ? Math.round(h * 60) + 'm' : h.toFixed(1) + 'h');
+      const g2 = this.g; g2.font = '600 11px ' + UI.font;
+      const tw = g2.measureText(lbl).width + 18;
+      const hover = Math.abs(Input.mouse.sx - px) < tw / 2 && Math.abs(Input.mouse.sy - py) < 12;
+      this.pill(lbl, px, py, d.home ? UI.good : hover ? UI.accent : UI.ink, 11);
+      this.travelRects.push({ x: px - tw / 2, y: py - 12, w: tw, h: 24, d });
+    }
     g.fillStyle = '#fff'; g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 2;
     g.beginPath(); g.arc(x + Player.x * k, y + Player.y * k, 6, 0, 7); g.stroke(); g.fill();
   },
@@ -510,15 +525,12 @@ const Hud = {
   },
 
   drawWorldLabels() {
-    const k = World.shopkeeper;
-    if (U.dist(Player.x, Player.y, k.x, k.y) < 3) {
-      const [sx, sy] = Scene3D.project(k.x, k.y, 1.9);
-      this.pill('E  ·  Hettie\'s Tackle', sx, sy, UI.accent, 12);
-    }
-    const npc = Npcs.near(Player.x, Player.y, 2.5);
-    if (npc && !npc.bubbleT && Fishing.state !== 'fight') {
-      const [sx, sy] = Scene3D.project(npc.x, npc.y, 1.9);
-      this.pill('E  ·  Chat to ' + npc.name, sx, sy, UI.accent, 12);
+    // One prompt for whatever E will do right now.
+    const act = Fishing.state === 'idle' && !Menus.open ? Interact.best() : null;
+    this.act = act;
+    if (act) {
+      const [sx, sy, ok] = Scene3D.project(act.x, act.y, Scene3D.standH(act.x, act.y) + 1.9);
+      if (ok) this.pill('E  ·  ' + act.label, sx, sy, UI.accent, 12);
     }
     const f = Fight.fish;
     if (Fishing.state === 'fight' && f && f.airborne) {

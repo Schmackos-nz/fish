@@ -64,7 +64,7 @@ const Player = {
       dx = Math.cos(this.rollDir) * sp * dt; dy = Math.sin(this.rollDir) * sp * dt;
     } else if (ix || iy) {
       const len = Math.hypot(ix, iy);
-      let sp = this.running ? 6.5 : this.crouch ? 1.8 : 3.6;
+      let sp = (this.running ? 6.5 : this.crouch ? 1.8 : 3.6) * Life.speedMul();
       // Wading: the deeper it gets, the harder the going.
       if (this.wading) sp *= U.clamp(0.85 - World.depthAt(this.x, this.y) * 0.5, 0.3, 0.8);
       dx = ix / len * sp * dt; dy = iy / len * sp * dt;
@@ -87,6 +87,7 @@ const Player = {
 
   // Mid-jump you clear bushes and logs. If you land inside one, you can still walk out.
   blockedAt(x, y) {
+    if (Interior.active) return Interior.blocked(x, y);
     if (this.z > 0.3) return World.blockedLow(x, y);
     return World.blocked(x, y) && !World.blocked(this.x, this.y) ? true : World.blocked(x, y) && World.blockedLow(x, y);
   },

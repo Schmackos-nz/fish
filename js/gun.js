@@ -127,6 +127,7 @@ const Gun = {
 
   shoot() {
     if (this.cooldown > 0) return;
+    if (Interior.active) { Hud.toast('Not indoors!', UI.bad, 1.2); return; }
     // Never at people. Not even the ones on lilos.
     let a = this.aimPoint();
     const lilo = Floaters.near(a.x, a.y, 3.5);
