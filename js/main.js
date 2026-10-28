@@ -10,6 +10,24 @@ const Input = {
   pressed(code) { return this.down.has(code); },
   endFrame() { this.down.clear(); this.mousePressed = false; this.rPressed = false; this.wheel = 0; },
 
+  // The primary pointer (mouse button 0, or a finger on the world).
+  ptrDown(x, y, touch) {
+    this.mouse.sx = x; this.mouse.sy = y;
+    if (!touch && Hud.click(x, y)) return; // HUD buttons eat the click (touch already asked)
+    this.mouse.down = true; this.mousePressed = true;
+  },
+  ptrUp() { this.mouse.down = false; this.reelGrab = false; },
+  ptrMove(x, y) {
+    this.mouse.sx = x; this.mouse.sy = y;
+    // Dragging the grabbed handle round the reel's centre turns it, one-to-one.
+    if (!this.reelGrab || !Hud.reel) return;
+    const k = Hud.k || 1, dx = x / k - Hud.reel.cx, dy = y / k - Hud.reel.cy;
+    if (Math.hypot(dx, dy) < 14) return; // too close to the axle to read an angle
+    const a = Math.atan2(dy, dx), d = U.angDiff(this.reelAng, a);
+    if (Math.abs(d) < 1.5) this.crankAcc += d;
+    this.reelAng = a;
+  },
+
   init(target) {
     addEventListener('keydown', (e) => {
       if (e.code === 'Space' || e.code === 'Tab' || e.code.startsWith('Arrow')) e.preventDefault();
@@ -20,24 +38,14 @@ const Input = {
     addEventListener('blur', () => { this.keys.clear(); this.mouse.down = false; this.reelGrab = false; });
     target.addEventListener('contextmenu', (e) => e.preventDefault());
     target.addEventListener('mousedown', (e) => {
-      if (e.button === 0 && Hud.click(e.clientX, e.clientY)) return; // HUD buttons eat the click
-      if (e.button === 0) { this.mouse.down = true; this.mousePressed = true; }
+      if (e.button === 0) this.ptrDown(e.clientX, e.clientY);
       if (e.button === 2) { this.mouse.rdown = true; this.rPressed = true; }
     });
     addEventListener('mouseup', (e) => {
-      if (e.button === 0) { this.mouse.down = false; this.reelGrab = false; }
+      if (e.button === 0) this.ptrUp();
       if (e.button === 2) this.mouse.rdown = false;
     });
-    addEventListener('mousemove', (e) => {
-      this.mouse.sx = e.clientX; this.mouse.sy = e.clientY;
-      // Dragging the grabbed handle round the reel's centre turns it, one-to-one.
-      if (!this.reelGrab || !Hud.reel) return;
-      const dx = e.clientX - Hud.reel.cx, dy = e.clientY - Hud.reel.cy;
-      if (Math.hypot(dx, dy) < 14) return; // too close to the axle to read an angle
-      const a = Math.atan2(dy, dx), d = U.angDiff(this.reelAng, a);
-      if (Math.abs(d) < 1.5) this.crankAcc += d;
-      this.reelAng = a;
-    });
+    addEventListener('mousemove', (e) => this.ptrMove(e.clientX, e.clientY));
     target.addEventListener('wheel', (e) => { this.wheel += Math.sign(e.deltaY); e.preventDefault(); }, { passive: false });
   },
 };
@@ -217,6 +225,7 @@ function showTitle() {
 }
 
 function enterPlay() {
+  Mobile.goFull();
   Music.stop();
   Sfx.init(); Settings.apply();
   Game.mode = 'play';
@@ -363,7 +372,8 @@ function frame(now) {
     Input.crank = CRANK_STATES.has(Fishing.state) && !Menus.open ? crank : 0;
     Input.crankAcc = 0;
     handleGlobalKeys();
-    if (!Menus.open && Game.mode === 'play') {
+    Mobile.update(dt);
+    if (!Menus.open && Game.mode === 'play' && !Mobile.blocking()) {
       Game.time += dt;
       Game.updateEnv(dt);
       Player.update(dt);
@@ -433,6 +443,7 @@ window.addEventListener('load', () => {
   Gun.init();
   Hud.init();
   Input.init(document.getElementById('hud'));
+  Mobile.init();
   wireScreens();
   // Build the valley straight away so the title screen can show it.
   const saved = Game.load();

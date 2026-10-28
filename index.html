@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
 <title>Grand Trout Auto VI — Early Access</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -83,6 +87,43 @@
   #toast.show { opacity: 1; transform: translate(-50%, 0); }
 
   /* ---------- title screen: cartoon game front page ---------- */
+
+  /* ---------- touch devices ---------- */
+  body.touch, body.touch canvas { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  #touchUI { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+  #touchUI.hidden, #touchUI .hidden { display: none !important; }
+  #touchUI button { pointer-events: auto; border: 3px solid #1a1410; border-radius: 999px; background: rgba(26,20,16,0.72);
+    color: #F3EAD6; font: 600 13px var(--font); box-shadow: 0 3px 0 #1a1410; -webkit-tap-highlight-color: transparent; }
+  #touchUI button.on { background: #E3A945; color: #1a1410; transform: translateY(2px); box-shadow: 0 1px 0 #1a1410; }
+  #touchUI .tbar { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
+  #touchUI .tbar button { padding: 6px 12px; font-size: 12px; }
+  #touchUI .tpad { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom)); right: 16px; display: grid; grid-template-columns: auto auto; gap: 10px; align-items: end; justify-items: end; }
+  #tJump, #tCrouch, #tScope { width: 66px; height: 66px; }
+  #tJump { width: 78px; height: 78px; background: rgba(227,169,69,0.85) !important; color: #1a1410 !important; font-weight: 700 !important; }
+  #tUse { grid-column: 1 / span 2; display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; max-width: 250px;
+    background: rgba(26,20,16,0.85) !important; }
+  #tUse b { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #E3A945; color: #1a1410; font-size: 16px; flex: none; }
+  #tUse span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+  #tJoy { position: absolute; left: calc(40px + env(safe-area-inset-left)); bottom: 40px; top: auto; width: 140px; height: 140px; border-radius: 50%;
+    border: 3px solid rgba(243,234,214,0.35); background: rgba(26,20,16,0.25); opacity: 0.55; transition: opacity .15s; }
+  #tJoy.live { opacity: 1; bottom: auto; }
+  #tJoy .knob { position: absolute; left: 40px; top: 40px; width: 60px; height: 60px; border-radius: 50%; background: rgba(243,234,214,0.85); border: 3px solid #1a1410; }
+  #gate { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: #0F1A1C; color: #F3EAD6; text-align: center; }
+  #gate.hidden { display: none; }
+  #gate .gate-card { display: grid; gap: 10px; padding: 24px; font: 500 14px var(--font); color: #C8BFAE; }
+  #gate b { font: 400 28px "Lilita One", sans-serif; color: #FFD447; letter-spacing: 0.5px; }
+  #gate .gate-icon { font-size: 54px; animation: gateSpin 2.2s ease-in-out infinite; }
+  @keyframes gateSpin { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+  body.touch #title footer span:last-child { display: none; }
+  body.touch canvas#hud { cursor: default; }
+  body.touch #toast { top: 58px; }
+  /* Short landscape screens: shrink the title and menus to fit. */
+  @media (max-height: 520px) {
+    #title .title-wrap { zoom: 0.6; }
+    .panel, .modal .sheet { max-height: 92vh !important; overflow-y: auto; zoom: 0.78; }
+    #shop, #journal { max-height: calc(92vh / 0.78) !important; }
+    #pause .sheet, #jail .sheet { zoom: 0.75; }
+  }
   #title { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
     background: radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 35%, rgba(6,14,20,0.55) 100%); overflow: hidden; }
   .title-wrap { display: flex; align-items: center; gap: 3vw; margin-top: -2vh; }
@@ -300,42 +341,43 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=50"></script>
-<script src="js/data.js?v=50"></script>
-<script src="js/audio.js?v=50"></script>
-<script src="js/music.js?v=50"></script>
-<script src="js/world.js?v=50"></script>
-<script src="js/scene-sprites.js?v=50"></script>
-<script src="js/toon.js?v=50"></script>
-<script src="js/scene.js?v=50"></script>
-<script src="js/folk.js?v=50"></script>
-<script src="js/models.js?v=50"></script>
-<script src="js/actors.js?v=50"></script>
-<script src="js/fish.js?v=50"></script>
-<script src="js/fishing.js?v=50"></script>
-<script src="js/fight.js?v=50"></script>
-<script src="js/player.js?v=50"></script>
-<script src="js/npcs.js?v=50"></script>
-<script src="js/gun.js?v=50"></script>
-<script src="js/arsenal.js?v=50"></script>
-<script src="js/camp.js?v=50"></script>
-<script src="js/bugs.js?v=50"></script>
-<script src="js/floaters.js?v=50"></script>
-<script src="js/animals.js?v=50"></script>
-<script src="js/wardens.js?v=50"></script>
-<script src="js/interiors.js?v=50"></script>
-<script src="js/life.js?v=50"></script>
-<script src="js/weed.js?v=50"></script>
-<script src="js/markers.js?v=50"></script>
-<script src="js/swimmers.js?v=50"></script>
-<script src="js/couples.js?v=50"></script>
-<script src="js/tim.js?v=50"></script>
-<script src="js/bikes.js?v=50"></script>
-<script src="js/wanted.js?v=50"></script>
-<script src="js/tools.js?v=50"></script>
-<script src="js/hud.js?v=50"></script>
-<script src="js/share.js?v=50"></script>
-<script src="js/menus.js?v=50"></script>
-<script src="js/main.js?v=50"></script>
+<script src="js/util.js?v=51"></script>
+<script src="js/data.js?v=51"></script>
+<script src="js/audio.js?v=51"></script>
+<script src="js/music.js?v=51"></script>
+<script src="js/world.js?v=51"></script>
+<script src="js/scene-sprites.js?v=51"></script>
+<script src="js/toon.js?v=51"></script>
+<script src="js/scene.js?v=51"></script>
+<script src="js/folk.js?v=51"></script>
+<script src="js/models.js?v=51"></script>
+<script src="js/actors.js?v=51"></script>
+<script src="js/fish.js?v=51"></script>
+<script src="js/fishing.js?v=51"></script>
+<script src="js/fight.js?v=51"></script>
+<script src="js/player.js?v=51"></script>
+<script src="js/npcs.js?v=51"></script>
+<script src="js/gun.js?v=51"></script>
+<script src="js/arsenal.js?v=51"></script>
+<script src="js/camp.js?v=51"></script>
+<script src="js/bugs.js?v=51"></script>
+<script src="js/floaters.js?v=51"></script>
+<script src="js/animals.js?v=51"></script>
+<script src="js/wardens.js?v=51"></script>
+<script src="js/interiors.js?v=51"></script>
+<script src="js/life.js?v=51"></script>
+<script src="js/weed.js?v=51"></script>
+<script src="js/markers.js?v=51"></script>
+<script src="js/swimmers.js?v=51"></script>
+<script src="js/couples.js?v=51"></script>
+<script src="js/tim.js?v=51"></script>
+<script src="js/bikes.js?v=51"></script>
+<script src="js/wanted.js?v=51"></script>
+<script src="js/tools.js?v=51"></script>
+<script src="js/hud.js?v=51"></script>
+<script src="js/share.js?v=51"></script>
+<script src="js/menus.js?v=51"></script>
+<script src="js/mobile.js?v=51"></script>
+<script src="js/main.js?v=51"></script>
 </body>
 </html>

@@ -302,7 +302,7 @@ const Wanted = {
   },
 
   drawHud(hud) {
-    const g = hud.g, W = innerWidth, H = innerHeight;
+    const g = hud.g, W = hud.W, H = hud.H;
     // Getting hit flashes the screen edges red.
     if (this.hurtT > 0 || this.health < 40) {
       const k = Math.max(this.hurtT * 2, (40 - this.health) / 80);

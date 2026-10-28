@@ -125,7 +125,6 @@ const Hud = {
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, this.cv.width, this.cv.height);
     g.setTransform(d, 0, 0, d, 0, 0);
-    const W = innerWidth, H = innerHeight;
     this.drawWorldLabels();
     Npcs.drawBubbles(this);
     Floaters.drawBubbles(this);
@@ -135,22 +134,27 @@ const Hud = {
     Bikes.drawBubbles(this);
     Animals.drawLabels(this);
     Wardens.drawLabels(this);
-    this.drawCursorInfo();
+    if (!Mobile.active) this.drawCursorInfo();
+    Bugs.draw(g);
+    Tools.drawOverlay(this);
+    Gun.drawScope(this);
+    // Panels are laid out on a virtual screen, scaled down to fit phones.
+    const k = this.k = Mobile.hudScale();
+    g.setTransform(d * k, 0, 0, d * k, 0, 0);
+    const W = this.W = innerWidth / k, H = this.H = innerHeight / k;
     const sh = this.drawStatus(20, 20);
-    this.drawControls(20, 20 + sh + 12);
+    if (Mobile.active) this.drawVitals(20, 20 + sh + 12 + 100);
+    else this.drawControls(20, 20 + sh + 12);
     this.drawMinimap(W - 20 - 82, 20 + 82);
     // Bottom stack: tools, then lures (rod only), then the context panel.
     const barY = H - 20 - 64;
     Tools.drawBar(this, W / 2, barY);
-    this.drawVitals(20, H - 20);
+    if (!Mobile.active) this.drawVitals(20, H - 20);
     let top = barY - 12;
     // Lures can only change with the line in, so the picker steps aside while you fish.
     if (Tools.current === 'rod' && Fishing.state === 'idle') { this.drawLureBar(W / 2, top - 50); top -= 62; } else this.slots = [];
     this.drawStatePanel(W / 2, top);
-    if (Tools.current === 'rod' || Fishing.state !== 'idle') this.drawReel(W - 146, H - 176); else this.reel = null;
-    Bugs.draw(g);
-    Tools.drawOverlay(this);
-    Gun.drawScope(this);
+    if ((Tools.current === 'rod' && !Mobile.active) || Fishing.state !== 'idle') this.drawReel(W - 146, H - 176); else this.reel = null;
     Wanted.drawHud(this);
     if (this.bigMap) this.drawBigMap(W, H);
   },
@@ -310,10 +314,12 @@ const Hud = {
 
   click(x, y) {
     if (this.bigMap) {
+      x /= this.k || 1; y /= this.k || 1;
       for (const t of this.travelRects || []) if (x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h) { Travel.go(t.d); return true; }
       return true;
     }
     if (Bugs.swat(x, y)) return true;
+    const k = this.k || 1; x /= k; y /= k; // into the scaled HUD's coordinates
     const hit = (s) => x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h;
     if (this.reel) {
       if (this.bailBtn && hit(this.bailBtn)) { Fishing.toggleBail(); return true; }

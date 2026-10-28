@@ -1,0 +1,9 @@
+{
+  "name": "Grand Trout Auto VI",
+  "short_name": "GTA VI",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#0F1A1C",
+  "theme_color": "#0F1A1C"
+}
