@@ -104,6 +104,7 @@ const Npcs = {
 
   say(n, text, time = 3.5, pose) {
     n.bubble = text; n.bubbleT = time;
+    Voice.babble(text, n.x, n.y, n.name);
     if (pose) { n.pose = pose; n.poseT = Math.min(time, 2.5); }
   },
 

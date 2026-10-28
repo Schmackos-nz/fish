@@ -124,7 +124,7 @@ const Floaters = {
     return best;
   },
 
-  say(f, text, time = 3) { f.bubble = text; f.bubbleT = time; },
+  say(f, text, time = 3) { f.bubble = text; f.bubbleT = time; Voice.babble(text, f.x, f.y, f.skin + f.lilo[0]); },
 
   update(dt) {
     const e = Game.env;

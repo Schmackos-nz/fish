@@ -533,6 +533,7 @@ const Bikes = {
   drawBubbles(hud) {
     for (const r of this.riders) {
       const rp = this.riderPos(r);
+      if (r.bubbleT > 0 && r.bubble !== r.said) { r.said = r.bubble; Voice.babble(r.bubble, rp.x, rp.y, r.name); } else if (r.bubbleT <= 0) r.said = null;
       if (r.bubbleT <= 0 || U.dist(rp.x, rp.y, Player.x, Player.y) > 30) continue;
       const [sx, sy, ok] = Scene3D.project(rp.x, rp.y, Scene3D.standH(rp.x, rp.y) + 2);
       if (ok) hud.pill(r.bubble, sx, sy, UI.accent, 12);

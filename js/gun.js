@@ -12,11 +12,20 @@ const Gun = {
     setTimeout(() => Arsenal.build(), 0); // after Models is ready
     this.mesh.visible = false;
     Scene3D.scene.add(this.mesh);
+    // Tracers are thin glowing beams (WebGL lines are always 1px — too faint to read).
+    const beam = new THREE.BoxGeometry(1, 1, 1).translate(0, 0, 0.5);
     for (let i = 0; i < 8; i++) {
-      const t = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xfff2c8, transparent: true }));
-      t.frustumCulled = false; t.visible = false; t.userData.t = 1;
+      const t = new THREE.Mesh(beam, new THREE.MeshBasicMaterial({ color: 0xFFE7A0, transparent: true, depthWrite: false }));
+      t.frustumCulled = false; t.visible = false; t.userData.t = 1; t.renderOrder = 6;
       Scene3D.scene.add(t); this.tracers.push(t);
     }
+    // Muzzle flash: a hot ball plus a quick burst of light on everything nearby.
+    this.muzzle = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 8), new THREE.MeshBasicMaterial({ color: 0xFFD27A, transparent: true, depthWrite: false }));
+    this.muzzle.visible = false; Scene3D.scene.add(this.muzzle);
+    this.muzzleLight = new THREE.PointLight(0xFFC060, 0, 9, 1.5); Scene3D.scene.add(this.muzzleLight);
+    // Dirt/water kicked up where rounds land.
+    const puffGeo = new THREE.IcosahedronGeometry(0.16, 0);
+    this.puffs = Array.from({ length: 48 }, () => { const m = new THREE.Mesh(puffGeo, new THREE.MeshBasicMaterial({ color: 0x8A7A5A, transparent: true, depthWrite: false })); m.visible = false; m.userData.t = 1; Scene3D.scene.add(m); return m; });
     // Belly-up fish lying on the surface.
     for (let i = 0; i < 6; i++) {
       const geo = new THREE.PlaneGeometry(1, 0.5); geo.rotateX(-Math.PI / 2);
@@ -145,7 +154,13 @@ const Gun = {
     this.cooldown = W.cd; this.flashT = 0.06; this.kick = W.id === 'smg' ? 0.35 : W.id === 'pistol' ? 0.6 : 1;
     // Hip range depends on the gun; the scope (rifle) lets you reach further.
     if (!a.scoped && U.dist(Player.x, Player.y, a.x, a.y) > W.range) a = { ...a, x: Player.x + Math.cos(a.ang) * W.range, y: Player.y + Math.sin(a.ang) * W.range };
-    if (W.id === 'launcher') { Sfx.whoosh(1); } else { Sfx.shot(); setTimeout(() => Sfx.burst(0.9, 900, 0.12, 'lowpass', 0.5, 300), 260); }
+    if (W.id === 'launcher') { Sfx.whoosh(1); Sfx.gunshot('shotgun', 0.6); } else Sfx.gunshot(W.id);
+    // Flash and kick.
+    const mx = Player.x + Math.cos(a.ang) * 1.05, my = Player.y + Math.sin(a.ang) * 1.05, mh = Scene3D.standH(Player.x, Player.y) + 0.62;
+    this.muzzle.position.set(mx, mh, my); this.muzzle.scale.setScalar(W.pellets > 1 ? 1.6 : W.id === 'smg' ? 0.8 : 1.2); this.muzzle.visible = true;
+    this.muzzleLight.position.set(mx, mh + 0.3, my); this.muzzleLight.intensity = W.id === 'smg' ? 1 : 1.8;
+    this.muzzleT = 0.06;
+    Bugs.shake = Math.max(Bugs.shake, { rifle: 0.55, pistol: 0.3, shotgun: 0.85, smg: 0.18, launcher: 0.6 }[W.id] || 0.4);
     if (W.id === 'rifle') setTimeout(() => Sfx.click(), 650); // bolt
     if (W.id === 'shotgun') setTimeout(() => { Sfx.click(); Sfx.click(); }, 450); // pump
     const base = Scene3D.standH(Player.x, Player.y) + 0.62;
@@ -156,9 +171,10 @@ const Gun = {
         p = { ...a, x: a.x + (Math.random() - 0.5) * spread * 2, y: a.y + (Math.random() - 0.5) * spread * 2 };
       }
       const t = this.tracers.find((x) => x.userData.t >= 1) || this.tracers[k % this.tracers.length];
-      t.geometry.setFromPoints([new THREE.Vector3(Player.x + Math.cos(a.ang) * 1.1, base, Player.y + Math.sin(a.ang) * 1.1),
-        new THREE.Vector3(p.x, Math.max(0, Scene3D.groundH(p.x, p.y)) + 0.05, p.y)]);
+      this.setTracer(t, new THREE.Vector3(Player.x + Math.cos(a.ang) * 1.1, base, Player.y + Math.sin(a.ang) * 1.1),
+        new THREE.Vector3(p.x, Math.max(0, Scene3D.groundH(p.x, p.y)) + 0.05, p.y));
       t.userData.t = 0; t.visible = true;
+      if (!W.blast) this.puff(p.x, p.y, World.isWater(p.x, p.y));
       if (W.blast) { setTimeout(() => Arsenal.explode(p.x, p.y, W.blast), 220); continue; }
       this.impact(p, a.scoped, W.pellets > 1);
     }
@@ -197,6 +213,23 @@ const Gun = {
     } else { if (!pellet) Sfx.plop(); Hud.ripple(a.x, a.y, 0.3); }
   },
 
+  // Stretch a beam from a to b.
+  setTracer(t, a, b) {
+    t.position.copy(a);
+    t.scale.set(0.05, 0.05, Math.max(0.01, a.distanceTo(b)));
+    t.lookAt(b);
+  },
+
+  puff(x, y, water) {
+    const h = water ? 0.05 : Math.max(0, Scene3D.groundH(x, y)) + 0.1;
+    for (let k = 0; k < (water ? 3 : 4); k++) {
+      const m = this.puffs.find((q) => q.userData.t >= 1); if (!m) return;
+      m.userData = { t: 0, vx: (Math.random() - 0.5) * 1.2, vy: 1 + Math.random() * 1.2, vz: (Math.random() - 0.5) * 1.2 };
+      m.material.color.set(water ? 0xDDF2FF : 0x9A8A6A);
+      m.position.set(x, h, y); m.visible = true;
+    }
+  },
+
   kill(f) {
     Fish.list.splice(Fish.list.indexOf(f), 1);
     if (Fishing.engaged === f) Fishing.engaged = null;
@@ -226,8 +259,16 @@ const Gun = {
     }
     for (const t of this.tracers) {
       if (t.userData.t >= 1) { t.visible = false; continue; }
-      t.userData.t += dt / 0.12;
+      t.userData.t += dt / 0.14;
       t.material.opacity = 1 - t.userData.t;
+    }
+    this.muzzleT = Math.max(0, (this.muzzleT || 0) - dt);
+    if (this.muzzle) { this.muzzle.visible = this.muzzleT > 0; this.muzzle.material.opacity = this.muzzleT / 0.06; this.muzzleLight.intensity = this.muzzleT > 0 ? this.muzzleLight.intensity : 0; }
+    for (const m of this.puffs || []) {
+      const u = m.userData; if (u.t >= 1) { m.visible = false; continue; }
+      u.t += dt / 0.45; u.vy -= dt * 4;
+      m.position.x += u.vx * dt; m.position.y += u.vy * dt; m.position.z += u.vz * dt;
+      m.scale.setScalar(0.6 + u.t * 1.6); m.material.opacity = (1 - u.t) * 0.85;
     }
     this.floatPool.forEach((m, i) => {
       const f = this.floaters[i];

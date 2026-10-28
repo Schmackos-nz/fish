@@ -58,7 +58,7 @@ const Tim = {
     }
   },
 
-  say(text, time = 3) { this.bubble = text; this.bubbleT = time; },
+  say(text, time = 3) { this.bubble = text; this.bubbleT = time; Voice.babble(text, World.tim.x, World.tim.y, 'Tim'); },
 
   render() {
     const t = World.tim, base = Scene3D.standH(t.x, t.y);

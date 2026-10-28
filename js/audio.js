@@ -111,6 +111,19 @@ const Sfx = {
   },
   fail() { this.tone(330, 0.25, 0.2, 'triangle', 160); },
 
+  // Weighty gunfire: a sharp crack, a low thump, a noisy blast and a rolling echo off the hills.
+  gunshot(kind = 'rifle', vol = 1) {
+    const K = { rifle: [1, 85, 1], pistol: [0.7, 140, 0.6], shotgun: [1.15, 70, 1.2], smg: [0.6, 120, 0.25], enemy: [0.8, 100, 0.7] }[kind] || [1, 90, 1];
+    const [loud, low, echo] = K, v = loud * vol;
+    this.burst(0.05, 6500, 0.95 * v, 'highpass');
+    this.tone(low * 2, 0.08, 0.6 * v, 'square', low);
+    this.tone(low, 0.32, 0.75 * v, 'sine', 32);
+    this.burst(0.55, 2200, 0.85 * v, 'lowpass', 0.7, 120);
+    if (echo > 0.3 || Math.random() < echo) {
+      setTimeout(() => this.burst(0.8, 1100, 0.22 * v * echo, 'lowpass', 0.5, 160), 170);
+      setTimeout(() => this.burst(1.1, 700, 0.12 * v * echo, 'lowpass', 0.5, 120), 420);
+    }
+  },
   shot() { this.burst(0.06, 7000, 0.9, 'highpass'); this.tone(150, 0.16, 0.5, 'square', 50); this.burst(0.5, 2400, 0.6, 'lowpass', 0.7, 140); },
   slap(v) { this.burst(0.07, 1800, 0.25 * v + 0.1, 'bandpass', 1.2); this.tone(180, 0.05, 0.15 * v, 'square', 90); },
   setEngine(level, rpm) {

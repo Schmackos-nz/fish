@@ -62,7 +62,7 @@ const Wardens = {
     w.x = s.x; w.y = s.y; w.state = 'patrol'; w.target = null; w.t = 0;
   },
 
-  say(w, list, time = 3) { w.bubble = Array.isArray(list) ? U.pick(Math.random, list) : list; w.bubbleT = time; },
+  say(w, list, time = 3) { w.bubble = Array.isArray(list) ? U.pick(Math.random, list) : list; w.bubbleT = time; Voice.babble(w.bubble, w.x, w.y, w.name); },
 
   update(dt) {
     for (const w of this.list) {

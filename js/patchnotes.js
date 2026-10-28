@@ -3,6 +3,9 @@
 
 const PATCH_NOTES = [
   { v: '1.3', name: 'Hot Wired', date: '29 Oct 2026', notes: [
+    ['changed', 'Gunfire hits harder: a layered crack-and-boom with an echo off the hills, a muzzle flash that lights things up, bright tracer beams, dust or spray where rounds land, and screen kick'],
+    ['new', 'Everyone talks now, in gibberish. Each local has their own voice, and shouting comes out faster and higher'],
+    ['fixed', 'Screen shake (explosions, bites, crashes) actually shakes the screen'],
     ['fixed', 'Getting released from jail no longer drops you into an empty blue void (worst when arrested on a bike). Stolen rides get impounded'],
     ['new', 'Stealing a ride is now a lockpicking job: three random lock puzzles (pins, latches and a dial) against a rising alert meter'],
     ['changed', 'The alert climbs faster with the owner or the law nearby (crouch to stay calmer). Hit 100% and the owner comes for you with a wanted star'],

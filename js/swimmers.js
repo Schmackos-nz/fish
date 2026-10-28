@@ -70,7 +70,7 @@ const Swimmers = {
     return best;
   },
 
-  say(s, list, time = 3) { s.bubble = U.pick(Math.random, list); s.bubbleT = time; },
+  say(s, list, time = 3) { s.bubble = U.pick(Math.random, list); s.bubbleT = time; Voice.babble(s.bubble, s.x, s.y, 'swim' + s.look); },
 
   onLureLanded(x, y) {
     const s = this.near(x, y, 1.6);

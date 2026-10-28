@@ -326,7 +326,7 @@ const Hunters = {
       return h;
     });
   },
-  say(h, t, s = 2) { h.bubble = t; h.bubbleT = s; },
+  say(h, t, s = 2) { h.bubble = t; h.bubbleT = s; Voice.babble(t, h.x, h.y, h.name); },
   update(dt) {
     for (const h of this.list) {
       h.bubbleT = Math.max(0, h.bubbleT - dt);

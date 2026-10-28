@@ -229,7 +229,7 @@ const Wanted = {
     t.geometry.setFromPoints([new THREE.Vector3(x, Scene3D.standH(x, y) + 0.75, y), new THREE.Vector3(tx, Scene3D.standH(tx, ty) + 0.6, ty)]);
     t.userData.t = 0; t.visible = true;
     const near = U.dist(x, y, Player.x, Player.y);
-    Sfx.burst(0.1, 5000, U.clamp(0.4 - near / 60, 0.05, 0.4), 'highpass'); Sfx.tone(160, 0.12, U.clamp(0.3 - near / 70, 0.04, 0.3), 'square', 60);
+    Sfx.gunshot('enemy', U.clamp(1 - near / 45, 0.12, 1));
     if (hit) this.hurt(dmg, src); else Hud.ripple(tx, ty, 0.3);
   },
 
