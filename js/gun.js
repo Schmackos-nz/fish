@@ -239,7 +239,8 @@ const Gun = {
     const edge = g.createRadialGradient(cx, cy, r * 0.82, cx, cy, r);
     edge.addColorStop(0, 'rgba(0,0,0,0)'); edge.addColorStop(1, 'rgba(0,0,0,0.65)');
     g.fillStyle = edge; g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.fill();
-    // Reticle follows the swaying point of aim.
+    // Reticle follows the swaying point of aim, drawn only inside the lens.
+    g.save(); g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); g.clip();
     const rx = U.clamp(px, cx - r * 0.5, cx + r * 0.5), ry = U.clamp(py, cy - r * 0.5, cy + r * 0.5);
     g.strokeStyle = 'rgba(10,10,10,0.9)';
     g.lineWidth = 4;
@@ -255,6 +256,7 @@ const Gun = {
       g.beginPath(); g.arc(rx, ry + o, 1.6, 0, 7); g.fill();
     }
     g.fillStyle = '#E2584D'; g.beginPath(); g.arc(rx, ry, 2.4, 0, 7); g.fill();
+    g.restore();
     // Range readout
     const dist = U.dist(Player.x, Player.y, this.look.x, this.look.y);
     hud.text(dist.toFixed(0) + ' m', cx + r * 0.62, cy + r * 0.62, 'rgba(230,240,240,0.85)', 12, 'center', 600);
