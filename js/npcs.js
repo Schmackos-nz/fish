@@ -264,28 +264,13 @@ const Npcs = {
 
   // ---------- rendering ----------
   drawSprite(pal, dir, f, pose) {
-    const c = document.createElement('canvas'); c.width = 16; c.height = 20;
-    const g = c.getContext('2d');
-    const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
-    const step = f === 1 ? 1 : f === 3 ? -1 : 0;
-    r(5, 15, 2, 4 + (step > 0 ? -1 : 0), pal.pants); r(9, 15, 2, 4 + (step < 0 ? -1 : 0), pal.pants);
-    r(5, 18, 2, 1, '#2a2018'); r(9, 18, 2, 1, '#2a2018');
-    r(4, 9, 8, 7, pal.shirt);
-    if (dir !== 'up') { r(4, 9, 3, 7, pal.vest); r(9, 9, 3, 7, pal.vest); } else r(4, 9, 8, 7, pal.vest);
-    if (pose === 'brag') { r(0, 10, 4, 1, pal.shirt); r(12, 10, 4, 1, pal.shirt); r(0, 9, 1, 2, pal.skin); r(15, 9, 1, 2, pal.skin); }
-    else if (pose === 'hold') { r(3, 7, 1, 3, pal.shirt); r(12, 7, 1, 3, pal.shirt); r(3, 6, 1, 1, pal.skin); r(12, 6, 1, 1, pal.skin); }
-    else { r(3, 10, 1, 4, pal.shirt); r(12, 10, 1, 4, pal.shirt); r(3, 14, 1, 1, pal.skin); r(12, 14, 1, 1, pal.skin); }
-    r(5, 4, 6, 5, pal.skin);
-    if (dir === 'down') {
-      r(6, 6, 1, 1, '#222'); r(9, 6, 1, 1, '#222');
-      if (pal.beard) r(5, 7, 6, 2, pal.beard); else r(7, 8, 2, 1, '#8a5a3a');
-      if (pose === 'brag' || pose === 'hold') r(7, 8, 2, 1, '#3a1a1a');
-    } else if (dir === 'side') r(9, 6, 1, 1, '#222');
-    else r(5, 6, 6, 3, '#5a3a2a');
-    r(3, 3, 10, 2, pal.hat); r(5, 1, 6, 3, pal.hat); r(5, 3, 6, 1, U.shade(pal.hat, -0.3));
-    const tex = new THREE.CanvasTexture(c);
-    tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
-    return tex;
+    if (!pal.hatStyle) {
+      const i = NPC_PALETTES.indexOf(pal);
+      pal.hatStyle = ['beanie', 'cap', 'bucket'][i % 3];
+      pal.pom = ['#F2E6C8', '#E84A3A', '#FFD54A'][i % 3];
+      pal.hair = pal.beard || '#5A3A2A';
+    }
+    return Folk.texture(pal, dir, f, pose);
   },
 
   buildMeshes(n) {
@@ -367,7 +352,7 @@ const Npcs = {
       const [sx, sy, ok] = Scene3D.project(n.x, n.y, Scene3D.standH(n.x, n.y) + 1.6);
       if (!ok) continue;
       const shout = n.pose === 'brag' || /!$/.test(n.bubble) && n.bubble === n.bubble.toUpperCase();
-      g.font = (shout ? 'bold 15px' : '13px') + ' Trebuchet MS';
+      g.font = (shout ? '700 15px ' : '500 13px ') + UI.font;
       const w = Math.min(320, g.measureText(n.bubble).width + 20), h = 28;
       const bx = sx - w / 2, by = sy - h - 10;
       g.globalAlpha = Math.min(1, n.bubbleT * 2);
@@ -376,7 +361,7 @@ const Npcs = {
       g.beginPath(); g.moveTo(sx - 6, by + h - 1); g.lineTo(sx, by + h + 9); g.lineTo(sx + 6, by + h - 1); g.fill();
       g.fillStyle = '#2a1a0a'; g.textAlign = 'center';
       g.fillText(n.bubble, sx, by + 19, w - 12);
-      g.font = 'bold 10px Trebuchet MS'; g.fillStyle = '#c9a86a';
+      g.font = '600 10px ' + UI.font; g.fillStyle = UI.accent;
       g.fillText(n.name, sx, by - 4);
       g.globalAlpha = 1;
     }

@@ -103,18 +103,18 @@ const Share = {
     g.textAlign = 'left';
     if (i.prized) {
       g.fillStyle = '#c9a86a'; g.fillRect(28, 26, 300, 44);
-      g.fillStyle = '#3a2614'; g.font = 'bold 28px Trebuchet MS'; g.fillText('★ PRIZED CATCH ★', 42, 58);
+      g.fillStyle = '#3a2614'; g.font = '700 26px ' + UI.font; g.fillText('★ PRIZED CATCH ★', 42, 58);
     }
     g.fillStyle = '#fff'; g.strokeStyle = 'rgba(0,0,0,.6)'; g.lineWidth = 6;
-    g.font = 'bold 46px Trebuchet MS';
+    g.font = '700 48px ' + UI.display;
     g.strokeText(i.sp.name, 30, i.prized ? 120 : 70); g.fillText(i.sp.name, 30, i.prized ? 120 : 70);
-    g.font = 'bold 30px Trebuchet MS';
+    g.font = '700 28px ' + UI.font;
     const stat = U.fmtKg(i.kg) + '  ·  ' + i.cm + ' cm';
     g.strokeText(stat, 30, i.prized ? 162 : 112); g.fillStyle = '#f2c14e'; g.fillText(stat, 30, i.prized ? 162 : 112);
-    g.font = '20px Trebuchet MS'; g.fillStyle = '#fff';
+    g.font = '500 19px ' + UI.font; g.fillStyle = '#fff';
     const where = i.place + '  ·  Day ' + i.day + ', ' + TIME_NAMES[i.phase].toLowerCase();
     g.lineWidth = 4; g.strokeText(where, 30, H - 22); g.fillText(where, 30, H - 22);
-    g.textAlign = 'right'; g.font = 'bold 26px Trebuchet MS'; g.fillStyle = '#f2c14e';
+    g.textAlign = 'right'; g.font = '700 26px ' + UI.display; g.fillStyle = '#f2c14e';
     g.strokeText('REELWILD', W - 26, H - 22); g.fillText('REELWILD', W - 26, H - 22);
     return c;
   },
@@ -147,23 +147,22 @@ const Share = {
 
   grip(g, x, y, S, cx, fy, len) {
     for (const side of [-1, 1]) {
-      const sx = x + (side < 0 ? 4 : 12) * S, sy = y + 10 * S;
+      const sx = x + (side < 0 ? 4.5 : 11.5) * S, sy = y + 12.3 * S;
       const hx = cx + side * len * 0.3, hy = fy - S * 0.5;
-      g.strokeStyle = '#b8433a'; g.lineWidth = S * 1.6; g.lineCap = 'square';
+      g.lineCap = 'round';
+      g.strokeStyle = 'rgba(20,14,10,0.85)'; g.lineWidth = S * 2.3;
       g.beginPath(); g.moveTo(sx, sy); g.lineTo(hx, hy); g.stroke();
-      g.fillStyle = '#e8b88a'; g.fillRect(hx - S, hy - S, S * 2, S * 2);
-      g.fillStyle = '#c8986a'; g.fillRect(hx - S, hy + S * 0.4, S * 2, S * 0.6);
+      g.strokeStyle = PLAYER_PAL.shirt; g.lineWidth = S * 1.6;
+      g.beginPath(); g.moveTo(sx, sy); g.lineTo(hx, hy); g.stroke();
+      g.fillStyle = PLAYER_PAL.shirt; g.strokeStyle = 'rgba(20,14,10,0.85)'; g.lineWidth = S * 0.45;
+      g.beginPath(); g.arc(hx, hy, S * 1.25, 0, Math.PI * 2); g.fill(); g.stroke();
     }
   },
 
-  // Same pixel angler as in-game; arms are added by grip().
+  // Same round angler as in-game (64x80 art scaled up); arms are added by grip().
   angler(g, x, y, S) {
-    const r = (px, py, w, h, col) => { g.fillStyle = col; g.fillRect(x + px * S, y + py * S, w * S, h * S); };
-    r(5, 15, 2, 4, '#3d5a3a'); r(9, 15, 2, 4, '#3d5a3a'); r(5, 18, 2, 1, '#2a2018'); r(9, 18, 2, 1, '#2a2018');
-    r(4, 9, 8, 7, '#b8433a'); r(4, 11, 8, 1, '#7a2a24'); r(4, 13, 8, 1, '#7a2a24');
-    r(4, 9, 3, 7, '#8a7a4a'); r(9, 9, 3, 7, '#8a7a4a'); r(5, 11, 1, 1, '#5a4a2a'); r(10, 11, 1, 1, '#5a4a2a');
-    r(5, 4, 6, 5, '#e8b88a'); r(6, 6, 1, 1, '#222'); r(9, 6, 1, 1, '#222');
-    r(6, 7, 4, 1, '#8a5a3a'); r(6, 8, 4, 1, '#e8b88a'); r(7, 8, 2, 1, '#6a3a2a'); // big grin
-    r(3, 3, 10, 2, '#a89a6a'); r(5, 1, 6, 3, '#bfb07a'); r(5, 3, 6, 1, '#6a5a3a'); r(10, 2, 1, 1, '#e84a3a');
+    g.save(); g.translate(x, y); g.scale(S / 4, S / 4);
+    Folk.draw(g, PLAYER_PAL, 'down', 0, 'grin');
+    g.restore();
   },
 };

@@ -11,7 +11,10 @@ const Actors = {
     this.group = new THREE.Group();
     Scene3D.scene.add(this.group);
     this.buildPlayer();
-    this.keeper = this.billboard(this.drawKeeper(), 1.0, 1.25);
+    const kc = document.createElement('canvas'); kc.width = Folk.W; kc.height = Folk.H;
+    Folk.draw(kc.getContext('2d'), KEEPER_PAL, 'down', 0, 'normal');
+    this.keeper = this.billboard(kc, 1.0, 1.25);
+    this.keeper.material.map.magFilter = THREE.LinearFilter; this.keeper.material.map.minFilter = THREE.LinearFilter;
     this.group.add(this.keeper);
     this.rod = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0x3a2a1a }));
     this.line = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({ color: 0xf0f0f0, transparent: true, opacity: 0.8 }));
@@ -53,11 +56,7 @@ const Actors = {
   // ---------- the little angler ----------
   buildPlayer() {
     for (const dir of ['down', 'up', 'side']) for (let f = 0; f < 4; f++) {
-      const c = document.createElement('canvas'); c.width = 16; c.height = 20;
-      this.drawAngler(c.getContext('2d'), dir, f);
-      const tex = new THREE.CanvasTexture(c);
-      tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter;
-      this.frames[dir + f] = tex;
+      this.frames[dir + f] = Folk.texture(PLAYER_PAL, dir, f, 'normal');
     }
     this.player = this.billboard(document.createElement('canvas'), 1.0, 1.25);
     this.player.material.map = this.frames.down0;
@@ -68,41 +67,6 @@ const Actors = {
     this.ghost = new THREE.Mesh(this.player.geometry, new THREE.MeshBasicMaterial({ map: this.frames.down0, color: 0xfff2c8, transparent: true, opacity: 0.32, depthTest: false, depthWrite: false, alphaTest: 0.5 }));
     this.ghost.rotation.x = -BILLBOARD_LEAN; this.ghost.renderOrder = 10;
     this.group.add(this.player, sh, this.ghost);
-  },
-
-  drawAngler(g, dir, f) {
-    const r = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
-    const step = f === 1 ? 1 : f === 3 ? -1 : 0;
-    // Legs (waders)
-    r(5, 15, 2, 4 + (step > 0 ? -1 : 0), '#3d5a3a'); r(9, 15, 2, 4 + (step < 0 ? -1 : 0), '#3d5a3a');
-    r(5, 18 + (step > 0 ? -1 : 0), 2, 1, '#2a2018'); r(9, 18 + (step < 0 ? -1 : 0), 2, 1, '#2a2018');
-    // Body: fishing vest over a plaid shirt
-    r(4, 9, 8, 7, '#b8433a'); r(4, 11, 8, 1, '#7a2a24'); r(4, 13, 8, 1, '#7a2a24');
-    if (dir !== 'up') { r(4, 9, 3, 7, '#8a7a4a'); r(9, 9, 3, 7, '#8a7a4a'); r(5, 11, 1, 1, '#5a4a2a'); r(10, 11, 1, 1, '#5a4a2a'); }
-    else r(4, 9, 8, 7, '#8a7a4a');
-    // Arms
-    r(3, 10 + (step < 0 ? 1 : 0), 1, 4, '#b8433a'); r(12, 10 + (step > 0 ? 1 : 0), 1, 4, '#b8433a');
-    r(3, 14, 1, 1, '#e8b88a'); r(12, 14, 1, 1, '#e8b88a');
-    // Head
-    r(5, 4, 6, 5, '#e8b88a');
-    if (dir === 'down') { r(6, 6, 1, 1, '#222'); r(9, 6, 1, 1, '#222'); r(7, 8, 2, 1, '#8a5a3a'); }
-    else if (dir === 'side') { r(9, 6, 1, 1, '#222'); r(10, 7, 1, 1, '#d8a07a'); }
-    else r(5, 6, 6, 3, '#6a4a2a');
-    // Bucket hat with a fly stuck in the band
-    r(3, 3, 10, 2, '#a89a6a'); r(5, 1, 6, 3, '#bfb07a'); r(5, 3, 6, 1, '#6a5a3a');
-    r(10, 2, 1, 1, '#e84a3a');
-  },
-
-  drawKeeper() {
-    const c = document.createElement('canvas'); c.width = 16; c.height = 20;
-    const g = c.getContext('2d');
-    const r = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
-    r(5, 15, 2, 4, '#4a4058'); r(9, 15, 2, 4, '#4a4058');
-    r(4, 9, 8, 7, '#5a7a9a'); r(5, 10, 6, 6, '#d8cfb0'); r(3, 10, 1, 4, '#5a7a9a'); r(12, 10, 1, 4, '#5a7a9a');
-    r(5, 3, 6, 6, '#d8a07a'); r(6, 6, 1, 1, '#222'); r(9, 6, 1, 1, '#222'); r(7, 8, 2, 1, '#8a4a3a');
-    r(4, 2, 8, 3, '#e8e8e8'); r(4, 4, 1, 4, '#e8e8e8'); r(11, 4, 1, 4, '#e8e8e8');
-    r(6, 6, 4, 1, '#333'); // spectacles
-    return c;
   },
 
   buildLures() {

@@ -4,58 +4,124 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reelwild</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --panel: rgba(18, 26, 30, 0.88);
-    --panel-edge: #c9a86a;
-    --ink: #f3ead6;
-    --muted: #a99f8a;
-    --good: #8fd16a;
-    --warn: #f2c14e;
-    --bad: #e2584d;
+    --font: "Inter", "Segoe UI", system-ui, sans-serif;
+    --display: "Fraunces", Georgia, serif;
+    --bg: #0b1013;
+    --card: rgba(15, 21, 24, 0.94);
+    --card-2: rgba(255, 255, 255, 0.04);
+    --line: rgba(255, 255, 255, 0.09);
+    --line-2: rgba(255, 255, 255, 0.16);
+    --ink: #EEE7D7;
+    --muted: #98A2A4;
+    --dim: #626C6E;
+    --accent: #E3A945;
+    --accent-ink: #1b1408;
+    --accent-soft: rgba(227, 169, 69, 0.14);
+    --good: #7DC383;
+    --bad: #E2675A;
+    --water: #7FC4D4;
+    --shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.3);
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #0d1416; color: var(--ink);
-    font-family: "Trebuchet MS", "Segoe UI", sans-serif; user-select: none; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
+    font-family: var(--font); font-size: 14px; -webkit-font-smoothing: antialiased; user-select: none; }
   canvas#game { display: block; width: 100vw; height: 100vh; }
   canvas#hud { position: absolute; inset: 0; width: 100vw; height: 100vh; cursor: crosshair; }
-  .panel { position: absolute; background: var(--panel); border: 2px solid var(--panel-edge); border-radius: 8px;
-    padding: 14px 18px; box-shadow: 0 6px 24px rgba(0,0,0,.5); }
   .hidden { display: none !important; }
-  h2 { margin: 0 0 8px; font-size: 20px; color: var(--warn); letter-spacing: 1px; }
-  h3 { margin: 12px 0 6px; font-size: 15px; color: var(--panel-edge); }
-  button { background: #3b4f3a; color: var(--ink); border: 1px solid #7fa06a; border-radius: 5px; padding: 6px 12px;
-    font: inherit; font-size: 13px; cursor: pointer; }
-  button:hover { background: #4f6a4c; }
-  button:disabled { opacity: .45; cursor: default; }
-  #shop, #journal { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(760px, 94vw);
-    max-height: 86vh; overflow-y: auto; }
-  .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 5px 0;
-    border-bottom: 1px solid rgba(255,255,255,.07); font-size: 13px; }
-  .row .desc { color: var(--muted); font-size: 12px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 8px; }
-  .card { background: rgba(255,255,255,.05); border-radius: 6px; padding: 8px; font-size: 12px; }
-  .card b { font-size: 13px; }
-  .card.unknown { opacity: .4; }
-  #catch { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 340px; text-align: center; }
-  #catch canvas { background: rgba(0,0,0,.25); border-radius: 6px; margin: 6px 0; }
-  #catch .big { font-size: 26px; color: var(--warn); font-weight: bold; }
-  #catch .rec { color: var(--good); font-weight: bold; }
-  #catch .prize { color: #ffd76a; font-weight: bold; font-size: 18px; letter-spacing: 2px; text-shadow: 0 0 10px rgba(255,200,80,.7); }
-  button.gold { background: #8a6a1e; border-color: #ffd76a; font-weight: bold; }
-  button.gold:hover { background: #a8822a; }
-  #share { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(720px, 94vw); max-height: 92vh; overflow-y: auto; z-index: 5; }
-  #title { inset: 0; position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background: radial-gradient(ellipse at center, rgba(10,30,35,.75), rgba(5,10,12,.96)); text-align: center; }
-  #title h1 { font-size: 64px; margin: 0; color: var(--warn); letter-spacing: 6px; text-shadow: 0 4px 0 #6a4b1c; }
-  #title p { color: var(--muted); max-width: 640px; line-height: 1.5; }
-  #title .keys { text-align: left; font-size: 13px; columns: 2; column-gap: 30px; color: var(--ink); max-width: 700px; }
-  #title .keys div { break-inside: avoid; margin-bottom: 4px; }
-  kbd { background: #2b3638; border: 1px solid #556; border-bottom-width: 2px; border-radius: 3px; padding: 0 5px;
-    font-family: inherit; font-size: 12px; }
-  #toast { position: absolute; left: 50%; top: 14%; transform: translateX(-50%); font-size: 18px; font-weight: bold;
-    text-shadow: 0 2px 4px #000; pointer-events: none; white-space: nowrap; transition: opacity .3s; }
-  .close { position: absolute; right: 10px; top: 8px; }
+
+  /* ---------- buttons ---------- */
+  button { font: 500 13px var(--font); color: var(--ink); background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--line-2); border-radius: 10px; padding: 8px 14px; cursor: pointer;
+    transition: background .15s, border-color .15s, transform .1s; }
+  button:hover:not(:disabled) { background: rgba(255, 255, 255, 0.11); border-color: rgba(255, 255, 255, 0.24); }
+  button:active:not(:disabled) { transform: translateY(1px); }
+  button:disabled { opacity: .4; cursor: default; }
+  button.primary, button.gold { background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600; }
+  button.primary:hover:not(:disabled), button.gold:hover:not(:disabled) { background: #EDB955; }
+  button.danger { color: var(--bad); border-color: rgba(226, 103, 90, 0.4); background: rgba(226, 103, 90, 0.08); }
+  .close { position: absolute; right: 16px; top: 16px; width: 34px; height: 34px; padding: 0; border-radius: 50%; font-size: 15px; line-height: 1; }
+  kbd { display: inline-block; min-width: 24px; padding: 3px 7px; border-radius: 6px; text-align: center;
+    background: rgba(255, 255, 255, 0.08); border: 1px solid var(--line-2); border-bottom-width: 2px;
+    font: 600 11px var(--font); color: var(--ink); }
+
+  /* ---------- panels (shop, journal, catch, share) ---------- */
+  .panel { position: absolute; background: var(--card); border: 1px solid var(--line); border-radius: 20px;
+    padding: 28px 30px; box-shadow: var(--shadow); backdrop-filter: blur(14px); z-index: 4; }
+  .panel h2 { margin: 0 0 4px; font: 700 26px var(--display); color: var(--ink); letter-spacing: -0.2px; }
+  .panel h3 { margin: 22px 0 8px; font: 600 11px var(--font); color: var(--muted); letter-spacing: 1.6px; text-transform: uppercase; }
+  .panel .desc { color: var(--muted); font-size: 12.5px; line-height: 1.5; }
+  #shop, #journal { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(780px, 94vw); max-height: 88vh; overflow-y: auto; }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 12px 14px;
+    margin-bottom: 6px; border-radius: 12px; background: var(--card-2); border: 1px solid transparent; font-size: 13.5px; }
+  .row:hover { border-color: var(--line); }
+  .row b { font-weight: 600; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  .card { background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 12px; font-size: 12px; line-height: 1.5; }
+  .card b { font-size: 13.5px; font-weight: 600; }
+  .card canvas { width: 100%; height: auto; }
+  .card.unknown { opacity: .45; }
+  #catch { left: 50%; top: 50%; transform: translate(-50%, -50%); width: 380px; text-align: center; }
+  #catch canvas { background: radial-gradient(ellipse at center, rgba(127, 196, 212, 0.12), transparent 70%); border-radius: 14px; margin: 10px 0; max-width: 100%; }
+  #catch .big { font: 700 30px var(--display); color: var(--ink); margin-top: 2px; }
+  #catch .rec { color: var(--good); font-weight: 600; font-size: 13px; margin-top: 4px; }
+  #catch .prize { display: inline-block; margin-top: 8px; padding: 4px 12px; border-radius: 999px; background: var(--accent-soft);
+    color: var(--accent); font-weight: 700; font-size: 12px; letter-spacing: 1.5px; }
+  #catch button { margin: 4px 3px; }
+  #share { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(760px, 94vw); max-height: 92vh; overflow-y: auto; z-index: 6; }
+  #shop::-webkit-scrollbar, #journal::-webkit-scrollbar, .sheet::-webkit-scrollbar { width: 10px; }
+  #shop::-webkit-scrollbar-thumb, #journal::-webkit-scrollbar-thumb, .sheet::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.12); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
+
+  /* ---------- toast ---------- */
+  #toast { position: absolute; left: 50%; top: 22px; transform: translate(-50%, -8px); padding: 10px 18px; border-radius: 999px;
+    background: rgba(11, 16, 19, 0.82); border: 1px solid var(--line); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    font: 600 14px var(--font); white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity .25s, transform .25s; z-index: 3; }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+  /* ---------- title screen ---------- */
+  #title { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; justify-content: center;
+    padding: 0 7vw; background:
+      linear-gradient(90deg, rgba(6, 10, 12, 0.92) 0%, rgba(6, 10, 12, 0.72) 34%, rgba(6, 10, 12, 0.08) 70%),
+      linear-gradient(0deg, rgba(6, 10, 12, 0.6) 0%, transparent 30%); }
+  #title .eyebrow { font: 600 12px var(--font); letter-spacing: 3px; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  #title h1 { margin: 0; font: 700 clamp(64px, 9vw, 118px)/0.92 var(--display); letter-spacing: -2px; color: var(--ink); }
+  #title h1 em { font-style: italic; color: var(--accent); }
+  #title .tagline { max-width: 430px; margin: 22px 0 34px; color: #BFC3BD; font-size: 16px; line-height: 1.6; }
+  .menu { display: flex; flex-direction: column; gap: 10px; width: 300px; }
+  .menu button { text-align: left; padding: 14px 18px; font-size: 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .menu button small { font-size: 12px; font-weight: 500; opacity: .7; }
+  .menu .sep { height: 6px; }
+  #saveInfo { color: var(--muted); font-size: 12.5px; margin: 2px 0 6px 2px; }
+  #title footer { position: absolute; left: 7vw; right: 7vw; bottom: 28px; display: flex; justify-content: space-between; color: var(--dim); font-size: 12px; }
+
+  /* ---------- modals (help, settings, pause) ---------- */
+  .modal { position: absolute; inset: 0; z-index: 7; display: flex; align-items: center; justify-content: center;
+    background: rgba(4, 7, 9, 0.62); backdrop-filter: blur(6px); }
+  .sheet { position: relative; width: min(820px, 94vw); max-height: 88vh; overflow-y: auto; background: var(--card);
+    border: 1px solid var(--line); border-radius: 22px; padding: 30px 32px; box-shadow: var(--shadow); }
+  .sheet h2 { margin: 0 0 6px; font: 700 28px var(--display); }
+  .sheet .sub { color: var(--muted); margin: 0 0 20px; }
+  .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .help-grid section { background: var(--card-2); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; }
+  .help-grid h4 { margin: 0 0 10px; font: 600 11px var(--font); letter-spacing: 1.6px; text-transform: uppercase; color: var(--accent); }
+  .help-grid div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 5px 0; color: #CFCBC0; font-size: 13px; }
+  .help-grid div span:last-child { white-space: nowrap; color: var(--muted); }
+  .setting { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .setting:last-of-type { border-bottom: 0; }
+  .setting label { font-weight: 500; }
+  .setting .desc { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  input[type=range] { width: 180px; accent-color: var(--accent); }
+  .switch { position: relative; flex: none; width: 44px; height: 24px; border-radius: 999px; background: rgba(255, 255, 255, 0.12); cursor: pointer; transition: background .15s; }
+  .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .15s; }
+  .switch.on { background: var(--accent); }
+  .switch.on::after { transform: translateX(20px); }
+  #pause .sheet { width: 340px; text-align: center; }
+  #pause .menu { width: 100%; margin-top: 18px; }
+  #pause .menu button { justify-content: center; }
 </style>
 </head>
 <body>
@@ -64,22 +130,74 @@
 <div id="toast"></div>
 
 <div id="title">
-  <h1>REELWILD</h1>
-  <p>A little angler, a big wild valley. Wander the streams, rivers and lakes, read the water, and work
-    every cast — open the bail, load the rod, spin the reel and fight what bites.</p>
-  <div class="keys">
-    <div><kbd>WASD</kbd> walk · <kbd>Shift</kbd> run · <kbd>C</kbd> crouch</div>
-    <div><kbd>Space</kbd> jump · <kbd>Q</kbd> dodge roll</div>
-    <div><kbd>1</kbd>–<kbd>4</kbd> rod · shotgun · bug spray · binoculars</div>
-    <div><b>Hold</b> left-click to cast, <b>hold</b> again to reel (spin to go faster)</div>
-    <div><b>Click</b> when a fish strikes · <b>right-click</b> twitches · <kbd>Tab</kbd> lure</div>
-    <div>Fighting: keep reeling, <b>let go</b> when it jumps, scroll for drag</div>
-    <div><kbd>Space</kbd> with a line out reels all the way in</div>
-    <div><b>Click</b> bugs to swat them · <kbd>E</kbd> talk · <kbd>J</kbd> journal · <kbd>M</kbd> map</div>
+  <div class="eyebrow">An open-valley fishing game</div>
+  <h1>Reel<em>wild</em></h1>
+  <p class="tagline">Wander lakes, rivers and mountain streams. Read the water, work every cast, and fight whatever bites — under the watchful eye of the locals.</p>
+  <div class="menu">
+    <button id="startBtn" class="primary"><span>Start fishing</span><small>Enter</small></button>
+    <div id="saveInfo" class="hidden"></div>
+    <button id="newBtn"><span>New valley</span></button>
+    <div class="sep"></div>
+    <button id="helpBtn"><span>How to play</span></button>
+    <button id="settingsBtn"><span>Settings</span></button>
   </div>
-  <p><button id="startBtn" style="font-size:18px;padding:10px 30px">Go fishing</button>
-     <button id="newBtn" style="margin-left:8px">New valley</button></p>
+  <footer><span>Reelwild · v1.0</span><span>Best with a mouse and keyboard</span></footer>
 </div>
+
+<div id="help" class="modal hidden"><div class="sheet">
+  <button class="close" data-close="help">✕</button>
+  <h2>How to play</h2>
+  <p class="sub">Everything runs on the mouse. The controls panel in-game always shows what you can do right now.</p>
+  <div class="help-grid">
+    <section><h4>Moving</h4>
+      <div><span>Walk</span><span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span></div>
+      <div><span>Run</span><span><kbd>Shift</kbd></span></div>
+      <div><span>Crouch (sneak)</span><span><kbd>C</kbd></span></div>
+      <div><span>Jump · Dodge roll</span><span><kbd>Space</kbd> <kbd>Q</kbd></span></div>
+      <div><span>Talk · Shop</span><span><kbd>E</kbd></span></div>
+    </section>
+    <section><h4>Fishing</h4>
+      <div><span>Cast</span><span>Hold, release at peak</span></div>
+      <div><span>Reel</span><span>Hold · spin to speed up</span></div>
+      <div><span>Set the hook</span><span>Click on the strike</span></div>
+      <div><span>Twitch the lure</span><span>Right-click</span></div>
+      <div><span>Next lure · Reel in</span><span><kbd>Tab</kbd> <kbd>Space</kbd></span></div>
+    </section>
+    <section><h4>The fight</h4>
+      <div><span>Reel, rod up</span><span>Hold</span></div>
+      <div><span>When it jumps</span><span>Let go</span></div>
+      <div><span>Side strain</span><span>Aim away from its run</span></div>
+      <div><span>Drag</span><span>Scroll wheel</span></div>
+    </section>
+    <section><h4>Tools &amp; more</h4>
+      <div><span>Rod · Gun · Spray · Binoculars</span><span><kbd>1</kbd>–<kbd>4</kbd></span></div>
+      <div><span>Swat a bug</span><span>Click it</span></div>
+      <div><span>Journal · Map</span><span><kbd>J</kbd> <kbd>M</kbd></span></div>
+      <div><span>Pause</span><span><kbd>Esc</kbd></span></div>
+    </section>
+  </div>
+</div></div>
+
+<div id="settings" class="modal hidden"><div class="sheet" style="width:min(540px,94vw)">
+  <button class="close" data-close="settings">✕</button>
+  <h2>Settings</h2>
+  <p class="sub">Saved on this device.</p>
+  <div class="setting"><div><label>Master volume</label><div class="desc">Reel clicks, splashes and drag scream.</div></div><input id="setVolume" type="range" min="0" max="100"></div>
+  <div class="setting"><div><label>Camera distance</label><div class="desc">You can also zoom with the scroll wheel.</div></div><input id="setZoom" type="range" min="8" max="34"></div>
+  <div class="setting"><div><label>Controls panel</label><div class="desc">Context hints in the top-left (H).</div></div><div id="setControls" class="switch"></div></div>
+  <div class="setting"><div><label>Reset progress</label><div class="desc">Deletes your valley, money and journal.</div></div><button id="setReset" class="danger">Reset</button></div>
+</div></div>
+
+<div id="pause" class="modal hidden"><div class="sheet">
+  <h2>Paused</h2>
+  <p class="sub" id="pauseInfo"></p>
+  <div class="menu">
+    <button id="resumeBtn" class="primary">Resume</button>
+    <button id="pHelpBtn">How to play</button>
+    <button id="pSettingsBtn">Settings</button>
+    <button id="quitBtn">Save &amp; quit to title</button>
+  </div>
+</div></div>
 
 <div id="shop" class="panel hidden"></div>
 <div id="journal" class="panel hidden"></div>
@@ -87,26 +205,27 @@
 <div id="share" class="panel hidden"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=8"></script>
-<script src="js/data.js?v=8"></script>
-<script src="js/audio.js?v=8"></script>
-<script src="js/world.js?v=8"></script>
-<script src="js/scene-sprites.js?v=8"></script>
-<script src="js/scene.js?v=8"></script>
-<script src="js/actors.js?v=8"></script>
-<script src="js/fish.js?v=8"></script>
-<script src="js/fishing.js?v=8"></script>
-<script src="js/fight.js?v=8"></script>
-<script src="js/player.js?v=8"></script>
-<script src="js/npcs.js?v=8"></script>
-<script src="js/gun.js?v=8"></script>
-<script src="js/bugs.js?v=8"></script>
-<script src="js/floaters.js?v=8"></script>
-<script src="js/animals.js?v=8"></script>
-<script src="js/tools.js?v=8"></script>
-<script src="js/hud.js?v=8"></script>
-<script src="js/share.js?v=8"></script>
-<script src="js/menus.js?v=8"></script>
-<script src="js/main.js?v=8"></script>
+<script src="js/util.js?v=11"></script>
+<script src="js/data.js?v=11"></script>
+<script src="js/audio.js?v=11"></script>
+<script src="js/world.js?v=11"></script>
+<script src="js/scene-sprites.js?v=11"></script>
+<script src="js/scene.js?v=11"></script>
+<script src="js/folk.js?v=11"></script>
+<script src="js/actors.js?v=11"></script>
+<script src="js/fish.js?v=11"></script>
+<script src="js/fishing.js?v=11"></script>
+<script src="js/fight.js?v=11"></script>
+<script src="js/player.js?v=11"></script>
+<script src="js/npcs.js?v=11"></script>
+<script src="js/gun.js?v=11"></script>
+<script src="js/bugs.js?v=11"></script>
+<script src="js/floaters.js?v=11"></script>
+<script src="js/animals.js?v=11"></script>
+<script src="js/tools.js?v=11"></script>
+<script src="js/hud.js?v=11"></script>
+<script src="js/share.js?v=11"></script>
+<script src="js/menus.js?v=11"></script>
+<script src="js/main.js?v=11"></script>
 </body>
 </html>

@@ -74,26 +74,24 @@ const Tools = {
     g.restore();
   },
 
-  drawBar(hud, x, y) {
-    const g = hud.g;
+  drawBar(hud, cx, y) {
+    const g = hud.g, sw = 74, gap = 8;
+    const x0 = cx - (TOOLS.length * sw + (TOOLS.length - 1) * gap) / 2;
     hud.toolSlots = [];
     TOOLS.forEach((t, i) => {
-      const sx = x + i * 66, sel = this.current === t.id;
-      hud.toolSlots.push({ x: sx, y, w: 60, h: 60, id: t.id });
-      g.fillStyle = sel ? 'rgba(201,168,106,.4)' : 'rgba(18,26,30,.85)';
-      g.strokeStyle = sel ? '#f2c14e' : '#667'; g.lineWidth = sel ? 2.5 : 1;
-      g.beginPath(); g.roundRect(sx, y, 60, 60, 8); g.fill(); g.stroke();
-      this.icon(g, t.id, sx + 30, y + 27, 1.1);
-      hud.text(t.key, sx + 6, y + 14, '#a99f8a', 12, 'left', true);
+      const sx = x0 + i * (sw + gap), sel = this.current === t.id;
+      hud.toolSlots.push({ x: sx, y, w: sw, h: 64, id: t.id });
+      hud.slot(sx, y, sw, 64, sel);
+      this.icon(g, t.id, sx + sw / 2, y + 26, 1.05);
+      hud.text(t.key, sx + 9, y + 16, sel ? UI.accent : UI.dim, 11, 'left', 700);
       const c = this.count(t.id);
-      if (c !== null) hud.text('×' + c, sx + 54, y + 14, c ? '#f3ead6' : '#e2584d', 11, 'right');
-      hud.text(t.name, sx + 30, y + 54, sel ? '#ffffff' : '#c8bfae', 10, 'center', sel);
+      if (c !== null) hud.text(String(c), sx + sw - 9, y + 16, c ? UI.muted : UI.bad, 11, 'right', 600);
+      hud.text(t.name, sx + sw / 2, y + 56, sel ? UI.ink : UI.muted, 10, 'center', sel ? 600 : 400);
+      if (t.id === 'spray' && this.repelT > 0) {
+        g.fillStyle = 'rgba(125,195,131,0.18)'; g.beginPath(); g.roundRect(sx + 4, y + 4, (sw - 8) * this.repelT / 90, 4, 2); g.fill();
+        hud.text(Math.ceil(this.repelT) + 's', sx + sw - 9, y + 42, UI.good, 10, 'right', 600);
+      }
     });
-    if (this.repelT > 0) {
-      const sx = x + 2 * 66;
-      g.fillStyle = 'rgba(20,40,20,.75)'; g.fillRect(sx + 8, y + 31, 44, 14);
-      hud.text(Math.ceil(this.repelT) + 's', sx + 30, y + 42, '#8fd16a', 11, 'center', true);
-    }
   },
 
   // Binocular vignette, plus fish and game spotted in view.

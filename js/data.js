@@ -81,9 +81,9 @@ const LURES = [
   { id: 'crank', key: '3', name: 'Diving Crankbait', price: 30, pack: 1, sink: -0.25, sight: 5, snag: 1.1,
     color: '#6fbf4a', accent: '#f0e14a', tip: 'Floats at rest, dives deeper the faster you crank. Ticks the bottom.' },
   { id: 'popper', key: '4', name: 'Topwater Popper', price: 25, pack: 1, sink: -1, sight: 6, snag: 0.05,
-    color: '#f2f0e8', accent: '#d23a3a', tip: 'Let the rings settle, then pop it with RMB. Deadly at dawn and dusk.' },
+    color: '#f2f0e8', accent: '#d23a3a', tip: 'Let the rings settle, then right-click to pop it. Deadly at dawn and dusk.' },
   { id: 'worm', key: '5', name: 'Worm & Bobber', price: 10, pack: 15, sink: 0, sight: 3.5, snag: 0.1,
-    color: '#c95f6f', accent: '#e83a3a', tip: 'Cast, close the bail, wait. Strike when the bobber goes UNDER, not when it twitches.' },
+    color: '#c95f6f', accent: '#e83a3a', tip: 'Cast and wait. Click when the bobber goes UNDER — not when it twitches.' },
 ];
 const LURE_BY_ID = Object.fromEntries(LURES.map((l) => [l.id, l]));
 

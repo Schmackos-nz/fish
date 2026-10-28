@@ -155,7 +155,7 @@ const Floaters = {
       if (f.bubbleT <= 0 || U.dist(f.x, f.y, Player.x, Player.y) > 30) continue;
       const [sx, sy, ok] = Scene3D.project(f.x, f.y, 0.6);
       if (!ok) continue;
-      g.font = 'bold 13px Trebuchet MS';
+      g.font = '600 13px ' + UI.font;
       const w = Math.min(300, g.measureText(f.bubble).width + 20), h = 26;
       const bx = sx - w / 2, by = sy - h - 10;
       g.globalAlpha = Math.min(1, f.bubbleT * 2);

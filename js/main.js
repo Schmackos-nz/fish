@@ -47,7 +47,7 @@ const Input = {
 
 const Game = {
   time: 0, money: 0, lures: {}, owned: [], gear: null, drag: 2, creel: [], creelMax: 8, journal: {},
-  stats: { caught: 0, released: 0 }, seed: 1, running: false, npcRecords: {},
+  stats: { caught: 0, released: 0 }, seed: 1, mode: 'title', npcRecords: {},
   env: { hour: 6, day: 1, phase: 0, daylight: 0.5, weather: WEATHERS[0], weatherT: 3, wind: { x: 0.5, y: 0.2 }, visibility: 1 },
 
   newGame(seed) {
@@ -141,24 +141,121 @@ function buildWorld(seed, savedPos) {
   Scene3D.target.set(Player.x, 0, Player.y);
 }
 
-function start(fresh) {
-  Sfx.init();
-  const title = document.getElementById('title');
-  title.querySelector('p').textContent = 'Carving the valley…';
-  // Let the message paint before the heavy generation.
+// ---------- settings ----------
+const Settings = {
+  volume: 70, zoom: 16,
+  load() { try { Object.assign(this, JSON.parse(localStorage.getItem('reelwild.settings')) || {}); } catch (e) { /* defaults */ } },
+  save() { try { localStorage.setItem('reelwild.settings', JSON.stringify({ volume: this.volume, zoom: this.zoom })); } catch (e) { /* ignore */ } },
+  apply() { if (Sfx.master) Sfx.master.gain.value = (this.volume / 100) * 0.7; },
+};
+
+// ---------- screens ----------
+const $ = (id) => document.getElementById(id);
+const TITLE_ENV = { phase: 2, daylight: 0.78, hour: 18.4, weather: WEATHERS[0], wind: { x: 0.3, y: 0.1 } };
+let titleT = 0, hasSave = false, newArmed = 0;
+
+function refreshTitle() {
+  try { hasSave = !!localStorage.getItem(SAVE_KEY); } catch (e) { hasSave = false; }
+  $('startBtn').querySelector('span').textContent = hasSave ? 'Continue' : 'Start fishing';
+  const info = $('saveInfo');
+  if (hasSave) {
+    const species = Object.keys(Game.journal).length;
+    info.textContent = 'Day ' + Game.env.day + '  ·  ' + U.fmtMoney(Game.money) + '  ·  ' + species + ' species  ·  ' + Game.stats.caught + ' caught';
+    info.classList.remove('hidden');
+  } else info.classList.add('hidden');
+  $('newBtn').querySelector('span').textContent = 'New valley';
+  $('newBtn').classList.remove('danger');
+}
+
+function showTitle() {
+  Game.mode = 'title';
+  $('title').classList.remove('hidden');
+  $('pause').classList.add('hidden');
+  Menus.close(); Hud.bigMap = false;
+  Actors.group.visible = false; Gun.mesh.visible = false;
+  Hud.g.setTransform(1, 0, 0, 1, 0, 0); Hud.g.clearRect(0, 0, Hud.cv.width, Hud.cv.height);
+  $('toast').classList.remove('show');
+  refreshTitle();
+}
+
+function enterPlay() {
+  Sfx.init(); Settings.apply();
+  Game.mode = 'play';
+  $('title').classList.add('hidden');
+  Actors.group.visible = true;
+  Scene3D.camDist = Settings.zoom;
+  Scene3D.target.set(Player.x, Scene3D.standH(Player.x, Player.y), Player.y);
+  Game.save();
+  if (!Game.stats.caught) Hud.toast('Walk to the water with WASD, then hold the left mouse button to cast', UI.ink, 4.5);
+}
+
+function newValley() {
+  const b = $('newBtn');
+  b.querySelector('span').textContent = 'Carving the valley…';
+  b.disabled = true;
+  // Let the label paint before the heavy generation.
   setTimeout(() => {
-    let saved = fresh ? null : Game.load();
-    if (!saved) { Game.newGame((Math.random() * 1e9) | 0); }
-    buildWorld(Game.seed, saved ? { x: saved.px, y: saved.py } : null);
-    title.classList.add('hidden');
-    Game.running = true;
-    Game.save();
-    Hud.toast('Walk to the water with WASD, then hold the left mouse button to cast', '#f3ead6', 4.5);
-  }, 30);
+    Game.newGame((Math.random() * 1e9) | 0);
+    buildWorld(Game.seed, null);
+    b.disabled = false;
+    enterPlay();
+  }, 40);
+}
+
+function pause() {
+  Game.mode = 'pause';
+  $('pauseInfo').textContent = 'Day ' + Game.env.day + '  ·  ' + U.fmtMoney(Game.money) + '  ·  ' + Game.stats.caught + ' fish caught';
+  $('pause').classList.remove('hidden');
+  Sfx.setDrag(0); Sfx.setBuzz(0, 600);
+}
+function resume() { $('pause').classList.add('hidden'); Game.mode = 'play'; }
+
+function openModal(id) {
+  if (id === 'settings') {
+    $('setVolume').value = Settings.volume;
+    $('setZoom').value = Settings.zoom;
+    $('setControls').classList.toggle('on', Hud.showControls);
+    $('setReset').textContent = 'Reset';
+  }
+  $(id).classList.remove('hidden');
+}
+function closeModals() {
+  let any = false;
+  for (const id of ['help', 'settings']) { if (!$(id).classList.contains('hidden')) any = true; $(id).classList.add('hidden'); }
+  return any;
+}
+
+function wireScreens() {
+  $('startBtn').onclick = () => enterPlay();
+  $('newBtn').onclick = () => {
+    if (!hasSave || Date.now() - newArmed < 4000) return newValley();
+    newArmed = Date.now();
+    $('newBtn').querySelector('span').textContent = 'Click again — replaces your valley';
+    $('newBtn').classList.add('danger');
+  };
+  $('helpBtn').onclick = () => openModal('help');
+  $('settingsBtn').onclick = () => openModal('settings');
+  $('pHelpBtn').onclick = () => openModal('help');
+  $('pSettingsBtn').onclick = () => openModal('settings');
+  $('resumeBtn').onclick = resume;
+  $('quitBtn').onclick = () => { Game.save(); showTitle(); };
+  document.querySelectorAll('[data-close]').forEach((b) => { b.onclick = () => $(b.dataset.close).classList.add('hidden'); });
+  for (const id of ['help', 'settings']) $(id).addEventListener('mousedown', (e) => { if (e.target.id === id) $(id).classList.add('hidden'); });
+  $('setVolume').oninput = (e) => { Settings.volume = +e.target.value; Settings.apply(); Settings.save(); };
+  $('setZoom').oninput = (e) => { Settings.zoom = +e.target.value; if (Game.mode !== 'title') Scene3D.camDist = Settings.zoom; Settings.save(); };
+  $('setControls').onclick = () => { Hud.toggleControls(); $('setControls').classList.toggle('on', Hud.showControls); };
+  $('setReset').onclick = (e) => {
+    if (e.target.textContent !== 'Click again to confirm') { e.target.textContent = 'Click again to confirm'; return; }
+    try { localStorage.removeItem(SAVE_KEY); } catch (err) { /* ignore */ }
+    location.reload();
+  };
 }
 
 function handleGlobalKeys() {
-  if (Input.pressed('Escape')) { Menus.close(); Hud.bigMap = false; }
+  if (Input.pressed('Escape')) {
+    if (closeModals()) return;
+    if (Menus.open || Hud.bigMap) { Menus.close(); Hud.bigMap = false; } else { pause(); return; }
+  }
   if (Menus.open === 'catch') return;
   if (Input.pressed('KeyJ')) Menus.toggleJournal();
   if (Input.pressed('KeyM')) Hud.bigMap = !Hud.bigMap;
@@ -176,14 +273,37 @@ function handleGlobalKeys() {
     if (U.dist(Player.x, Player.y, k.x, k.y) < 3) Menus.openShop();
     else if (npc && npc.state !== 'fight' && npc.state !== 'show') Npcs.talk(npc);
   }
-  if (Fishing.state !== 'fight' && Input.wheel) Scene3D.camDist = U.clamp(Scene3D.camDist + Input.wheel * 1.5, 8, 34);
+  if (Fishing.state !== 'fight' && Input.wheel) {
+    Scene3D.camDist = U.clamp(Scene3D.camDist + Input.wheel * 1.5, 8, 34);
+    Settings.zoom = Scene3D.camDist; Settings.save();
+  }
+}
+
+// The title screen floats the camera along the town lake at golden hour.
+function titleFrame(dt) {
+  titleT += dt;
+  const modalOpen = !$('help').classList.contains('hidden') || !$('settings').classList.contains('hidden');
+  if (Input.pressed('Enter') && !modalOpen) $('startBtn').click();
+  if (Input.pressed('Escape')) closeModals();
+  const t = World.town;
+  Scene3D.camDist = 22;
+  Scene3D.updateCamera(dt, { x: t.x + 6 + Math.sin(titleT * 0.05) * 14, y: t.y - 9 + Math.cos(titleT * 0.04) * 3 });
+  Scene3D.updateEnv(TITLE_ENV, dt);
+  Npcs.update(dt); Floaters.update(dt);
+  Npcs.render(); Floaters.render();
+  Scene3D.render(titleT);
 }
 
 let last = performance.now(), saveT = 0;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000);
   last = now;
-  if (Game.running) {
+  if (Game.mode === 'title') titleFrame(dt);
+  else if (Game.mode === 'pause') {
+    if (Input.pressed('Escape') && !closeModals()) resume();
+    Scene3D.render(Game.time);
+    Hud.draw();
+  } else {
     const w = Scene3D.screenToWorld(Input.mouse.sx, Input.mouse.sy);
     Input.mouse.wx = w.x; Input.mouse.wy = w.y;
     // Holding the left button turns the reel steadily; spinning the mouse while holding reels faster.
@@ -191,7 +311,7 @@ function frame(now) {
     Input.crank = CRANK_STATES.has(Fishing.state) && !Menus.open ? crank : 0;
     Input.crankAcc = 0;
     handleGlobalKeys();
-    if (!Menus.open) {
+    if (!Menus.open && Game.mode === 'play') {
       Game.time += dt;
       Game.updateEnv(dt);
       Player.update(dt);
@@ -227,16 +347,17 @@ function frame(now) {
 }
 
 window.addEventListener('load', () => {
-  const canvas = document.getElementById('game');
-  Scene3D.init(canvas);
+  Settings.load();
+  Scene3D.init(document.getElementById('game'));
   Actors.init();
   Gun.init();
   Hud.init();
   Input.init(document.getElementById('hud'));
-  let hasSave = false;
-  try { hasSave = !!localStorage.getItem(SAVE_KEY); } catch (e) { /* no storage */ }
-  document.getElementById('startBtn').textContent = hasSave ? 'Continue' : 'Go fishing';
-  document.getElementById('startBtn').onclick = () => start(false);
-  document.getElementById('newBtn').onclick = () => start(true);
+  wireScreens();
+  // Build the valley straight away so the title screen can show it.
+  const saved = Game.load();
+  if (!saved) Game.newGame((Math.random() * 1e9) | 0);
+  buildWorld(Game.seed, saved ? { x: saved.px, y: saved.py } : null);
+  showTitle();
   requestAnimationFrame(frame);
 });
