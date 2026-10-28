@@ -24,6 +24,7 @@ const Menus = {
     Game.journal[sp.id] = j;
     Game.stats.caught++;
     Npcs.onPlayerCatch(f);
+    if (sp.myth) Hud.toast('🐉 You caught ' + sp.name + '! Nobody in town is going to believe this.', '#B8C8FF', 4);
     Contest.onFish('You', f.kg, sp.name);
     const el = document.getElementById('catch');
     const full = Game.creel.length >= Game.creelMax;

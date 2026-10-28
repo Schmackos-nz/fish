@@ -11,6 +11,8 @@ const Fight = {
     this.slackT = 0; this.time = 0; this.landReady = false; this.jumpWarn = 0;
     Game.drag = U.clamp(Game.drag, 0.25, Game.gear.reel.maxDrag);
     this.pickMode(true);
+    // Urban legends: without diamond line and the Leviathan rod, you've got seconds before it's gone.
+    this.mythDoom = f.sp.myth && !Legends.geared() && Math.random() > 0.03 ? 1.5 + Math.random() * 2.5 : 0;
     Fishing.state = 'fight'; Fishing.engaged = f;
     Sfx.thunk(); Sfx.splash(0.8); Hud.ripple(f.x, f.y, 1.2);
     Fishing.say(f.prized ? "FISH ON — it's a PRIZED one! Don't lose it!" : q > 0.9 ? 'FISH ON! Solid hookset!' : 'Fish on — hook is light, keep it tight!', f.prized ? '#f2c14e' : '#8fd16a', 2);
@@ -41,6 +43,11 @@ const Fight = {
   update(dt, turns) {
     const f = this.fish, sp = f.sp, gear = Game.gear, l = Fishing.lure;
     this.time += dt;
+    if (this.mythDoom > 0) {
+      this.mythDoom -= dt;
+      Bugs.shake = Math.max(Bugs.shake, 0.4);
+      if (this.mythDoom <= 0) { Fishing.say('It\'s like trying to stop a freight train… You\'ll need diamond line and a Leviathan rod.', '#B8C8FF', 3.5); return this.snap(); }
+    }
     // ----- angler input -----
     // A/D lean the rod against the fish's run; cranking keeps the rod up, letting go of the reel drops it.
     const side = (Input.keys.has('KeyD') || Input.keys.has('ArrowRight') ? 1 : 0) - (Input.keys.has('KeyA') || Input.keys.has('ArrowLeft') ? 1 : 0);

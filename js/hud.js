@@ -140,13 +140,13 @@ const Hud = {
     Tools.drawOverlay(this);
     Gun.drawScope(this);
     Wanted.drawWorld(this);
+    this.drawGunCursor();
     // Panels are laid out on a virtual screen, scaled down to fit phones.
     const k = this.k = Mobile.hudScale();
     g.setTransform(d * k, 0, 0, d * k, 0, 0);
     const W = this.W = innerWidth / k, H = this.H = innerHeight / k;
     const sh = this.drawStatus(20, 20);
     if (Mobile.active) this.drawVitals(20, 20 + sh + 12 + 100);
-    else this.drawControls(20, 20 + sh + 12);
     this.drawMinimap(W - 20 - 82, 20 + 82);
     drawWindSock(this, W - 20 - 164 - 44, 52);
     Contest.drawHud(this, W - 20 - 82, 222);
@@ -161,6 +161,26 @@ const Hud = {
     if ((Tools.current === 'rod' && !Mobile.active) || Fishing.state !== 'idle') this.drawReel(W - 146, H - 176); else this.reel = null;
     Wanted.drawHud(this);
     if (this.bigMap) this.drawBigMap(W, H);
+  },
+
+  // Rounds left (and the reload) right by the mouse while a gun is out.
+  drawGunCursor() {
+    if (!Gun.out || Mobile.active || Menus.open || Game.mode !== 'play' || Gun.scoped) return;
+    const g = this.g, W = Arsenal.weapon(), n = Arsenal.ammo(W.ammo), m = Input.mouse;
+    const x = m.sx + 18, y = m.sy + 16;
+    // Reload ring round the cursor.
+    if (Gun.cooldown > 0) {
+      g.strokeStyle = 'rgba(243,234,214,0.85)'; g.lineWidth = 3;
+      g.beginPath(); g.arc(m.sx, m.sy, 14, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - Gun.cooldown / W.cd)); g.stroke();
+    }
+    const shown = Math.min(n, 10), bw = 4, gap = 2, w = Math.max(48, shown * (bw + gap) + 30);
+    g.fillStyle = 'rgba(20,16,12,0.78)'; g.beginPath(); g.roundRect(x, y, w, 22, 8); g.fill();
+    for (let i = 0; i < shown; i++) {
+      const bx = x + 6 + i * (bw + gap);
+      g.fillStyle = '#E3B04A'; g.beginPath(); g.roundRect(bx, y + 6, bw, 11, [2, 2, 1, 1]); g.fill();
+      g.fillStyle = '#B07A2A'; g.fillRect(bx, y + 14, bw, 3);
+    }
+    this.text(String(n), x + w - 8, y + 15, n ? UI.ink : UI.bad, 12, 'right', 700);
   },
 
   drawStatus(x, y) {

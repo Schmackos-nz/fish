@@ -154,7 +154,7 @@ const Bikes = {
     Game.fuel = Math.max(10, Math.min(100, r.fuel));
     this.syncMine();
     this.group.remove(r.bike);
-    r.state = 'stranded'; r.stateT = old ? 60 : 45; r.chaseT = 10; r.foot = null;
+    r.state = 'stranded'; r.stateT = old ? 60 : 45; r.chaseT = 25; r.foot = null; r.armed = Math.random() < 0.55; r.hitCD = 1.5;
     if (old) { r.bikeId = old.id; r.plate = old.plate; r.owner = old.owner; r.bike = this.modelFor(old.id); this.group.add(r.bike); r.x = old.x; r.y = old.y; r.ang = old.ang || 0; r.noBike = false; }
     else { r.noBike = true; }
     r.bubble = old ? 'OI! THAT\'S MY BIKE! …Fine, I\'ll take YOURS!' : 'OI! THAT\'S MY BIKE!'; r.bubbleT = 3;
@@ -251,13 +251,31 @@ const Bikes = {
         r.gasT += dt;
         r.target = { x: pump.x + 1.3, y: pump.y + 0.6 };
         if (U.dist(r.x, r.y, r.target.x, r.target.y) < 2 || r.gasT > 60) { this.park(r, 'refuel', 10, ['Running on fumes!', 'Fill \'er up!']); continue; }
-      } else if (Math.random() < dt / 90) { this.park(r, 'break', 12 + Math.random() * 15, ['Smoko!', 'Gotta stretch the legs.', 'Nice spot for a break.']); continue; }
-      if (r.state !== 'toGas' && (!r.target || U.dist(r.x, r.y, r.target.x, r.target.y) < 2)) r.target = this.pickTarget(r);
+      }
+      if (r.state !== 'toGas' && (!r.target || U.dist(r.x, r.y, r.target.x, r.target.y) < 2.5)) {
+        // Arrived: usually stop for a bit, then pick the next place to go.
+        if (r.target && r.target.stop && Math.random() < 0.6) {
+          this.park(r, 'break', 10 + Math.random() * 15, ['Made it to ' + r.target.name + '!', 'Smoko!', 'Nice spot, this.']);
+          r.target = null; continue;
+        }
+        r.target = this.pickTarget(r);
+      }
+      // Steer toward the destination, swinging round anything in the way.
       const want = Math.atan2(r.target.y - r.y, r.target.x - r.x);
-      r.ang += U.clamp(U.angDiff(r.ang, want), -2.5 * dt, 2.5 * dt);
-      const nx = r.x + Math.cos(r.ang) * r.speed * dt, ny = r.y + Math.sin(r.ang) * r.speed * dt;
-      if (this.blocked(nx, ny, r.bikeId)) { r.ang += Math.PI * (0.5 + Math.random() * 0.4); r.target = this.pickTarget(r); }
-      else { r.x = nx; r.y = ny; }
+      let head = null;
+      for (const off of [0, 0.35, -0.35, 0.7, -0.7, 1.1, -1.1, 1.6, -1.6, 2.3, -2.3]) {
+        const a = want + off;
+        if (!this.blocked(r.x + Math.cos(a) * 1.2, r.y + Math.sin(a) * 1.2, r.bikeId) && !this.blocked(r.x + Math.cos(a) * 2.6, r.y + Math.sin(a) * 2.6, r.bikeId)) { head = a; break; }
+      }
+      if (head === null) head = r.ang + Math.PI * 0.6;
+      r.ang += U.clamp(U.angDiff(r.ang, head), -3 * dt, 3 * dt);
+      const sharp = Math.abs(U.angDiff(r.ang, head)) > 0.7;
+      const spd = r.speed * (sharp ? 0.45 : 1);
+      const nx = r.x + Math.cos(r.ang) * spd * dt, ny = r.y + Math.sin(r.ang) * spd * dt;
+      if (this.blocked(nx, ny, r.bikeId)) r.ang += 0.8; else { r.x = nx; r.y = ny; }
+      // Not getting any closer? Give up on that place and go somewhere else.
+      r.progT = (r.progT || 0) + dt;
+      if (r.progT > 6) { const d = U.dist(r.x, r.y, r.target.x, r.target.y); if (r.lastD !== undefined && d > r.lastD - 4 && r.state !== 'toGas') r.target = this.pickTarget(r); r.lastD = d; r.progT = 0; }
       // Showing off.
       if (r.wheelie > 0) r.wheelie -= dt; else if (Math.random() < dt * 0.08) r.wheelie = 1.5;
       const pd = U.dist(r.x, r.y, Player.x, Player.y);
@@ -299,7 +317,14 @@ const Bikes = {
         const nx = r.px + Math.cos(a) * sp * dt, ny = r.py + Math.sin(a) * sp * dt;
         if (!World.blocked(nx, ny)) { r.px = nx; r.py = ny; }
         r.walkFace = a; r.walkT += dt; r.onFootMoving = true;
-        if (r.chaseT > 0 && Math.random() < dt * 0.4 && U.dist(r.px, r.py, Player.x, Player.y) < 30) { r.bubble = U.pick(Math.random, ['COME BACK HERE!', 'THIEF!', 'That\'s MY bike!']); r.bubbleT = 1.6; }
+        // Get stuck in: fists up close, and some of them are carrying.
+        const pd = U.dist(r.px, r.py, Player.x, Player.y);
+        r.hitCD = (r.hitCD || 0) - dt;
+        if (r.chaseT > 0 && r.hitCD <= 0 && !Interior.active) {
+          if (pd < 1.3) { r.hitCD = 1.2; Wanted.hurt(8); r.bubble = U.pick(Math.random, ['TAKE THAT!', 'GIMME MY BIKE!', 'THIEF!']); r.bubbleT = 1.2; }
+          else if (r.armed && pd < 13) { r.hitCD = 1.3 + Math.random(); Wanted.fireAt(r.px, r.py, 0.3, 9); }
+        }
+        if (r.chaseT > 0 && Math.random() < dt * 0.4 && pd < 30) { r.bubble = U.pick(Math.random, ['COME BACK HERE!', 'THIEF!', 'That\'s MY bike!']); r.bubbleT = 1.6; }
         if (!r.noBike && r.chaseT <= 0 && U.dist(r.px, r.py, r.x, r.y) < 0.8) { r.state = 'ride'; r.target = this.pickTarget(r); }
       } else r.onFootMoving = false;
       if (r.noBike && r.stateT <= 0) {
@@ -326,32 +351,151 @@ const Bikes = {
     return true;
   },
 
-  pickTarget(r) {
-    // Mostly trails; now and then cut across open country.
-    for (let t = 0; t < 20; t++) {
-      const a = Math.random() * 6.28, d = 15 + Math.random() * 50;
-      const x = r.x + Math.cos(a) * d, y = r.y + Math.sin(a) * d;
-      if (this.blocked(x, y)) continue;
-      if (World.tileAt(x, y) === T.PATH || Math.random() < 0.25) return { x, y };
+  // Places worth riding to: town, bridges, lake shores, cottages, Dusty's camp.
+  destinations() {
+    if (this.dests && this.dests.seed === World.seed) return this.dests;
+    const d = [], add = (x, y, name) => { if (!this.blocked(x, y) && !World.isWater(x, y)) d.push({ x, y, name, stop: true }); };
+    add(World.town.x + 0.5, World.town.y + 8, 'town');
+    for (const b of World.bridges) { add(b.x0 + 0.5, b.y0 + 0.5, 'the bridge'); add(b.x1 + 0.5, b.y1 + 0.5, 'the bridge'); }
+    for (const h of World.houses) { const dr = World.doorOf(h); add(dr.x + 1.5, dr.y + 1.5, 'the cottages'); }
+    for (const l of World.lakes) for (let k = 0; k < 3; k++) {
+      const a = k / 3 * 6.28 + l.x;
+      for (let r = 0; r < 60; r++) { const x = l.x + Math.cos(a) * r, y = l.y + Math.sin(a) * r; if (!World.isWater(x, y)) { add(x + Math.cos(a) * 2.5, y + Math.sin(a) * 2.5, l.name || 'the lake'); break; } }
     }
-    return { x: World.town.x, y: World.town.y + 10 };
+    if (World.dusty) add(World.dusty.x + 2.5, World.dusty.y, 'Dusty\'s camp');
+    d.seed = World.seed;
+    return (this.dests = d);
+  },
+
+  pickTarget(r) {
+    const ds = this.destinations().filter((t) => t !== r.dest && U.dist(t.x, t.y, r.x, r.y) > 20 && U.dist(t.x, t.y, r.x, r.y) < 150);
+    const t = ds.length ? ds[(Math.random() * ds.length) | 0] : { x: World.town.x, y: World.town.y + 10, name: 'town', stop: true };
+    r.dest = t; r.lastD = undefined; r.progT = 0;
+    return t;
+  },
+
+  // ---------- shooting vehicles ----------
+  vehicles() {
+    const out = [];
+    for (const r of this.riders) if (!r.noBike) out.push({ x: r.x, y: r.y, o: r });
+    if (Game.bike && !this.riding) out.push({ x: Game.bike.x, y: Game.bike.y, o: 'mine' });
+    return out;
+  },
+  hpOf(o) { const v = o === 'mine' ? Game.bike.hp : o.hp; return v === undefined ? 4 : v; },
+
+  // A bullet landing at x,y: returns true if it hit a bike or kart.
+  hitAt(x, y, dmg) {
+    let best = null, bd = 1.0;
+    for (const v of this.vehicles()) { const d = U.dist(v.x, v.y, x, y); if (d < bd) { bd = d; best = v; } }
+    if (!best) return false;
+    this.damage(best.o, dmg);
+    return true;
+  },
+
+  damage(o, dmg) {
+    const before = this.hpOf(o), hp = before - dmg;
+    if (o === 'mine') Game.bike.hp = hp; else o.hp = hp;
+    Sfx.tone(1100 + Math.random() * 400, 0.05, 0.18, 'square', 500);
+    if (hp <= 0) { setTimeout(() => this.explode(o), 120); return; }
+    if (before > 2.5 && hp <= 2.5) Hud.toast('It\'s smoking — a couple more and it\'ll blow!', '#F2C14E', 1.8);
+    else if (before > 1.2 && hp <= 1.2) Hud.toast('It\'s on FIRE!', UI.bad, 1.4);
+    if (o !== 'mine' && !this.onFoot(o) && Math.random() < 0.5) { o.bubble = U.pick(Math.random, ['HEY! MY BIKE!', 'ARE YOU SHOOTING AT ME?!', 'Not the paint job!']); o.bubbleT = 1.8; }
+  },
+
+  explode(o) {
+    if (o === 'mine') {
+      if (!Game.bike) return;
+      const x = this.riding ? Player.x : Game.bike.x, y = this.riding ? Player.y : Game.bike.y, id = Game.bike.id;
+      if (this.riding) this.dismount();
+      this.wreck(this.mine, x, y); this.mine = null;
+      Game.vpermits = (Game.vpermits || []).filter((p) => p !== Game.bike.plate);
+      Game.bike = null;
+      Hud.toast('KABOOM. Your ' + BIKE_BY_ID[id].name + ' is a smoking wreck.', UI.bad, 2.6);
+      Arsenal.explode(x, y, 3);
+      Game.save();
+      return;
+    }
+    if (o.noBike) return;
+    const x = o.x, y = o.y, riding = !this.onFoot(o);
+    this.wreck(o.bike, x, y);
+    o.bike = this.modelFor(o.bikeId); o.noBike = true; o.hp = 4;
+    if (riding) { o.px = x + 1; o.py = y + 0.6; }
+    o.state = 'stranded'; o.stateT = 50; o.chaseT = 0; o.foot = null;
+    Arsenal.explode(x, y, 3);
+  },
+
+  // Rockets and other explosions set off any ride nearby (with a little delay for drama).
+  blast(x, y, r) {
+    for (const v of this.vehicles()) if (U.dist(v.x, v.y, x, y) < r) { if (v.o === 'mine') Game.bike.hp = 0; else v.o.hp = 0; setTimeout(() => this.explode(v.o), 180 + Math.random() * 200); }
+  },
+
+  wreck(mesh, x, y) {
+    if (!mesh) return;
+    const burnt = this.burntMat || (this.burntMat = new THREE.MeshToonMaterial({ color: 0x2A2522, gradientMap: Toon.gradient() }));
+    mesh.traverse((m) => { if (m.isMesh && m.material && m.material.side !== THREE.BackSide) m.material = burnt; });
+    mesh.position.set(x, Scene3D.standH(x, y), y); mesh.rotation.set(0.35, mesh.rotation.y, 0.5);
+    if (!mesh.parent) this.group.add(mesh);
+    (this.wrecks = this.wrecks || []).push({ mesh, x, y, t: 60 });
+  },
+
+  // Smoke (and flames) from damaged rides and fresh wrecks.
+  smokeTick(dt) {
+    if (!this.smoke) {
+      // Cartoon puffs: little low-poly balls that swell and fade.
+      const geo = new THREE.IcosahedronGeometry(0.32, 1);
+      this.smoke = Array.from({ length: 70 }, () => { const s = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false })); s.visible = false; s.userData.t = 1; s.renderOrder = 5; Scene3D.scene.add(s); return s; });
+    }
+    const emit = (x, y, h, fire) => {
+      const s = this.smoke.find((q) => q.userData.t >= 1); if (!s) return;
+      s.userData = { t: 0, life: fire ? 0.6 : 1.8, vx: (Math.random() - 0.5) * 0.3, vz: (Math.random() - 0.5) * 0.3, fire };
+      s.position.set(x + (Math.random() - 0.5) * 0.4, h + (fire ? 0.6 : 0.9), y + (Math.random() - 0.5) * 0.4); s.visible = true;
+      s.material.color.set(fire ? 0xFF8A2A : 0x3A3A3A);
+    };
+    const src = [];
+    for (const r of this.riders) if (!r.noBike && (r.hp ?? 4) <= 2.5) src.push([r.x, r.y, r.hp]);
+    if (Game.bike && (Game.bike.hp ?? 4) <= 2.5) src.push([this.riding ? Player.x : Game.bike.x, this.riding ? Player.y : Game.bike.y, Game.bike.hp]);
+    for (const w of this.wrecks || []) { w.t -= dt; src.push([w.x, w.y, w.t > 45 ? 0.5 : 2]); }
+    if (this.wrecks) this.wrecks = this.wrecks.filter((w) => { if (w.t > 0) return true; this.group.remove(w.mesh); return false; });
+    for (const [x, y, hp] of src) {
+      if (U.dist(x, y, Player.x, Player.y) > 60) continue;
+      const h = Scene3D.standH(x, y);
+      if (Math.random() < dt * (3 - hp) * 7) emit(x, y, h, false);
+      if (hp <= 1.2 && Math.random() < dt * 10) emit(x, y, h, true);
+    }
+    for (const s of this.smoke) {
+      const u = s.userData; if (u.t >= 1) continue;
+      u.t += dt / u.life;
+      if (u.t >= 1) { s.visible = false; continue; }
+      s.position.x += u.vx * dt; s.position.z += u.vz * dt; s.position.y += dt * (u.fire ? 1.4 : 1.5);
+      const k = u.fire ? 0.5 + u.t * 0.4 : 0.7 + u.t * 2.2;
+      s.scale.set(k, k, k);
+      s.material.opacity = (1 - u.t) * (u.fire ? 0.95 : 0.85);
+    }
   },
 
   // ---------- drawing + engine noise ----------
-  render() {
+  render(dt = 1 / 60) {
+    this.smokeTick(dt);
     const base = (x, y) => Scene3D.standH(x, y);
     let loud = 0, rpm = 60;
     for (const r of this.riders) {
       const d = U.dist(r.x, r.y, Player.x, Player.y), vis = d < 70 && !Interior.active;
       r.mesh.visible = vis; r.bike.visible = vis && !r.noBike;
+      if (r.pistol) r.pistol.visible = vis && r.armed && r.state === 'stranded' && r.chaseT > 0 && !(r.ko > 0);
       if (vis) {
         const h = base(r.x, r.y), pitch = r.wheelie > 0 ? Math.min(0.5, r.wheelie) : 0;
         r.bike.position.set(r.x, h, r.y); r.bike.rotation.set(0, -r.ang, pitch);
         const dir = Math.abs(Math.cos(r.ang)) > Math.abs(Math.sin(r.ang)) ? 'side' : Math.sin(r.ang) > 0 ? 'down' : 'up';
         if (this.onFoot(r)) {
           r.mesh.position.set(r.px, base(r.px, r.py), r.py);
+          const aiming = r.armed && r.state === 'stranded' && r.chaseT > 0;
+          if (aiming) r.walkFace = Math.atan2(Player.y - r.py, Player.x - r.px);
           if (r.walkFace !== undefined) r.mesh.userData.rig.yaw.rotation.y = -r.walkFace;
-          Models.pose(r.mesh.userData.rig, { moving: r.onFootMoving, phase: r.walkT, t: Game.time });
+          Models.pose(r.mesh.userData.rig, { moving: r.onFootMoving, phase: r.walkT, t: Game.time, pose: aiming ? 'grip' : undefined });
+          if (aiming) {
+            if (!r.pistol) { r.pistol = Wanted.gunMesh(false); this.group.add(r.pistol); }
+            Models.handPos(r.mesh.userData.rig, r.pistol.position); r.pistol.rotation.set(0, -r.walkFace, 0);
+          }
         } else {
           const S = seatOf(r.bikeId), rig = r.mesh.userData.rig;
           r.mesh.position.set(r.x + Math.cos(r.ang) * S.seatX, h + S.seatY + pitch * 0.3, r.y + Math.sin(r.ang) * S.seatX);

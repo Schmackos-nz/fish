@@ -2,6 +2,15 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '1.1', name: 'Here Be Monsters', date: '29 Oct 2026', notes: [
+    ['new', 'Urban legend fish: the Bunyip, the Taniwha Eel and the Dam Monster Carp. Watch for a huge silhouette sliding past'],
+    ['new', 'Leviathan Heavy rod and 60 kg Diamond Braid at Hettie\'s. Without both, a legend snaps you off in seconds'],
+    ['new', 'Shoot bikes and go-karts: they smoke, catch fire, then blow up (and set off anything parked nearby)'],
+    ['new', 'Ammo count and reload ring at your cursor while a gun is out'],
+    ['changed', 'Steal someone\'s ride and they come after you, with fists or a pistol'],
+    ['changed', 'Bikers and kart drivers ride to real places (town, bridges, lakes, cottages) and stop when they get there'],
+    ['changed', 'The controls panel in the top left is gone. The action bar and prompts cover it'],
+  ] },
   { v: '1.0', name: 'Weekend Warriors', date: '29 Oct 2026', notes: [
     ['new', 'Weekend contests: alternate fishing and hunting weekends. Enter with Tim, heaviest catch from Saturday dawn to Monday dawn wins cash and a trophy'],
     ['new', 'Go-karts: the Go-Kart 90 and Racer Kart, sold by Revs alongside the dirt bikes'],

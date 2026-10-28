@@ -260,6 +260,7 @@ const Actors = {
       m.position.set(f.x, -Math.min(f.z, 4) * SUB - 0.03, f.y);
       m.rotation.y = -f.heading;
       m.scale.set(len * (1 + Math.sin(f.wig) * 0.05), 1, len);
+      if (f.sp.myth && !near) { m.material.color.set(0x04101a); m.material.opacity = 0.82 * Math.max(0, f.alpha) * env.visibility; continue; } // a monster's shadow
       m.material.color.set(f.prized ? (Math.sin(Game.time * 4 + f.wig) > 0.4 ? 0xd9b44a : 0x8a6a1e) : near ? f.sp.color : 0x0d2430);
       m.material.opacity = (near ? U.clamp(1 - f.z * 0.12, 0.55, 0.95) : U.clamp(0.75 - f.z * 0.1, 0.12, 0.75)) * env.visibility * Math.max(0, f.alpha);
     }

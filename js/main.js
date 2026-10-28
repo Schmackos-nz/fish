@@ -262,7 +262,6 @@ function openModal(id) {
   if (id === 'settings') {
     $('setVolume').value = Settings.volume;
     $('setZoom').value = Settings.zoom;
-    $('setControls').classList.toggle('on', Hud.showControls);
     $('setMusic').classList.toggle('on', Settings.music);
     $('setReset').textContent = 'Reset';
   }
@@ -306,7 +305,6 @@ function wireScreens() {
     if (Game.mode === 'title' && Settings.music) Music.play();
   };
   addEventListener('pointerdown', firstTouch); addEventListener('keydown', firstTouch);
-  $('setControls').onclick = () => { Hud.toggleControls(); $('setControls').classList.toggle('on', Hud.showControls); };
   $('setReset').onclick = (e) => {
     if (e.target.textContent !== 'Click again to confirm') { e.target.textContent = 'Click again to confirm'; return; }
     try { localStorage.removeItem(SAVE_KEY); } catch (err) { /* ignore */ }
@@ -323,7 +321,6 @@ function handleGlobalKeys() {
   if (Input.pressed('KeyJ')) Menus.toggleJournal();
   if (Input.pressed('KeyI')) { if (Menus.open === 'misc') Menus.close(); else if (!Menus.open) Life.openBag(); }
   if (Input.pressed('KeyM')) Hud.bigMap = !Hud.bigMap;
-  if (Input.pressed('KeyH')) Hud.toggleControls();
   if (Input.pressed('KeyG') && !Menus.open) Tools.select('gun');
   for (const t of TOOLS) if (Input.pressed('Digit' + t.key) && !Menus.open) Tools.select(t.id);
   if (Input.pressed('Tab') && !Menus.open && Tools.current === 'rod') {
@@ -392,6 +389,7 @@ function frame(now) {
       Life.update(dt);
       Camp.update(dt);
       Contest.update(dt);
+      Legends.update(dt);
       Swimmers.update(dt);
       Couples.update(dt);
       Tim.update(dt);
@@ -425,7 +423,7 @@ function frame(now) {
     Swimmers.render();
     Couples.render(dt);
     Tim.render();
-    Bikes.render();
+    Bikes.render(dt);
     Wanted.render(dt);
     Arsenal.render(dt);
     Camp.render(dt);

@@ -177,6 +177,8 @@ const Gun = {
   impact(a, scoped, pellet) {
     if (Wanted.hitPerson(a.x, a.y, scoped)) {
       Hud.ripple(a.x, a.y, 0.3);
+    } else if (Bikes.hitAt(a.x, a.y, { rifle: 1.4, pistol: 0.8, shotgun: 0.4, smg: 0.45 }[Arsenal.weapon().id] || 1)) {
+      // Pinged a bike or kart.
     } else if (Animals.shotAt(a.x, a.y, scoped)) {
       Sfx.thunk();
     } else if (World.isWater(a.x, a.y)) {
@@ -184,7 +186,7 @@ const Gun = {
       // It has to actually hit the fish. Deep fish are mostly safe.
       let hit = null, best = 1e9;
       for (const f of Fish.list) {
-        if (f.state === 'hooked') continue;
+        if (f.state === 'hooked' || f.sp.myth) continue; // legends shrug off bullets
         const d = U.dist(f.x, f.y, a.x, a.y);
         if (d < 0.35 + f.cm / 200 && d < best && Math.random() < U.clamp(1.2 - f.z * 0.4, 0.05, 1)) { best = d; hit = f; }
       }
