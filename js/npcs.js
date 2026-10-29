@@ -397,14 +397,14 @@ const Npcs = {
       const base = Scene3D.standH(n.x, n.y);
       const a = n.face;
       const dir = Math.abs(Math.cos(a)) > Math.abs(Math.sin(a)) ? 'side' : Math.sin(a) > 0 ? 'down' : 'up';
-      const walking = n.state === 'walk';
+      const walking = n.state === 'walk' || n.state === 'mob';
       n.mesh.position.set(n.x, base, n.y);
       n.rig.yaw.rotation.y = n.pose === 'normal' ? -a : Math.PI * -0.5; // face the camera to show off
       Models.pose(n.rig, { moving: walking, phase: n.walkT, t: Game.time + n.x, pose: n.pose !== 'normal' ? n.pose : walking ? 'normal' : 'grip' });
       n.shadow.position.set(n.x, Math.max(base, 0.01) + 0.015, n.y);
 
       // Rod: up and bent during a fight, laid back mid-cast, hidden while walking or posing.
-      const showRod = !walking && n.pose === 'normal' && !['brawl', 'ko', 'armed'].includes(n.state);
+      const showRod = !walking && n.pose === 'normal' && !['brawl', 'ko', 'armed', 'mob'].includes(n.state);
       n.rod.visible = n.line.visible = showRod;
       const hand = Models.handPos(n.rig);
       const fighting = n.state === 'fight';

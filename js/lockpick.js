@@ -176,6 +176,7 @@ const LockPick = {
     if (this.house) {
       const b = this.house;
       b.forcedDay = Game.env.day; // the lock's busted for the rest of the day
+      { const o = Npcs.list.find((n) => n.home === b); Thief.record('break-in', o ? o.name : null); }
       if (loud) { Wanted.crime(1); Hud.toast('The lock gives — but the neighbours heard you. Breaking and entering!', UI.bad, 2.6); }
       else Hud.toast('Click. You\'re in.', UI.accent, 1.6);
       Life.enterHouse(b);

@@ -224,13 +224,14 @@ const Clinic = {
 };
 
 const NURSE_TIPS = [
+  [/mob/, 'Word is you\'ve been nicking things. The locals don\'t forget, and they don\'t forgive.'],
   [/police|army/, 'Maybe… stop shooting at people? Just a thought.'],
   [/venom|snakebite/, 'Crouch-walk past snakes, and watch where you put your feet in the forest.'],
   [/poisoning/, 'Stick to the golden and brown mushrooms. The white ones are a coin toss.'],
   [/explosion/, 'Rockets are not a fishing technique.'],
   [/fists|pistol/, 'If you nick someone\'s ride, they tend to take it personally.'],
 ];
-Clinic.wakeUp = function (log, last, bill, cops) {
+Clinic.wakeUp = function (log, last, bill, cops, robbed) {
   const rows = Object.entries(log).sort((a, b) => b[1] - a[1]).slice(0, 4);
   const total = rows.reduce((a, r) => a + r[1], 0) || 1;
   const top = rows[0] ? rows[0][0] : last;
@@ -242,6 +243,7 @@ Clinic.wakeUp = function (log, last, bill, cops) {
       <div style="height:8px;border-radius:6px;background:rgba(255,255,255,0.08);margin-top:6px"><div style="height:8px;border-radius:6px;width:${pct}%;background:${pct > 50 ? 'var(--bad)' : 'var(--accent)'}"></div></div></div>`; }).join('') : '<div class="desc">Honestly, we\'re not sure. You just keeled over.</div>'}
     <div class="row"><div><b>The final blow</b><div class="desc">${last.charAt(0).toUpperCase() + last.slice(1)}</div></div></div>
     <div class="row"><div><b>Hospital bill</b><div class="desc">Taken straight out of your wallet while you were out.</div></div><b style="color:var(--bad)">−${U.fmtMoney(bill)}</b></div>
+    ${robbed ? `<div class="row" style="border-color:var(--bad)"><div><b style="color:var(--bad)">Robbed while you were out</b><div class="desc">${robbed.names.slice(0, -1).join(', ') + ' and ' + robbed.names.slice(-1)} went through your pockets: ${[U.fmtMoney(robbed.cash)].concat(robbed.taken).join(', ')}. "That\'s what thieves get."</div></div></div>` : ''}
     <div class="desc" style="margin-top:12px">"${tip}"</div>
     ${cops ? '<div class="row" style="margin-top:12px;border-color:var(--bad)"><div><b style="color:var(--bad)">👮 Two officers are waiting by your bed</b><div class="desc">"Patched up? Good. You\'re under arrest." They\'ll take you in as soon as you\'re on your feet.</div></div></div><button class="primary" id="goQuietly" style="margin-top:10px;width:100%">Go quietly</button>' : ''}`, (el) => {
     const b = el.querySelector('#goQuietly'); if (b) b.onclick = () => Menus.close();

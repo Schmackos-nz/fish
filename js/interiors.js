@@ -58,10 +58,12 @@ const Interior = {
       w = 10; h = 7;
       furn = [R(0.4, 0.3, 2, 1.6, 'bed', 0x8a4a3a, 'Sleep'), R(2.8, 0.3, 2, 1.6, 'bed', 0x4a5a8a, 'Sleep'), R(8.2, 0.2, 1.4, 0.8, 'stove', 0x2a2a2e, 'Cook'),
         R(8.3, 5.5, 1.2, 0.8, 'chest', 0x7a4a24, 'Storage'), R(4.6, 3.2, 1.6, 1.2, 'table', 0x9a6a3a), R(0.6, 5.2, 2.8, 0.9, 'couch', 0x6a8a5a)];
+      if (Thief.hasSafe(b)) furn.push(R(5.6, 0.3, 0.9, 0.9, 'safe', 0x3a3e42, 'Safe'));
     } else {
       w = 7; h = 5;
       furn = [R(0.4, 0.3, 2, 1.6, 'bed', 0x8a4a3a, 'Sleep'), R(5.2, 0.2, 1.4, 0.8, 'stove', 0x2a2a2e, 'Cook'),
         R(5.3, 2.9, 1.2, 0.8, 'chest', 0x7a4a24, 'Storage'), R(2.9, 2, 1.3, 1, 'table', 0x9a6a3a)];
+      if (b.type === 'house' && Thief.hasSafe(b)) furn.push(R(0.4, 3.0, 0.9, 0.9, 'safe', 0x3a3e42, 'Safe'));
     }
     return { b, x0, y0, w, h, furn, vendor, exit: { x: x0 + w / 2, y: y0 + h }, spawn: { x: x0 + w / 2, y: y0 + h - 0.8 } };
   },
@@ -97,7 +99,7 @@ const Interior = {
     const win = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.9), new THREE.MeshBasicMaterial({ color: 0x9fd4ee }));
     win.position.set(r.x0 + r.w - 2, 1.4, r.y0 + 0.01); g.add(win);
     for (const f of r.furn) {
-      const hgt = { shelf: 1.7, board: 1.2, counter: 0.9, grocer: 1.3, fridge: 1.8, bed: 0.5, stove: 0.9, chest: 0.6, table: 0.75, bikepad: 0.15 }[f.kind];
+      const hgt = { shelf: 1.7, board: 1.2, counter: 0.9, grocer: 1.3, fridge: 1.8, bed: 0.5, stove: 0.9, chest: 0.6, table: 0.75, bikepad: 0.15, safe: 0.85, couch: 0.6, cot: 0.5 }[f.kind];
       const m = new THREE.Mesh(new THREE.BoxGeometry(f.w, hgt, f.h), new THREE.MeshLambertMaterial({ color: f.color }));
       m.position.set(f.x + f.w / 2, hgt / 2, f.y + f.h / 2); g.add(m);
       if (f.kind === 'shelf' || f.kind === 'grocer') {

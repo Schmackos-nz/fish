@@ -2,6 +2,12 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '1.6', name: 'Light Fingers', date: '30 Oct 2026', notes: [
+    ['new', 'Safes in some houses (most big ones). Crack them with your trusty stethoscope: turn the dial slowly and listen for the clunk'],
+    ['changed', 'Big houses are worth burgling now: three or four finds per chest, with much more cash'],
+    ['new', 'Word gets around. After you steal something, locals gossip about the thief in town and sometimes name the victim'],
+    ['new', 'Push your luck and the locals gang up to take you down. If they knock you out, they go through your pockets'],
+  ] },
   { v: '1.5', name: 'Hard Time', date: '30 Oct 2026', notes: [
     ['changed', 'Rides now take a single lock to pick. Houses take 1 to 3 depending on size (big houses always 3, some cottages have a deadbolt)'],
     ['changed', 'The latch puzzle is now a 3×3 grid with an empty centre: each latch flips its neighbours above, below, left and right'],

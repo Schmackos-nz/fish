@@ -151,6 +151,7 @@ const Bikes = {
   steal(r, quiet = false) {
     const old = Game.bike ? { ...Game.bike } : null;
     Game.bike = { id: r.bikeId, x: r.x, y: r.y, ang: r.ang, plate: r.plate, owner: r.owner };
+    Thief.record('bike', r.name);
     Game.fuel = Math.max(10, Math.min(100, r.fuel));
     this.syncMine();
     this.group.remove(r.bike);

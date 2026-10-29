@@ -52,7 +52,7 @@ const Life = {
   // Rent is charged once per new day.
   processDays() {
     if (Game.lastDay === undefined) Game.lastDay = Game.env.day;
-    while (Game.lastDay < Game.env.day) { Game.lastDay++; this.payRent(); Decay.age(1, false); Staff.daily(); }
+    while (Game.lastDay < Game.env.day) { Game.lastDay++; this.payRent(); Decay.age(1, false); Staff.daily(); Thief.daily(); }
   },
 
   payRent() {
@@ -139,7 +139,7 @@ const Life = {
   foreignHouse() { const r = Interior.active; return r && r.b.type === 'house' && !(Game.home && Game.home.id === r.b.id) ? r.b : null; },
   furnLabel(f) {
     if (!this.foreignHouse()) return this.ownLabel(f);
-    return { bed: 'Their bed', stove: 'Cook on their stove', chest: 'Rummage through their chest' }[f.kind] || f.label;
+    return { bed: 'Their bed', stove: 'Cook on their stove', chest: 'Rummage through their chest', safe: Thief.safeReady(this.foreignHouse()) ? 'Crack the safe (stethoscope)' : 'Safe (empty)' }[f.kind] || f.label;
   },
   ownLabel(f) {
     return f.kind === 'bed' ? 'Sleep until morning' : f.label;
@@ -158,13 +158,18 @@ const Life = {
   rummage(b) {
     if (b.robbedDay === Game.env.day) { Hud.toast('Already cleaned out. Nothing left but socks.', UI.muted, 1.8); return; }
     b.robbedDay = Game.env.day;
-    const r = Math.random();
-    let msg;
-    if (r < 0.4) { const c = 8 + Math.floor(Math.random() * 33); Game.money += c; msg = 'Found ' + U.fmtMoney(c) + ' in a sock.'; }
-    else if (r < 0.7) { const f = U.pick(Math.random, FOODS.filter((x) => !x.ingredient)); Game.pantry.push({ name: f.name, energy: f.energy }); msg = 'Found ' + (/^[aeiou]/i.test(f.name) ? 'an ' : 'a ') + f.name.toLowerCase() + '.'; }
-    else if (r < 0.9) { const L2 = U.pick(Math.random, LURES); Game.lures[L2.id] = (Game.lures[L2.id] || 0) + 1; msg = 'Found ' + (/^[aeiou]/i.test(L2.name) ? 'an ' : 'a ') + L2.name + '.'; }
-    else { Game.ammo = (Game.ammo || 0) + 5; msg = 'Found 5 rifle rounds. Yikes.'; }
-    Sfx.coin(); Hud.toast(msg + ' (This is stealing, you know.)', UI.accent, 2.4);
+    // Big houses: several finds, and the cash is serious.
+    const finds = [], rolls = b.big ? 3 + ((Math.random() * 2) | 0) : 1;
+    for (let k = 0; k < rolls; k++) {
+      const r = Math.random();
+      if (r < 0.45) { const c = b.big ? 60 + Math.floor(Math.random() * 240) : 8 + Math.floor(Math.random() * 33); Game.money += c; finds.push(U.fmtMoney(c) + (b.big ? ' in an envelope' : ' in a sock')); }
+      else if (r < 0.65) { const f = U.pick(Math.random, FOODS.filter((x) => !x.ingredient)); Game.pantry.push({ name: f.name, energy: f.energy }); finds.push((/^[aeiou]/i.test(f.name) ? 'an ' : 'a ') + f.name.toLowerCase()); }
+      else if (r < 0.85) { const L2 = U.pick(Math.random, LURES), q = b.big ? 3 : 1; Game.lures[L2.id] = (Game.lures[L2.id] || 0) + q; finds.push((q > 1 ? q + ' × ' : /^[aeiou]/i.test(L2.name) ? 'an ' : 'a ') + L2.name); }
+      else { const q = b.big ? 15 : 5; Game.ammo = (Game.ammo || 0) + q; finds.push(q + ' rifle rounds'); }
+    }
+    const owner = Npcs.list.find((n) => n.home === b);
+    Thief.record('burglary', owner ? owner.name : null);
+    Sfx.coin(); Hud.toast('Found ' + finds.join(', ') + '. (This is stealing, you know.)', UI.accent, 3);
     Game.save();
   },
 
@@ -174,6 +179,7 @@ const Life = {
       if (kind === 'bed') Hud.toast('Better not — this isn\'t your bed.', UI.muted, 1.6);
       else if (kind === 'stove') this.openCook('their stove');
       else if (kind === 'chest') this.rummage(fb);
+      else if (kind === 'safe') Thief.crack(fb);
       return;
     }
     if (kind === 'bed') this.sleep();

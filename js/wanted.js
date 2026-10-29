@@ -78,7 +78,8 @@ const Wanted = {
       const fish = (o.creel || []).concat(o.held ? [{ id: o.held.sp.id, kg: o.held.kg, cm: o.held.cm, value: Menus.value(o.held.sp, o.held.kg, o.held.prized) }] : []);
       fish.forEach((f, i) => this.drop(o.x + Math.cos(i * 2.1) * 0.7, o.y + Math.sin(i * 2.1) * 0.7, f));
       o.creel = []; o.held = null; o.fish = null; o.lure = null; o.goingBush = false;
-      o.state = 'ko'; o.t = 35; Npcs.say(o, U.pick(Math.random, SAY_W.ko), 2);
+      if (o.mob) crime *= 0.3; // self-defence, mostly
+      o.mob = false; o.state = 'ko'; o.t = 35; Npcs.say(o, U.pick(Math.random, SAY_W.ko), 2);
       Hud.toast(o.name + ' is knocked out' + (fish.length ? ' — dropped ' + fish.length + ' fish' : '') + '!', UI.bad, 2);
       this.crime(1.3 * crime);
     } else if (t.kind === 'warden') { o.state = 'ko'; o.t = 0; this.crime(1.6 * crime); }
@@ -301,6 +302,7 @@ const Wanted = {
     this.blackingOut = true;
     const log = this.dmgLog || {}, last = this.lastHit || 'something nasty';
     this.dmgLog = {};
+    const robbed = Thief.robOnBlackout();
     const bill = Math.min(Game.money, 40 + Math.round(Game.money * 0.15));
     Game.money -= bill;
     // Wanted when you went down? The cops will be waiting when you wake up.
@@ -326,7 +328,7 @@ const Wanted = {
         this.escort = [standee(COP_PAL, World.nurse.x + 2.6, World.nurse.y + 1.2, Math.PI), standee(COP_PAL, World.nurse.x + 0.4, World.nurse.y + 2.4, 0)];
         this.escort.forEach((m) => this.group.add(m));
       }
-      Clinic.wakeUp(log, last, bill, !!this.pendingArrest);
+      Clinic.wakeUp(log, last, bill, !!this.pendingArrest, robbed);
       Game.save();
     }, 1800);
   },
