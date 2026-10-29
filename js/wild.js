@@ -81,28 +81,118 @@ const Forage = {
   // Called when a foraged item is eaten.
   eaten(item) {
     const s = SHROOM_BY_ID[item.shroom]; if (!s) return;
-    if (s.poison) { Poison.give(s.poison, s.name); Hud.toast('Uh oh. That was a ' + s.name + '! You\'re poisoned — get to the Clinic!', UI.bad, 3.2); }
+    if (s.poison) { Poison.give(s.id); Hud.toast(s.id === 'deathcap' ? 'Hmm, a bit bitter. That was a Death cap… you have maybe a minute before it hits. Get to the Clinic!' : 'That was a ' + s.name + '. Things are about to get weird.', UI.bad, 3.6); }
     else Hud.toast('Delicious — that was a ' + s.name + '.', UI.good, 2);
   },
 };
 
 // ---------- poison ----------
+const PHANTOM_WHISPERS = ['you shouldn\'t have eaten that', 'over here…', 'the fish are watching', 'tim knows', 'come closer', 'it was THIS big', 'don\'t trust the ducks'];
+// How each poison behaves: onset = seconds to reach full strength; rate = health/s at full strength.
+const POISONS = {
+  deathcap: { src: 'Death cap', onset: 60, rate: 0.95, dur: 220, blur: 1, halluc: 0.7, early: 'Your stomach gurgles. Probably nothing.' },
+  flyagaric: { src: 'Fly agaric', onset: 35, rate: 0.3, dur: 130, blur: 0.8, halluc: 1.7, early: 'The colours seem… brighter?' },
+  snake: { src: 'snakebite', onset: 8, rate: 0.7, dur: 120, blur: 1.2, halluc: 0.5, early: 'The bite burns. Your vision swims.' },
+};
+
 const Poison = {
-  give(strength, src) {
-    const p = Game.poison;
-    Game.poison = { left: Math.max(p ? p.left : 0, 90 + strength * 90), rate: Math.max(p ? p.rate : 0, 0.25 + strength * 0.35), src };
-    Sfx.tone(180, 0.5, 0.25, 'sawtooth', 90);
+  phantoms: [], spawnT: 3, group: null,
+
+  kind() { const p = Game.poison; return (p && POISONS[p.type]) || POISONS.deathcap; },
+
+  // A second dose of something worse takes over; the same again just extends it.
+  give(type) {
+    const P = POISONS[type] || POISONS.deathcap, p = Game.poison;
+    if (p && (POISONS[p.type] || POISONS.deathcap).rate > P.rate) { p.left = Math.max(p.left, P.dur * 0.6); return; }
+    Game.poison = { type, src: P.src, left: Math.max(p ? p.left : 0, P.dur), age: p ? Math.min(p.age || 0, P.onset * 0.5) : 0, rate: P.rate, warned: false };
+    Sfx.tone(180, 0.5, 0.18, 'sawtooth', 90);
   },
+
+  // 0..1 build-up: eases in over the onset, eases off in the last 15 seconds.
+  ramp() {
+    const p = Game.poison; if (!p) return 0;
+    return U.smooth(U.clamp((p.age || 0) / this.kind().onset, 0, 1)) * U.clamp(p.left / 15, 0, 1);
+  },
+  // How strongly it's messing with you right now (blur/stagger/camera).
+  severity() { return this.ramp() * this.kind().blur * U.clamp(this.kind().rate / 0.8, 0.5, 1); },
+
   update(dt) {
     const p = Game.poison;
+    this.effects(dt);
     if (!p) return;
-    p.left -= dt;
-    Wanted.health -= p.rate * dt;
-    Wanted.logDamage(p.src === 'snakebite' ? 'snake venom' : p.src + ' poisoning', p.rate * dt);
-    if (Math.random() < dt * 0.15) Hud.toast(U.pick(Math.random, ['You feel sick…', 'Everything\'s spinning.', 'The Clinic is on the main street.']), '#A8E05A', 1.6);
+    p.left -= dt; p.age = (p.age || 0) + dt;
+    const ramp = this.ramp(), K = this.kind();
+    if (!p.warned && p.age > K.onset * 0.15) { p.warned = true; Hud.toast(K.early, '#A8E05A', 2.4); }
+    // Damage over time, building up with the poison.
+    const dmg = (p.rate || K.rate) * ramp * dt;
+    Wanted.health -= dmg;
+    Wanted.logDamage(p.src === 'snakebite' ? 'snake venom' : p.src + ' poisoning', dmg);
+    // Staggering: a drunken sideways drift while you walk.
+    const s = this.severity();
+    if (Player.moving && !Bikes.riding && !Interior.active) {
+      const a = Player.face + Math.PI / 2, k = Math.sin(Game.time * 1.7) * 0.9 * s * dt;
+      const nx = Player.x + Math.cos(a) * k, ny = Player.y + Math.sin(a) * k;
+      if (!World.blocked(nx, ny)) { Player.x = nx; Player.y = ny; }
+    }
+    // Your stomach turns now and then.
+    if (Math.random() < dt * 0.06 * s) { Bugs.shake = Math.max(Bugs.shake, 0.5); Game.energy = Math.max(0, Game.energy - 4); Hud.toast(U.pick(Math.random, ['*hurk* You double over.', 'Your legs go to jelly.', 'The ground lurches.']), '#A8E05A', 1.6); }
+    if (ramp > 0.4 && Math.random() < dt * 0.1) Hud.toast(U.pick(Math.random, ['You feel sick…', 'Everything\'s spinning.', 'Did that tree just wave at you?', 'The Clinic is on the main street.', 'Your hands look… wrong.']), '#A8E05A', 1.6);
     if (Wanted.health <= 0) { Game.poison = null; Wanted.wasted(); return; }
     if (p.left <= 0) { Game.poison = null; Hud.toast('The poison has worn off. Phew.', UI.good, 2); }
   },
+
+  // Blurred, colour-shifting vision and things that aren't really there.
+  effects(dt) {
+    const s = Game.mode === 'play' ? this.severity() : 0, cv = document.getElementById('game');
+    if (s > 0) {
+      const t = Game.time, blur = (2.8 + Math.sin(t * 1.3) * 0.8) * s, hue = Math.sin(t * 0.6) * 45 * s, sat = 1 + 0.6 * s;
+      cv.style.filter = `blur(${blur.toFixed(2)}px) hue-rotate(${hue.toFixed(0)}deg) saturate(${sat.toFixed(2)})`;
+      this.blurred = true;
+    } else if (this.blurred) { cv.style.filter = ''; this.blurred = false; }
+    if (!this.group) { this.group = new THREE.Group(); Scene3D.scene.add(this.group); }
+    // Hallucinations: they turn up just out of reach and vanish when you get close.
+    this.spawnT -= dt;
+    const hal = Game.poison ? this.ramp() * this.kind().halluc : 0;
+    if (hal > 0.25 && !Interior.active && this.spawnT <= 0 && this.phantoms.length < Math.round(2 + hal * 3)) {
+      this.spawnT = (3 + Math.random() * 5) / hal;
+      for (let k = 0; k < 10; k++) {
+        const a = Math.random() * 6.28, r = 6 + Math.random() * 8, x = Player.x + Math.cos(a) * r, y = Player.y + Math.sin(a) * r;
+        if (World.blocked(x, y) || World.isWater(x, y)) continue;
+        this.phantoms.push(this.makePhantom(x, y)); break;
+      }
+    }
+    for (let i = this.phantoms.length - 1; i >= 0; i--) {
+      const ph = this.phantoms[i];
+      ph.t += dt;
+      const d = U.dist(ph.x, ph.y, Player.x, Player.y);
+      if (s <= 0 || ph.t > 9 || d < 2.4 || Interior.active) {
+        if (d < 2.4 && s > 0) { Sfx.burst(0.4, 3000, 0.12, 'bandpass', 2, 400); Hud.toast('…it was never there.', '#A8E05A', 1.2); }
+        this.group.remove(ph.mesh); this.phantoms.splice(i, 1); continue;
+      }
+      ph.mesh.visible = Math.sin(ph.t * 9 + ph.seed) > -0.6; // flickers
+      const bob = ph.kind === 'shroom' ? 0 : Math.sin(ph.t * 2 + ph.seed) * 0.15;
+      ph.mesh.position.set(ph.x, Scene3D.groundH(ph.x, ph.y) + bob + (ph.kind === 'fish' ? 1.6 : 0), ph.y);
+      ph.mesh.rotation.y = ph.kind === 'fish' ? ph.t * 0.8 : -Math.atan2(Player.y - ph.y, Player.x - ph.x);
+      if (ph.kind === 'person') { ph.x += Math.cos(ph.drift) * 0.3 * dt; ph.y += Math.sin(ph.drift) * 0.3 * dt; }
+      if (!ph.spoke && ph.t > 1.5 && d < 14) { ph.spoke = true; Voice.babble(U.pick(Math.random, PHANTOM_WHISPERS), ph.x, ph.y, 'phantom' + ph.seed); }
+    }
+  },
+
+  makePhantom(x, y) {
+    const kind = U.pick(Math.random, ['person', 'person', 'shroom', 'fish', 'snake']);
+    let mesh;
+    if (kind === 'person') mesh = Models.person({ hat: '#7A3AD2', hatStyle: 'bucket', shirt: '#3AD2B0', pants: '#D23A9A', skin: '#B8F0A0', mitt: '#B8F0A0' });
+    else if (kind === 'shroom') { mesh = Forage.mesh(U.pick(Math.random, SHROOMS)); mesh.scale.setScalar(7); }
+    else if (kind === 'snake') { mesh = Snakes.mesh(); mesh.scale.setScalar(4); mesh.userData.segs.forEach((sg, k) => sg.position.set(-k * 0.11, 0.06, Math.sin(k) * 0.05)); }
+    else {
+      mesh = new THREE.Group();
+      const body = Models.part(new THREE.SphereGeometry(0.5, 12, 8), '#E3A945', 0.05); body.scale.set(2.2, 0.8, 0.6); mesh.add(body);
+      const tail = Models.part(new THREE.ConeGeometry(0.4, 0.7, 4), '#C08A2A', 0.05); tail.rotation.z = Math.PI / 2; tail.position.x = -1.3; mesh.add(tail);
+    }
+    this.group.add(mesh);
+    return { kind, x, y, t: 0, mesh, seed: Math.random() * 10, drift: Math.random() * 6.28, spoke: false };
+  },
+
   // Green, woozy screen edges while poisoned.
   draw(hud) {
     if (!Game.poison || Game.mode !== 'play') return;
@@ -199,7 +289,7 @@ const Snakes = {
       if (pd < 1.1 && s.cool <= 0 && !Bikes.riding && !Interior.active && !Player.airborne) {
         s.cool = 4;
         if (Math.random() < (Player.crouch ? 0.35 : 0.65)) {
-          Wanted.hurt(6, 'a snakebite'); Poison.give(0.8, 'snakebite');
+          Wanted.hurt(6, 'a snakebite'); Poison.give('snake');
           Hud.toast('🐍 A snake bit you! You\'re poisoned — get to the Clinic on the main street!', UI.bad, 3);
         } else Hud.toast('🐍 A snake lunges — and misses! Back off!', '#F2C14E', 1.8);
       }

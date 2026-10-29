@@ -3,6 +3,8 @@
 
 const PATCH_NOTES = [
   { v: '1.3', name: 'Hot Wired', date: '29 Oct 2026', notes: [
+    ['changed', 'Poison hits harder: damage over time, blurred and colour-shifting vision, a woozy camera, staggering, slower legs, waves of nausea, and hallucinations that whisper and vanish when you get close'],
+    ['changed', 'Poisons ease in and each acts differently. Snake venom hits within seconds. Death caps creep up over a minute, then turn deadly. Fly agarics are mild but make you see things'],
     ['changed', 'Gunfire hits harder: a layered crack-and-boom with an echo off the hills, a muzzle flash that lights things up, bright tracer beams, dust or spray where rounds land, and screen kick'],
     ['new', 'Everyone talks now, in gibberish. Each local has their own voice, and shouting comes out faster and higher'],
     ['fixed', 'Screen shake (explosions, bites, crashes) actually shakes the screen'],

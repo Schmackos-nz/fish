@@ -220,7 +220,7 @@ const Hud = {
     ];
     const h = 22 + rows.length * 26, y = by - h;
     this.card(x, y, w, h);
-    if (Game.poison) this.pill('☠ Poisoned — get to the Clinic', x + w / 2, y - 16, '#A8E05A', 12);
+    if (Game.poison) this.pill('☠ ' + Game.poison.src + (Poison.ramp() < 0.95 && (Game.poison.age || 0) < Poison.kind().onset ? ' — kicking in…' : ' — get to the Clinic!'), x + w / 2, y - 16, '#A8E05A', 12);
     rows.forEach(([icon, name, v, col], i) => {
       const ry = y + 16 + i * 26, low = v < 20, blink = low && Math.sin(Game.time * 8) > 0;
       this.text(icon, x + 14, ry + 10, '#fff', 14);

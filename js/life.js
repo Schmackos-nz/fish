@@ -38,7 +38,7 @@ const Life = {
   },
 
   // Hunger slows you down; exhaustion weakens your cast.
-  speedMul() { return Game.food < 10 ? 0.7 : Game.food < 25 ? 0.88 : 1; },
+  speedMul() { return (Game.food < 10 ? 0.7 : Game.food < 25 ? 0.88 : 1) * (Game.poison ? 0.75 : 1); },
   maxPower() { return Game.energy < 12 ? 0.6 : 1; },
 
   passHours(h, drain = 3) {

@@ -511,6 +511,8 @@ const Scene3D = {
     const d = this.camDist;
     this.camera.position.set(this.target.x, this.target.y + Math.sin(CAM_PITCH) * d, this.target.z + Math.cos(CAM_PITCH) * d);
     this.camera.lookAt(this.target);
+    const ps = typeof Poison !== 'undefined' ? Poison.severity() : 0;
+    if (ps > 0) this.camera.rotateZ(Math.sin(Game.time * 0.8) * 0.07 * ps);
     const sh = typeof Bugs !== 'undefined' ? Bugs.shake : 0;
     if (sh > 0.01) { this.camera.position.x += (Math.random() - 0.5) * sh * 0.25; this.camera.position.y += (Math.random() - 0.5) * sh * 0.25; this.camera.position.z += (Math.random() - 0.5) * sh * 0.25; }
   },
