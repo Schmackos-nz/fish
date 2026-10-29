@@ -38,7 +38,7 @@ const Life = {
   },
 
   // Hunger slows you down; exhaustion weakens your cast.
-  speedMul() { return (Game.food < 10 ? 0.7 : Game.food < 25 ? 0.88 : 1) * (Game.poison ? 0.75 : 1); },
+  speedMul() { return (Game.food < 10 ? 0.7 : Game.food < 25 ? 0.88 : 1) * (Game.poison ? 0.75 : 1) * (Needs.urgent() ? 0.85 : 1); },
   maxPower() { return Game.energy < 12 ? 0.6 : 1; },
 
   passHours(h, drain = 3) {
@@ -46,6 +46,7 @@ const Life = {
     e.hour += h;
     while (e.hour >= 24) { e.hour -= 24; e.day++; }
     Game.food = U.clamp(Game.food - h * drain, 0, 100);
+    Needs.passHours(h);
     this.processDays();
   },
 
@@ -94,6 +95,7 @@ const Life = {
     if (!f) return;
     Game.pantry.splice(i, 1);
     Game.food = Math.min(100, Game.food + f.energy);
+    Needs.afterMeal(f.energy);
     Sfx.tone(380, 0.08, 0.12, 'triangle', 300);
     Hud.toast('Ate ' + f.name + ' (+' + f.energy + ' food)', UI.good, 1.6);
     if (f.shroom) Forage.eaten(f);
@@ -139,7 +141,7 @@ const Life = {
   foreignHouse() { const r = Interior.active; return r && r.b.type === 'house' && !(Game.home && Game.home.id === r.b.id) ? r.b : null; },
   furnLabel(f) {
     if (!this.foreignHouse()) return this.ownLabel(f);
-    return { bed: 'Their bed', stove: 'Cook on their stove', chest: 'Rummage through their chest', safe: Thief.safeReady(this.foreignHouse()) ? 'Crack the safe (stethoscope)' : 'Safe (empty)' }[f.kind] || f.label;
+    return { bed: 'Their bed', stove: 'Cook on their stove', chest: 'Rummage through their chest', toilet: 'Use their loo', safe: Thief.safeReady(this.foreignHouse()) ? 'Crack the safe (stethoscope)' : 'Safe (empty)' }[f.kind] || f.label;
   },
   ownLabel(f) {
     return f.kind === 'bed' ? 'Sleep until morning' : f.label;
@@ -180,9 +182,11 @@ const Life = {
       else if (kind === 'stove') this.openCook('their stove');
       else if (kind === 'chest') this.rummage(fb);
       else if (kind === 'safe') Thief.crack(fb);
+      else if (kind === 'toilet') Needs.useLoo(true);
       return;
     }
     if (kind === 'bed') this.sleep();
+    else if (kind === 'toilet') Needs.useLoo(false);
     else if (kind === 'stove') this.openCook('your stove');
     else if (kind === 'chest') this.openStorage();
   },
@@ -381,6 +385,7 @@ const Interact = {
       add(World.tim.x, World.tim.y, 2.6, 'Talk to Tim — tips & goals', () => Tim.open());
       if (!Weed.dustyKO.ko) add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
       Weed.interactions(add);
+      Needs.interactions(add);
       Staff.interactions(add);
       Camp.interactions(cands);
       Decay.interactions(cands);

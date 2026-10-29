@@ -151,7 +151,7 @@ const Hud = {
     const W = this.W = (innerWidth - ins.l - ins.r) / k, H = this.H = innerHeight / k;
     const sh = this.drawStatus(20, 20);
     this.drawRep(20, 20 + sh + 8);
-    if (Mobile.active) this.drawVitals(20, 20 + sh + 12 + 100 + 42);
+    if (Mobile.active) this.drawVitals(20, 20 + sh + 12 + 152 + 42);
     this.drawMinimap(W - 20 - 82, 20 + 82);
     drawWindSock(this, W - 20 - 164 - 44, 52);
     Contest.drawHud(this, W - 20 - 82, 222);
@@ -236,12 +236,14 @@ const Hud = {
       ['❤', 'Health', Wanted.health, '#E2584D'],
       ['🍗', 'Food', Game.food, '#E3A945'],
       ['⚡', 'Energy', Game.energy, '#7FC4D4'],
+      ['💧', 'Bladder', Game.bladder || 0, '#E8D44A', true],
+      ['💩', 'Bowels', Game.bowels || 0, '#A8763A', true],
     ];
     const h = 22 + rows.length * 26, y = by - h;
     this.card(x, y, w, h);
     if (Game.poison) this.pill('☠ ' + Game.poison.src + (Poison.ramp() < 0.95 && (Game.poison.age || 0) < Poison.kind().onset ? ' — kicking in…' : ' — get to the Clinic!'), x + w / 2, y - 16, '#A8E05A', 12);
-    rows.forEach(([icon, name, v, col], i) => {
-      const ry = y + 16 + i * 26, low = v < 20, blink = low && Math.sin(Game.time * 8) > 0;
+    rows.forEach(([icon, name, v, col, full], i) => {
+      const ry = y + 16 + i * 26, low = full ? v > 80 : v < 20, blink = low && Math.sin(Game.time * 8) > 0;
       this.text(icon, x + 14, ry + 10, '#fff', 14);
       this.label(name, x + 36, ry + 9);
       g.fillStyle = 'rgba(255,255,255,0.08)'; g.beginPath(); g.roundRect(x + 96, ry, w - 146, 12, 6); g.fill();

@@ -7,6 +7,7 @@ const TOOLS = [
   { id: 'spray', key: '3', name: 'Bug spray' },
   { id: 'binos', key: '4', name: 'Binoculars' },
   { id: 'axe', key: '5', name: 'Axe' },
+  { id: 'spade', key: '6', name: 'Spade' },
 ];
 
 const Tools = {
@@ -21,7 +22,7 @@ const Tools = {
     this.current = next;
     Gun.out = next === 'gun';
     Sfx.bail();
-    const msg = { rod: 'Rod in hand.', gun: Arsenal.weapon().name + ' out' + (Arsenal.weapon().scope ? ' — right-click to scope.' : '. Press 2 again to switch guns.'), spray: 'Bug spray ready — click to spray.', binos: 'Binoculars — hold the mouse to scout.', axe: 'Axe out — click a tree in front of you to chop it.', hands: 'Hands free.' }[next];
+    const msg = { rod: 'Rod in hand.', gun: Arsenal.weapon().name + ' out' + (Arsenal.weapon().scope ? ' — right-click to scope.' : '. Press 2 again to switch guns.'), spray: 'Bug spray ready — click to spray.', binos: 'Binoculars — hold the mouse to scout.', axe: 'Axe out — click a tree in front of you to chop it.', spade: 'Spade out — click to dig a hole.', hands: 'Hands free.' }[next];
     Hud.toast(msg, next === 'gun' ? '#e2584d' : '#c8bfae', 1.4);
   },
 
@@ -50,6 +51,7 @@ const Tools = {
   update(dt) {
     this.punchT = Math.max(0, (this.punchT || 0) - dt);
     if (this.current === 'hands' && Input.mousePressed && !Menus.open) this.punch();
+    if (this.current === 'spade' && Input.mousePressed && !Menus.open) Needs.dig();
     this.repelT = Math.max(0, this.repelT - dt);
     this.mistT = Math.max(0, this.mistT - dt);
     if (this.current === 'spray' && Input.mousePressed && !Menus.open) this.spray();
@@ -82,6 +84,12 @@ const Tools = {
   icon(g, id, x, y, s) {
     g.save(); g.translate(x, y); g.scale(s, s);
     g.lineCap = 'round';
+    if (id === 'spade') {
+      g.strokeStyle = '#a0703c'; g.lineWidth = 3; g.beginPath(); g.moveTo(-8, -12); g.lineTo(5, 6); g.stroke();
+      g.fillStyle = '#c9d0d4'; g.beginPath(); g.moveTo(1, 4); g.lineTo(12, 2); g.lineTo(14, 13); g.lineTo(5, 15); g.closePath(); g.fill();
+      g.strokeStyle = '#5a3a1a'; g.lineWidth = 3; g.beginPath(); g.moveTo(-12, -12); g.lineTo(-4, -12); g.stroke();
+      g.restore(); return;
+    }
     if (id === 'axe') {
       g.strokeStyle = '#a0703c'; g.lineWidth = 3; g.beginPath(); g.moveTo(-9, 12); g.lineTo(7, -10); g.stroke();
       g.fillStyle = '#c9d0d4'; g.beginPath(); g.moveTo(2, -14); g.quadraticCurveTo(15, -12, 14, -1); g.lineTo(5, -6); g.closePath(); g.fill();

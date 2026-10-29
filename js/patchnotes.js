@@ -2,6 +2,12 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '1.8', name: 'Nature Calls', date: '30 Oct 2026', notes: [
+    ['new', 'Spade (key 6): dig holes and turn up worms, loose change, old bottles, or (rarely) a tin of buried coins'],
+    ['new', 'Bladder and bowels fill over time, and eating fills your bowels faster. Wee behind a bush, poo in a hole you dug, or use a loo'],
+    ['new', 'Every house has a loo (including other people\'s)'],
+    ['new', 'Get caught in public and your reputation takes a hit. Hold it too long and you have an accident: you smell until you wade into some water'],
+  ] },
   { v: '1.7', name: 'Local Legend', date: '30 Oct 2026', notes: [
     ['new', 'Reputation bar under the clock, from Hated to Friendly. You start Neutral'],
     ['new', 'Liked gets you 10% off and Friendly 20% off at every till. Disliked and Hated pay a surcharge'],

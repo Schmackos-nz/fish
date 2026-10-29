@@ -177,6 +177,6 @@ const Mobile = {
     // Clear the reel: the button stack moves left of it while it's on screen.
     const r = Hud.reel ? (172 + Hud.reel.r + 60) * Hud.k : 0;
     this.ui.querySelector('.tpad').style.right = (r ? r : 16) + this.insets().r + 'px';
-    this.ui.querySelector('.tside').style.top = Math.round(292 * Hud.k + 10) + 'px';
+    this.ui.querySelector('.tside').style.top = Math.round(344 * Hud.k + 10) + 'px';
   },
 };
