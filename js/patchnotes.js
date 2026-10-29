@@ -3,6 +3,8 @@
 
 const PATCH_NOTES = [
   { v: '2.1', name: 'Take a Seat', date: '30 Oct 2026', notes: [
+    ['new', 'Waypoints: click anywhere on the big map (M) to set one. A purple beam marks the spot, an arrow at your feet points the way with the distance, and the minimap traces the route'],
+    ['changed', 'A brand-new title screen in proper crime-epic style, now the 2.0 Crab Edition 🦀'],
     ['changed', 'Sharper ground: the terrain is drawn in high-resolution chunks with twice the mesh detail, so slopes curve smoothly'],
     ['changed', 'No more censor bars on the sunbathers or the busy bushes'],
     ['new', 'Benches on the banks, facing the water. Sit and rest (and fish from them). Armchairs and sofas indoors too'],

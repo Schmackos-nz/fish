@@ -7,10 +7,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.webmanifest">
-<title>Grand Trout Auto VI — Early Access</title>
+<title>Grand Trout Auto VI — 2.0 Crab Edition</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700&family=Lilita+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700&family=Lilita+One&family=Anton&display=swap" rel="stylesheet">
 <style>
   :root {
     --font: "Inter", "Segoe UI", system-ui, sans-serif;
@@ -147,6 +147,36 @@
   .inv-info { margin-top: 14px; min-height: 40px; }
   .inv-info-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--card-2); }
   .inv-info-row .desc { flex: 1; }
+
+  /* ---------- GTA-style title ---------- */
+  #title { justify-content: flex-start !important; align-items: stretch !important; }
+  #title .gta-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(8,6,14,0.92) 0%, rgba(8,6,14,0.75) 34%, rgba(8,6,14,0.15) 62%, rgba(8,6,14,0.35) 100%); pointer-events: none; }
+  #title .gta-left { position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center; padding: 0 0 0 6vw; width: min(560px, 48vw); }
+  .gta-logo { position: relative; transform: rotate(-3deg); margin-bottom: 4vh; line-height: 0.86; font-family: "Anton", Impact, sans-serif; text-transform: uppercase; }
+  .gta-logo div { -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 6px 6px 0 rgba(0,0,0,0.45); }
+  .gta-logo .gl1 { font-size: clamp(54px, 7vw, 108px); color: #fff; letter-spacing: 2px; }
+  .gta-logo .gl2 { font-size: clamp(40px, 5.2vw, 80px); color: #fff; letter-spacing: 1px; }
+  .gta-logo .gl3 { font-size: clamp(110px, 15vw, 230px); line-height: 0.82; background: linear-gradient(180deg, #FF5FA2 0%, #FF8A3D 45%, #FFD447 70%, #7B5CFF 100%); -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-stroke: 4px #000; filter: drop-shadow(6px 6px 0 rgba(0,0,0,0.45)); }
+  .gta-logo .gta-tag { position: absolute; right: -10px; bottom: 6%; transform: rotate(-4deg); padding: 6px 16px; background: #13E0C8; color: #10081C; font: 400 clamp(18px, 2vw, 28px) "Anton", sans-serif; letter-spacing: 1.5px; text-transform: uppercase; border: 3px solid #000; box-shadow: 5px 5px 0 #000; -webkit-text-stroke: 0; text-shadow: none; }
+  #title #saveInfo { color: #CFC8DA; font: 600 13px var(--font); letter-spacing: 1px; margin: 0 0 10px; }
+  .gta-menu { display: flex; flex-direction: column; gap: 2px; width: min(380px, 40vw); }
+  .gta-menu button { all: unset; cursor: pointer; padding: 8px 18px; font: 400 clamp(20px, 2.1vw, 30px) "Anton", Impact, sans-serif; letter-spacing: 1.5px; text-transform: uppercase; color: #F4F0FA; border-left: 6px solid transparent; transition: background .12s, color .12s, padding .12s; }
+  .gta-menu button:hover, .gta-menu button:focus-visible, .gta-menu button.on { background: #F4F0FA; color: #10081C; border-left-color: #FF5FA2; padding-left: 26px; }
+  .gta-menu button.danger { color: #FF8A8A; }
+  .gta-menu button.danger:hover { color: #B8202A; }
+  .gta-collage { position: absolute; right: 3vw; top: 6vh; bottom: 10vh; width: 46vw; z-index: 1; display: grid; grid-template-columns: 1.15fr 1fr; grid-template-rows: 1fr 1fr 0.8fr; gap: 14px; pointer-events: none; }
+  .gta-panel { position: relative; overflow: hidden; border: 6px solid #fff; box-shadow: 8px 8px 0 rgba(0,0,0,0.55); display: grid; place-items: center; animation: gtaIn .6s cubic-bezier(.2,.9,.3,1.3) both; }
+  .gta-panel b { font-size: clamp(54px, 7vw, 110px); line-height: 1; font-weight: 400; filter: drop-shadow(4px 4px 0 rgba(0,0,0,0.35)); }
+  .gta-panel span { position: absolute; left: 10px; bottom: 8px; font: 400 clamp(14px, 1.4vw, 22px) "Anton", sans-serif; letter-spacing: 1px; color: #fff; -webkit-text-stroke: 1.5px #000; paint-order: stroke fill; }
+  .gta-panel.p1 { grid-row: 1 / span 2; transform: rotate(-2deg); background: linear-gradient(160deg, #FF8A3D, #FF5FA2 55%, #7B5CFF); animation-delay: .05s; }
+  .gta-panel.p1 canvas { width: 78%; height: auto; }
+  .gta-panel.p2 { transform: rotate(3deg); background: linear-gradient(160deg, #13E0C8, #2A6AE8); animation-delay: .15s; }
+  .gta-panel.p3 { transform: rotate(-3deg); background: linear-gradient(160deg, #FFD447, #FF8A3D); animation-delay: .25s; }
+  .gta-panel.p4 { transform: rotate(2deg); background: linear-gradient(160deg, #2A1040, #6A1A3A); animation-delay: .35s; }
+  .gta-panel.p4 b { font-size: clamp(22px, 2.6vw, 40px); color: #FFD447; letter-spacing: 4px; -webkit-text-stroke: 1.5px #000; }
+  .gta-panel.p5 { transform: rotate(-1deg); background: linear-gradient(160deg, #7DC383, #2A8A5A); animation-delay: .45s; }
+  @keyframes gtaIn { from { opacity: 0; transform: translateY(30px) rotate(0deg) scale(0.9); } }
+  @media (max-width: 820px), (max-height: 520px) { .gta-collage { width: 44vw; top: 4vh; bottom: 14vh; gap: 8px; } .gta-panel { border-width: 4px; } #title .gta-left { padding-left: 4vw; } }
   #repNote { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 9; padding: 7px 16px; border-radius: 999px; background: rgba(11,16,19,0.9); border: 1px solid var(--line); font: 700 13px var(--font); pointer-events: none; }
   #repNote.hidden { display: none; }
   #sleepFade.on { opacity: 1; pointer-events: auto; }
@@ -293,19 +323,30 @@
 <div id="montage" class="hidden"><div class="mt-card"><div class="mt-icon"></div><div class="mt-text"><b class="mt-title"></b><div class="mt-sub"><span class="mt-clock"></span></div><div class="mt-bar"><div></div></div></div></div></div>
 
 <div id="title">
-  <div class="title-wrap">
-    <canvas id="titleTim" width="320" height="400"></canvas>
-    <div class="title-main">
-      <div class="logo"><span class="l1">GRAND TROUT<br>AUTO <span class="iv">VI</span></span><span class="l2">Early Access</span></div>
-      <div class="menu">
-        <button id="startBtn" class="primary"><span>Start fishing</span><small>ENTER</small></button>
-        <div id="saveInfo" class="hidden"></div>
-        <button id="newBtn"><span>New Game</span></button>
-        <div class="row2"><button id="helpBtn"><span>How to play</span></button><button id="settingsBtn"><span>Settings</span></button></div>
-      </div>
-    </div>
+  <div class="gta-shade"></div>
+  <div class="gta-collage">
+    <div class="gta-panel p1"><canvas id="titleTim" width="320" height="400"></canvas><span>THE GUIDE</span></div>
+    <div class="gta-panel p2"><b>🦀</b><span>CRAB SEASON</span></div>
+    <div class="gta-panel p3"><b>🏍️</b><span>BRAAAP</span></div>
+    <div class="gta-panel p4"><b>★★★★★</b><span>WANTED</span></div>
+    <div class="gta-panel p5"><b>🐟</b><span>IT WAS THIS BIG</span></div>
   </div>
-  <footer><button id="verBtn" class="ver-btn" title="Patch notes"><b>v1.0</b> · Patch notes</button><button id="themeBtn" class="theme-btn">♪ Play theme</button><span>🎣 Best with a mouse &amp; keyboard</span></footer>
+  <div class="gta-left">
+    <div class="gta-logo">
+      <div class="gl1">GRAND</div>
+      <div class="gl2">TROUT AUTO</div>
+      <div class="gl3">VI</div>
+      <div class="gta-tag">2.0 Crab Edition 🦀</div>
+    </div>
+    <div id="saveInfo" class="hidden"></div>
+    <nav class="gta-menu">
+      <button id="startBtn" class="primary"><span>Start fishing</span></button>
+      <button id="newBtn"><span>New Game</span></button>
+      <button id="helpBtn"><span>How to play</span></button>
+      <button id="settingsBtn"><span>Settings</span></button>
+    </nav>
+  </div>
+  <footer><button id="verBtn" class="ver-btn" title="Patch notes"><b>v2.1</b> · Patch notes</button><button id="themeBtn" class="theme-btn">♪ Play theme</button><span>🎣 Best with a mouse &amp; keyboard</span></footer>
 </div>
 
 <div id="help" class="modal hidden"><div class="sheet">
@@ -424,58 +465,59 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=94"></script>
-<script src="js/data.js?v=94"></script>
-<script src="js/audio.js?v=94"></script>
-<script src="js/music.js?v=94"></script>
-<script src="js/voice.js?v=94"></script>
-<script src="js/world.js?v=94"></script>
-<script src="js/scene-sprites.js?v=94"></script>
-<script src="js/toon.js?v=94"></script>
-<script src="js/scene.js?v=94"></script>
-<script src="js/folk.js?v=94"></script>
-<script src="js/models.js?v=94"></script>
-<script src="js/actors.js?v=94"></script>
-<script src="js/fish.js?v=94"></script>
-<script src="js/legends.js?v=94"></script>
-<script src="js/fishing.js?v=94"></script>
-<script src="js/fight.js?v=94"></script>
-<script src="js/linedrag.js?v=94"></script>
-<script src="js/player.js?v=94"></script>
-<script src="js/npcs.js?v=94"></script>
-<script src="js/path.js?v=94"></script>
-<script src="js/gun.js?v=94"></script>
-<script src="js/arsenal.js?v=94"></script>
-<script src="js/camp.js?v=94"></script>
-<script src="js/wild.js?v=94"></script>
-<script src="js/decay.js?v=94"></script>
-<script src="js/contest.js?v=94"></script>
-<script src="js/bugs.js?v=94"></script>
-<script src="js/floaters.js?v=94"></script>
-<script src="js/animals.js?v=94"></script>
-<script src="js/wardens.js?v=94"></script>
-<script src="js/interiors.js?v=94"></script>
-<script src="js/life.js?v=94"></script>
-<script src="js/weed.js?v=94"></script>
-<script src="js/markers.js?v=94"></script>
-<script src="js/swimmers.js?v=94"></script>
-<script src="js/couples.js?v=94"></script>
-<script src="js/tim.js?v=94"></script>
-<script src="js/bikes.js?v=94"></script>
-<script src="js/lockpick.js?v=94"></script>
-<script src="js/wanted.js?v=94"></script>
-<script src="js/tools.js?v=94"></script>
-<script src="js/hud.js?v=94"></script>
-<script src="js/share.js?v=94"></script>
-<script src="js/menus.js?v=94"></script>
-<script src="js/mobile.js?v=94"></script>
-<script src="js/patchnotes.js?v=94"></script>
-<script src="js/staff.js?v=94"></script>
-<script src="js/thief.js?v=94"></script>
-<script src="js/needs.js?v=94"></script>
-<script src="js/seats.js?v=94"></script>
-<script src="js/inventory.js?v=94"></script>
-<script src="js/main.js?v=94"></script>
-<script src="js/rep.js?v=94"></script>
+<script src="js/util.js?v=96"></script>
+<script src="js/data.js?v=96"></script>
+<script src="js/audio.js?v=96"></script>
+<script src="js/music.js?v=96"></script>
+<script src="js/voice.js?v=96"></script>
+<script src="js/world.js?v=96"></script>
+<script src="js/scene-sprites.js?v=96"></script>
+<script src="js/toon.js?v=96"></script>
+<script src="js/scene.js?v=96"></script>
+<script src="js/folk.js?v=96"></script>
+<script src="js/models.js?v=96"></script>
+<script src="js/actors.js?v=96"></script>
+<script src="js/fish.js?v=96"></script>
+<script src="js/legends.js?v=96"></script>
+<script src="js/fishing.js?v=96"></script>
+<script src="js/fight.js?v=96"></script>
+<script src="js/linedrag.js?v=96"></script>
+<script src="js/player.js?v=96"></script>
+<script src="js/npcs.js?v=96"></script>
+<script src="js/path.js?v=96"></script>
+<script src="js/gun.js?v=96"></script>
+<script src="js/arsenal.js?v=96"></script>
+<script src="js/camp.js?v=96"></script>
+<script src="js/wild.js?v=96"></script>
+<script src="js/decay.js?v=96"></script>
+<script src="js/contest.js?v=96"></script>
+<script src="js/bugs.js?v=96"></script>
+<script src="js/floaters.js?v=96"></script>
+<script src="js/animals.js?v=96"></script>
+<script src="js/wardens.js?v=96"></script>
+<script src="js/interiors.js?v=96"></script>
+<script src="js/life.js?v=96"></script>
+<script src="js/weed.js?v=96"></script>
+<script src="js/markers.js?v=96"></script>
+<script src="js/swimmers.js?v=96"></script>
+<script src="js/couples.js?v=96"></script>
+<script src="js/tim.js?v=96"></script>
+<script src="js/bikes.js?v=96"></script>
+<script src="js/lockpick.js?v=96"></script>
+<script src="js/wanted.js?v=96"></script>
+<script src="js/tools.js?v=96"></script>
+<script src="js/hud.js?v=96"></script>
+<script src="js/share.js?v=96"></script>
+<script src="js/menus.js?v=96"></script>
+<script src="js/mobile.js?v=96"></script>
+<script src="js/patchnotes.js?v=96"></script>
+<script src="js/staff.js?v=96"></script>
+<script src="js/thief.js?v=96"></script>
+<script src="js/needs.js?v=96"></script>
+<script src="js/seats.js?v=96"></script>
+<script src="js/waypoint.js?v=96"></script>
+<script src="js/inventory.js?v=96"></script>
+<script src="js/main.js?v=96"></script>
+<script src="js/rep.js?v=96"></script>
 </body>
 </html>

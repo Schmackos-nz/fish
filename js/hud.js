@@ -142,6 +142,7 @@ const Hud = {
     Gun.drawScope(this);
     Wanted.drawWorld(this);
     this.drawGunCursor();
+    Waypoint.draw(this);
     LineDrag.draw(this);
     // Panels are laid out on a virtual screen, scaled down to fit phones.
     const k = this.k = Mobile.hudScale(), ins = Mobile.insets();
@@ -363,6 +364,8 @@ const Hud = {
     if (this.bigMap) {
       x = (x - (this.ox || 0)) / (this.k || 1); y /= this.k || 1;
       for (const t of this.travelRects || []) if (x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h) { Travel.go(t.d); return true; }
+      const m = this.mapRect;
+      if (m && x >= m.x && x <= m.x + m.size && y >= m.y && y <= m.y + m.size) { Waypoint.set((x - m.x) / m.k, (y - m.y) / m.k); return true; }
       if (Mobile.active) this.bigMap = false; // tap anywhere else to close
       return true;
     }
@@ -414,6 +417,7 @@ const Hud = {
       g.fillStyle = '#fff'; g.beginPath(); g.arc(nx, ny, 3, 0, 7); g.fill();
       g.fillStyle = n.palette.shirt; g.beginPath(); g.arc(nx, ny, 2, 0, 7); g.fill();
     }
+    Waypoint.drawMini(this, cx, cy, s, R);
     g.restore();
     g.strokeStyle = 'rgba(255,255,255,0.18)'; g.lineWidth = 2;
     g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();
@@ -435,7 +439,8 @@ const Hud = {
     g.fillStyle = 'rgba(4,7,9,0.6)'; g.fillRect(0, 0, W, H);
     this.card(x - 16, y - 52, size + 32, size + 68, { fill: UI.cardHi, r: 18 });
     this.text('The Valley', x, y - 22, UI.ink, 20, 700);
-    this.text('Click a place to travel there (costs time) · M to close', x + size, y - 22, UI.dim, 12, 'right');
+    this.text('Click a place to set a waypoint · click a label to travel there (costs time) · M to close', x + size, y - 22, UI.dim, 12, 'right');
+    this.mapRect = { x, y, size, k };
     g.save(); g.beginPath(); g.roundRect(x, y, size, size, 10); g.clip();
     g.imageSmoothingEnabled = false;
     g.drawImage(Art.minimap, x, y, size, size);
@@ -453,6 +458,7 @@ const Hud = {
     if (Game.home && World.houses[Game.home.id]) { const hb = World.houses[Game.home.id]; this.text('🏠', x + (hb.x + hb.w / 2) * k, y + (hb.y + hb.h / 2) * k + 7, '#fff', 20, 'center'); }
     g.fillStyle = '#fff'; g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 2;
     g.beginPath(); g.arc(x + Player.x * k, y + Player.y * k, 6, 0, 7); g.stroke(); g.fill();
+    if (Waypoint.at) { const wx = x + Waypoint.at.x * k, wy = y + Waypoint.at.y * k; g.fillStyle = '#D88AFF'; g.strokeStyle = '#2A1040'; g.lineWidth = 2; g.beginPath(); g.moveTo(wx, wy - 9); g.lineTo(wx + 7, wy); g.lineTo(wx, wy + 9); g.lineTo(wx - 7, wy); g.closePath(); g.fill(); g.stroke(); }
   },
 
   // The reel: grab the handle and drag it round. Flanked by line tension (left) and drag (right).
