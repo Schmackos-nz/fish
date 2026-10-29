@@ -66,7 +66,7 @@ const Wardens = {
 
   update(dt) {
     for (const w of this.list) {
-      if (w.state === 'ko') continue; // handled by Wanted
+      if (w.state === 'ko' || w.state === 'dead') continue; // handled by Wanted
       w.t += dt;
       w.bubbleT = Math.max(0, w.bubbleT - dt);
       w.checkCool = Math.max(0, w.checkCool - dt);
@@ -192,8 +192,11 @@ const Jail = {
   },
 
   sentence(reasons, w, forced) {
-    const days = forced || 1 + reasons.length + (reasons.some((r) => /firearm|Fleeing/.test(r)) ? 1 : 0) + (reasons.some((r) => /marijuana/.test(r)) ? 2 : 0) + Permits.undersized().length;
+    let days = forced || 1 + reasons.length + (reasons.some((r) => /firearm|Fleeing/.test(r)) ? 1 : 0) + (reasons.some((r) => /marijuana/.test(r)) ? 2 : 0) + Permits.undersized().length;
     Wanted.clear(); // whatever got you here, you're not wanted any more once you're inside
+    // The judge knows the town's opinion of you.
+    const t = Rep.tier(), sway = { Friendly: 0.6, Liked: 0.8, Neutral: 1, Disliked: 1.3, Hated: 1.6 }[t.name] || 1;
+    if (sway !== 1) { days = Math.max(1, Math.round(days * sway)); reasons = reasons.concat([sway < 1 ? 'Good character (' + t.name + '): −' + Math.round((1 - sway) * 100) + '%' : 'Town opinion (' + t.name + '): +' + Math.round((sway - 1) * 100) + '%']); }
     const fine = Math.min(Game.money, 30 * Math.min(days, 90));
     const seized = Game.creel.length, bags = Game.weed || 0;
     Fishing.reelInFast(); Fight.end(); Sfx.setDrag(0);

@@ -21,7 +21,7 @@ const Thief = {
     const s = this.st();
     s.rep = Math.min(10, s.rep + (what === 'safe' ? 2 : 1));
     s.last = this.nowH(); s.what = what; s.victim = victim || null;
-    Rep.add(what === 'safe' ? -10 : -6);
+    if (what !== 'murder') Rep.add(what === 'safe' ? -10 : -6);
   },
   daily() { const s = this.st(); s.rep = Math.max(0, s.rep * 0.8 - 0.1); },
   recent() { const s = this.st(); return s.rep > 0.3 && this.nowH() - s.last < 72; },
@@ -34,6 +34,7 @@ const Thief = {
       burglary: 'Someone went through ' + v + '\'s place. Took the lot!',
       'break-in': 'Somebody jimmied ' + v + '\'s front door. In broad daylight!',
       safe: v + '\'s safe got cracked. Cleaned right out!',
+      murder: v + ' was SHOT DEAD. In our valley! Lock your doors.',
     }[s.what] : null;
     return specific && Math.random() < 0.5 ? specific : U.pick(Math.random, RUMOURS);
   },

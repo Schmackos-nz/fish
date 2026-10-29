@@ -72,7 +72,7 @@ const Arsenal = {
     Bugs.shake = 1;
     if (World.isWater(x, y)) { Hud.ripple(x, y, 3); Sfx.splash(1.5); }
     // Knock out everyone in the blast; game and fish too.
-    for (const t of Wanted.targets()) if (U.dist(t.x, t.y, x, y) < r) Wanted.knockOut(t, 1.3);
+    for (const t of Wanted.targets()) if (U.dist(t.x, t.y, x, y) < r) Wanted.knockOut(t, 1.3, true);
     Bikes.blast(x, y, r * 0.9);
     (Wanted.rap = Wanted.rap || { ko: 0, cops: 0, booms: 0, thefts: 0 }).booms++;
     for (const an of Animals.list.slice()) if (an.state !== 'dead' && U.dist(an.x, an.y, x, y) < r) Animals.shotAt(an.x, an.y, true);

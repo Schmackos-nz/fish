@@ -2,6 +2,12 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '1.9', name: 'Life Sentence', date: '30 Oct 2026', notes: [
+    ['changed', 'Guns and explosions kill now. The dead drop what they carried, the town mourns, and the gossip turns dark'],
+    ['new', 'Murder sentences: 8 years each, 15 for a police officer, 2 for manslaughter (killing someone who was attacking you). Up to 60 years'],
+    ['new', 'The judge weighs your reputation: Friendly −40%, Liked −20%, Disliked +30%, Hated +60% on every sentence'],
+    ['new', 'Newcomers move into empty houses when the population dwindles (as long as the town isn\'t a ruin), and killed wardens, hunters, bikers, shopkeepers and Dusty get replaced in time'],
+  ] },
   { v: '1.8', name: 'Nature Calls', date: '30 Oct 2026', notes: [
     ['fixed', 'Locals, staff, hunters, bikers on foot and beachgoers no longer get stuck in walls or wade into deep water. If they stop making progress they shuffle free'],
     ['new', 'Spade (key 6): dig holes and turn up worms, loose change, old bottles, or (rarely) a tin of buried coins'],

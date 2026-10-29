@@ -47,8 +47,8 @@ const Wanted = {
   // ---------- who can be shot ----------
   targets() {
     const out = [];
-    for (const n of Npcs.list) if (!['home', 'bush', 'ko'].includes(n.state)) out.push({ x: n.x, y: n.y, kind: 'npc', o: n });
-    for (const w of Wardens.list) if (w.state !== 'ko') out.push({ x: w.x, y: w.y, kind: 'warden', o: w });
+    for (const n of Npcs.list) if (!n.away && !['home', 'bush', 'ko', 'dead'].includes(n.state)) out.push({ x: n.x, y: n.y, kind: 'npc', o: n });
+    for (const w of Wardens.list) if (w.state !== 'ko' && w.state !== 'dead') out.push({ x: w.x, y: w.y, kind: 'warden', o: w });
     for (const r of Bikes.riders) if (!(r.ko > 0) && !r.away) { const p = Bikes.riderPos(r); out.push({ x: p.x, y: p.y, kind: 'biker', o: r }); }
     for (const u of this.units) if (!u.ko) out.push({ x: u.x, y: u.y, kind: 'unit', o: u });
     for (const h of Hunters.list) if (!h.ko) out.push({ x: h.x, y: h.y, kind: 'hunter', o: h });
@@ -64,11 +64,43 @@ const Wanted = {
     let best = null, bd = scoped ? 0.6 : 0.85;
     for (const t of this.targets()) { const d = U.dist(t.x, t.y, x, y); if (d < bd) { bd = d; best = t; } }
     if (!best) return false;
-    this.knockOut(best);
+    this.knockOut(best, 1, true); // bullets kill
     return true;
   },
 
-  knockOut(t, crime = 1) {
+  // A shooting: someone's dead. Self-defence (mobs, angry hunters) is manslaughter; anything else is murder.
+  kill(t) {
+    const o = t.o, self = o.angry > 0 || !!o.mob, cop = t.kind === 'unit' || t.kind === 'warden';
+    const rap = this.rap || (this.rap = { ko: 0, cops: 0, booms: 0, thefts: 0 });
+    if (self) rap.mansl = (rap.mansl || 0) + 1; else if (cop) rap.copKills = (rap.copKills || 0) + 1; else rap.kills = (rap.kills || 0) + 1;
+    o.angry = 0; o.mob = false;
+    Rep.add(self ? -6 : -20);
+    Sfx.slap(1); Sfx.thunk(); Sfx.tone(70, 0.8, 0.3, 'sine', 40);
+    const name = o.name || (t.kind === 'unit' ? 'An officer' : t.kind === 'dusty' ? 'Dusty' : 'Someone');
+    if (t.kind === 'npc') {
+      const fish = (o.creel || []).concat(o.held ? [{ id: o.held.sp.id, kg: o.held.kg, cm: o.held.cm, value: Menus.value(o.held.sp, o.held.kg, o.held.prized) }] : []);
+      fish.forEach((f, i) => this.drop(o.x + Math.cos(i * 2.1) * 0.7, o.y + Math.sin(i * 2.1) * 0.7, f));
+      o.creel = []; o.held = null; o.fish = null; o.lure = null; o.goingBush = false; o.goingHome = false;
+      o.state = 'dead'; o.deadT = 60; o.bubbleT = 0;
+    } else if (t.kind === 'warden') { o.state = 'dead'; o.deadDay = Game.env.day; }
+    else if (t.kind === 'unit') { o.ko = true; o.koT = 0; }
+    else if (t.kind === 'biker') { o.ko = 1e9; o.dead = true; o.chaseT = 0; }
+    else if (t.kind === 'hunter') { o.ko = true; o.koT = -1e9; o.dead = true; }
+    else if (t.kind === 'dusty') {
+      o.ko = true; o.koT = -1e9; o.dead = true; o.deadDay = Game.env.day;
+      const bags = 1 + ((Math.random() * 3) | 0); Game.weed = (Game.weed || 0) + bags;
+    } else if (t.kind === 'staff') {
+      o.ko = false; o.quit = true; o.hireIn = 3; o.state = 'gone'; o.dead = true;
+      Staff.news.push(o.b.name + ' is shut — ' + o.name + ' was killed behind the counter. The town is in shock.');
+    }
+    if (!self) Thief.record('murder', name);
+    this.crime(self ? 1 : cop ? 3 : 2.5);
+    Hud.toast(self ? name + ' is dead. Self-defence… the judge might see it that way.' : name + ' is DEAD. That\'s murder.', UI.bad, 3);
+    this.panic(t.x, t.y);
+  },
+
+  knockOut(t, crime = 1, lethal = false) {
+    if (lethal) return this.kill(t);
     const o = t.o;
     if (!(o.angry > 0) && !o.mob) Rep.add(t.kind === 'unit' || t.kind === 'warden' ? -3 : -5); // decking innocent people goes down badly
     if (o.angry > 0) { crime *= 0.3; o.angry = 0; } // they were shooting at you
@@ -217,6 +249,11 @@ const Wanted = {
     }
     // Armed anglers.
     for (const n of Npcs.list) {
+      if (n.state === 'dead') {
+        n.deadT -= dt;
+        if (n.deadT <= 0) { n.state = 'home'; n.away = true; n.dead = true; } // the body's taken away
+        continue;
+      }
       if (n.state === 'ko') {
         n.t -= dt;
         if (n.t <= 0) { n.state = 'cast'; n.casts = 0; n.t = 1; Npcs.say(n, 'Ugh… my head.', 2.5); }
@@ -285,16 +322,20 @@ const Wanted = {
   // The bigger the rampage, the longer the stretch: days, weeks, months — or years.
   arrest() {
     const R = this.rap || {}, peak = Math.max(this.level, Math.floor(this.peak || 0));
-    const ko = R.ko || 0, cops = R.cops || 0, booms = R.booms || 0, thefts = R.thefts || 0;
+    const ko = R.ko || 0, cops = R.cops || 0, booms = R.booms || 0, thefts = R.thefts || 0, kills = R.kills || 0, copKills = R.copKills || 0, mansl = R.mansl || 0;
     const reasons = [];
+    if (copKills) reasons.push('Murder of a police officer ×' + copKills);
+    if (kills) reasons.push('Murder ×' + kills);
+    if (mansl) reasons.push('Manslaughter ×' + mansl);
     if (cops) reasons.push('Assaulting officers ×' + cops);
     if (ko) reasons.push('Assault ×' + ko);
     if (booms) reasons.push('Use of explosives ×' + booms);
     if (thefts) reasons.push('Vehicle theft ×' + thefts);
-    reasons.push('Firearms offences (wanted level ' + peak + ')');
+    if (peak > 0) reasons.push('Firearms offences (wanted level ' + peak + ')');
     let days = [1, 2, 5, 14, 75, 300][peak] + ko * 4 + cops * 25 + booms * 45 + thefts * 10;
     if (peak >= 5 && (cops >= 3 || booms >= 2)) days += 365 * (1 + Math.floor(cops / 3) + Math.floor(booms / 2));
-    days = Math.min(3650, Math.round(days));
+    days += kills * 365 * 8 + copKills * 365 * 15 + mansl * 365 * 2;
+    days = Math.min(365 * 60, Math.round(days));
     this.clear();
     Jail.sentence(reasons, null, days);
   },
@@ -341,14 +382,14 @@ const Wanted = {
     const lie = (rig, down) => { rig.lean.rotation.x = down ? -1.5 : -0.38; };
     for (const n of Npcs.list) {
       if (!n.rig) continue;
-      lie(n.rig, n.state === 'ko');
-      if (n.state === 'ko' || n.state === 'armed') { n.rod.visible = n.line.visible = n.bob.visible = false; n.heldMesh.visible = false; }
+      lie(n.rig, n.state === 'ko' || n.state === 'dead');
+      if (n.state === 'ko' || n.state === 'dead' || n.state === 'armed') { n.rod.visible = n.line.visible = n.bob.visible = false; n.heldMesh.visible = false; }
       if (n.state === 'armed') { n.rig.yaw.rotation.y = -n.face; Models.pose(n.rig, { pose: 'grip', t: Game.time }); }
       if (!n.pistol) { n.pistol = this.gunMesh(false); this.group.add(n.pistol); }
       n.pistol.visible = n.state === 'armed' && n.mesh.visible;
       if (n.pistol.visible) { Models.handPos(n.rig, v); n.pistol.position.copy(v); n.pistol.rotation.set(0, -n.face, 0); }
     }
-    for (const w of Wardens.list) lie(w.mesh.userData.rig, w.state === 'ko');
+    for (const w of Wardens.list) lie(w.mesh.userData.rig, w.state === 'ko' || w.state === 'dead');
     for (const r of Bikes.riders) {
       const down = r.ko > 0;
       lie(r.mesh.userData.rig, down);

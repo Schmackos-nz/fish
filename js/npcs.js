@@ -138,7 +138,7 @@ const Npcs = {
   // ---------- simulation ----------
   update(dt) {
     for (const n of this.list) {
-      if (n.state === 'ko' || n.state === 'armed') continue; // handled by Wanted
+      if (n.state === 'ko' || n.state === 'dead' || n.state === 'armed') continue; // handled by Wanted
       n.t -= dt;
       n.bubbleT = Math.max(0, n.bubbleT - dt);
       if (n.poseT !== undefined) { n.poseT -= dt; if (n.poseT <= 0) { n.pose = 'normal'; n.poseT = undefined; } }

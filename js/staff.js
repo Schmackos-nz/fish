@@ -167,6 +167,28 @@ const Staff = {
         this.news.push('New in town: ' + st.name + ' has taken over ' + st.b.name + ' now it\'s fixed up.');
       }
     }
+    // Replacements for the dead (wardens, hunters, bikers, Dusty) after a couple of days.
+    for (const w of Wardens.list) if (w.state === 'dead' && Game.env.day - (w.deadDay || 0) >= 2) {
+      w.state = 'patrol'; w.t = 0; w.name = 'Warden ' + U.pick(Math.random, ['Ngata', 'Price', 'Holm', 'Reyes', 'Kowalski', 'Ferris']); Wardens.relocate(w, 60);
+      this.news.push(w.name + ' has been posted to the valley.');
+    }
+    for (const h of Hunters.list) if (h.dead && Math.random() < 0.5) {
+      h.dead = false; h.ko = false; h.koT = 0; h.state = 'roam'; h.name = U.pick(Math.random, ['Big Trev', 'Shazza', 'Mick', 'Jono', 'Raewyn', 'Hoppo']) + ' Jr';
+      this.news.push(h.name + ' has taken up hunting in the hills.');
+    }
+    for (const r of Bikes.riders) if (r.dead && Math.random() < 0.5) {
+      r.dead = false; r.ko = 0; r.name = U.pick(Math.random, ['Jase', 'Kayla', 'Benny', 'Tui', 'Dee', 'Robbo']); r.owner = r.name; r.plate = newPlate();
+      if (r.noBike) { r.bike = Bikes.modelFor(r.bikeId); Bikes.group.add(r.bike); r.noBike = false; }
+      r.state = 'ride'; r.fuel = 100; r.target = Bikes.pickTarget(r);
+    }
+    const dk = Weed.dustyKO;
+    if (dk.dead && Game.env.day - (dk.deadDay || 0) >= 3) { dk.dead = false; dk.ko = false; dk.koT = 0; this.news.push('Someone new has set up in Dusty\'s old spot in the woods. Calls himself "Dusty". Of course he does.'); }
+    // Newcomers: when the town's shrinking but liveable, people move in to empty houses.
+    const living = Npcs.list.filter((n) => !n.away).length;
+    if (living < 8 && lvl < 0.5 && Math.random() < 0.5) {
+      const slot = Npcs.list.find((n) => n.away && n.dead) || Npcs.list.find((n) => n.away);
+      if (slot) this.newcomer(slot);
+    }
     // Residents follow the state of the place.
     const away = Game.townAway = Game.townAway || [];
     if (lvl > 0.45 && Math.random() < (lvl - 0.45) * 1.6) {
@@ -178,6 +200,23 @@ const Staff = {
     }
     while (this.news.length > 4) this.news.shift();
     this.save();
+  },
+
+  // A fresh face takes over an empty slot: new name, new look, same house.
+  newcomer(n) {
+    const used = new Set(Npcs.list.map((x) => x.name));
+    const name = ['Kiri', 'Duncan', 'Ana', 'Nev', 'Josie', 'Pita', 'Glenda', 'Sione', 'Morris', 'Hine', 'Craig', 'Ruby'].find((x) => !used.has(x)) || 'New Bloke';
+    const away = Game.townAway || []; const i = away.indexOf(n.name); if (i >= 0) away.splice(i, 1);
+    for (const m of [n.mesh, n.shadow, n.rod, n.line, n.bob, n.fishMesh, n.heldMesh]) if (m) Npcs.group.remove(m);
+    const base = NPC_PALETTES[(Math.random() * NPC_PALETTES.length) | 0];
+    n.palette = { ...base, hat: U.pick(Math.random, ['#3A6AD2', '#E2584D', '#7DC383', '#F2C14E', '#B85AE2', '#E8E8D8']), skin: U.pick(Math.random, ['#F0C8A0', '#C08A60', '#8A5A3A', '#E2B08A', '#A8724A']) };
+    const old = n.name;
+    n.name = name; n.away = false; n.dead = false; n.mob = false; n.angry = 0;
+    n.rec = { count: 0, best: 0, sp: null }; n.creel = [];
+    if (n.home) { n.home.owner = name; n.home.name = name + '\'s house'; }
+    Npcs.buildMeshes(n);
+    n.state = 'home'; n.homeT = 0;
+    this.news.push('New in the valley: ' + name + ' has moved into ' + (n.home ? old + '\'s old place' : 'town') + '. Say g\'day!');
   },
 
   // Who's where, for the E key outside.
