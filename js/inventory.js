@@ -5,7 +5,7 @@
 const HOTBAR_SIZE = 5;
 const DEFAULT_HOTBAR = ['rod', 'gun', 'axe', 'spade', 'spray'];
 const TOOL_IDS = ['rod', 'gun', 'spray', 'binos', 'axe', 'spade'];
-const FOOD_ICONS = { 'Bread roll': '🍞', 'Can of beans': '🥫', 'Meat pie': '🥧', 'Energy drink': '🥤', 'Wild duck': '🦆' };
+const FOOD_ICONS = { Crab: '🦀', 'Steamed crab': '🦀', 'Roast duck': '🍗', 'Bread roll': '🍞', 'Can of beans': '🥫', 'Meat pie': '🥧', 'Energy drink': '🥤', 'Wild duck': '🦆' };
 
 const Inventory = {
   iconCache: {},
@@ -34,7 +34,7 @@ const Inventory = {
     for (const [k, a] of Object.entries(AMMO)) if (k !== 'rifle' && (Game.ammoX[k] || 0) > 0) out.push({ kind: 'ammo', id: k, name: a.name, icon: k === 'rockets' ? '🚀' : k === 'shells' ? '🔴' : '🔹', count: Game.ammoX[k] });
     // Food stacks by name.
     const food = {};
-    Game.pantry.forEach((f, i) => { const key = f.name + (f.shroom || ''); (food[key] = food[key] || { kind: 'food', name: f.name, energy: f.energy, idx: [], icon: f.shroom ? '🍄' : FOOD_ICONS[f.name] || '🍽️' }).idx.push(i); });
+    Game.pantry.forEach((f, i) => { const key = f.name + (f.shroom || ''); (food[key] = food[key] || { kind: 'food', name: f.name, energy: f.energy, idx: [], icon: f.shroom ? '🍄' : FOOD_ICONS[f.name] || (f.raw ? '🥩' : '🍽️') }).idx.push(i); });
     for (const f of Object.values(food)) out.push({ ...f, count: f.idx.length });
     for (const [k, n] of [['batter', 'Batter mix'], ['herbs', 'Butter & herbs']]) if ((Game.ingredients[k] || 0) > 0) out.push({ kind: 'ingredient', name: n, icon: k === 'batter' ? '🥣' : '🧈', count: Game.ingredients[k] });
     Game.creel.forEach((c, i) => out.push({ kind: 'fish', name: SPECIES_BY_ID[c.id].name, idx: i, icon: '🐟', count: 1, sub: U.fmtKg(c.kg) + ' · ' + c.cm + ' cm' }));
@@ -43,6 +43,52 @@ const Inventory = {
     if ((Game.seeds || 0) > 0) out.push({ kind: 'seeds', name: 'Weed seeds', icon: '🌱', count: Game.seeds });
     out.push({ kind: 'tool', id: 'stetho', name: 'Stethoscope', icon: '🩺', fixed: true, count: null });
     return out;
+  },
+
+  // ---------- the storage chest: your bag on one side, the chest on the other ----------
+  // A side is either the carried stuff (Game) or the chest (Game.storage); both share these stacks.
+  stacksOf(side) {
+    const S = side, out = [];
+    S.lures = S.lures || {}; S.ammoX = S.ammoX || {}; S.ingredients = S.ingredients || {};
+    (S.creel || []).forEach((c, i) => out.push({ key: 'creel:' + i, name: SPECIES_BY_ID[c.id].name, icon: '🐟', count: 1, sub: U.fmtKg(c.kg) }));
+    const food = {};
+    (S.pantry || []).forEach((f) => { const k = f.name + '|' + (f.shroom || ''); (food[k] = food[k] || { key: 'food:' + k, name: f.name, icon: f.shroom ? '🍄' : FOOD_ICONS[f.name] || (f.raw ? '🥩' : '🍽️'), count: 0 }).count++; });
+    out.push(...Object.values(food));
+    for (const L of LURES) if ((S.lures[L.id] || 0) > 0) out.push({ key: 'lure:' + L.id, name: L.name, icon: L.id === 'worm' ? '🪱' : '🪝', count: S.lures[L.id] });
+    if ((S.ammo || 0) > 0) out.push({ key: 'n:ammo', name: 'Rifle rounds', icon: '🔸', count: S.ammo });
+    for (const k of Object.keys(AMMO)) if (k !== 'rifle' && (S.ammoX[k] || 0) > 0) out.push({ key: 'ax:' + k, name: AMMO[k].name, icon: k === 'rockets' ? '🚀' : k === 'shells' ? '🔴' : '🔹', count: S.ammoX[k] });
+    for (const [k, n, ic] of [['spray', 'Bug spray', '🧴'], ['wood', 'Firewood', '🪵'], ['weed', 'Bags of weed', '🌿'], ['seeds', 'Weed seeds', '🌱']]) if ((S[k] || 0) > 0) out.push({ key: 'n:' + k, name: n, icon: ic, count: S[k] });
+    for (const [k, n, ic] of [['batter', 'Batter mix', '🥣'], ['herbs', 'Butter & herbs', '🧈']]) if ((S.ingredients[k] || 0) > 0) out.push({ key: 'ing:' + k, name: n, icon: ic, count: S.ingredients[k] });
+    return out;
+  },
+
+  // Move a whole stack from one side to the other.
+  moveStack(key, from, to) {
+    const [kind, id] = [key.slice(0, key.indexOf(':')), key.slice(key.indexOf(':') + 1)];
+    to.lures = to.lures || {}; to.ammoX = to.ammoX || {}; to.ingredients = to.ingredients || {}; to.creel = to.creel || []; to.pantry = to.pantry || [];
+    if (kind === 'creel') {
+      if (to === Game && Game.creel.length >= Game.creelMax) { Hud.toast('Your creel\'s full.', UI.muted, 1.4); return; }
+      to.creel.push(from.creel.splice(+id, 1)[0]);
+    } else if (kind === 'food') {
+      const [name, sh] = id.split('|');
+      const keep = [], move = [];
+      for (const f of from.pantry) ((f.name === name && (f.shroom || '') === sh) ? move : keep).push(f);
+      from.pantry.length = 0; from.pantry.push(...keep); to.pantry.push(...move);
+    } else if (kind === 'lure') { to.lures[id] = (to.lures[id] || 0) + (from.lures[id] || 0); from.lures[id] = 0; }
+    else if (kind === 'ax') { to.ammoX[id] = (to.ammoX[id] || 0) + (from.ammoX[id] || 0); from.ammoX[id] = 0; }
+    else if (kind === 'ing') { to.ingredients[id] = (to.ingredients[id] || 0) + (from.ingredients[id] || 0); from.ingredients[id] = 0; }
+    else { to[id] = (to[id] || 0) + (from[id] || 0); from[id] = 0; }
+  },
+
+  openStorage() {
+    const S = Game.storage, mine = this.stacksOf(Game), box = this.stacksOf(S), COLS = 9;
+    const grid = (list, side) => { const n = Math.max(18, Math.ceil(list.length / COLS) * COLS); let h = ''; for (let i = 0; i < n; i++) h += this.slotHtml(list[i] ? { ...list[i], kind: 'x' } : null, list[i] ? `data-${side}="${i}"` : ''); return `<div class="inv-grid" style="grid-template-columns:repeat(${COLS}, 52px)">${h}</div>`; };
+    Life.panel(`<h2>Storage chest</h2><div class="desc">Click a stack to move it across. Safe while you pay the rent (and the police can't touch it).</div>
+      <h3>Your bag</h3>${grid(mine, 'bag')}
+      <h3>Chest</h3>${grid(box, 'box')}`, (el) => {
+      el.querySelectorAll('[data-bag]').forEach((s) => { s.onclick = () => { this.moveStack(mine[+s.dataset.bag].key, Game, S); Sfx.click(); Game.save(); this.openStorage(); }; });
+      el.querySelectorAll('[data-box]').forEach((s) => { s.onclick = () => { this.moveStack(box[+s.dataset.box].key, S, Game); Sfx.click(); Game.save(); this.openStorage(); }; });
+    });
   },
 
   slotHtml(it, attrs) {

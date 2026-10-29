@@ -401,6 +401,10 @@ const Hud = {
       g.fillStyle = u.army ? '#7A8A3A' : (Math.sin(Game.time * 12) > 0 ? '#E2584D' : '#3A6AD2');
       g.beginPath(); g.arc(nx, ny, 3.5, 0, 7); g.fill();
     }
+    if (Game.home && World.houses[Game.home.id]) {
+      const hb = World.houses[Game.home.id], hx = hb.x + hb.w / 2, hy = hb.y + hb.h / 2;
+      if (U.dist(hx, hy, Player.x, Player.y) < R / s) this.text('🏠', cx + (hx - Player.x) * s, cy + (hy - Player.y) * s + 6, '#fff', 15, 'center');
+    }
     for (const wd of Wardens.list) {
       if (U.dist(wd.x, wd.y, Player.x, Player.y) > 48) continue;
       const nx = cx + (wd.x - Player.x) * s, ny = cy + (wd.y - Player.y) * s;
@@ -448,6 +452,7 @@ const Hud = {
       this.pill(lbl, px, py, d.home ? UI.good : hover ? UI.accent : UI.ink, 11);
       this.travelRects.push({ x: px - tw / 2, y: py - 12, w: tw, h: 24, d });
     }
+    if (Game.home && World.houses[Game.home.id]) { const hb = World.houses[Game.home.id]; this.text('🏠', x + (hb.x + hb.w / 2) * k, y + (hb.y + hb.h / 2) * k + 7, '#fff', 20, 'center'); }
     g.fillStyle = '#fff'; g.strokeStyle = 'rgba(0,0,0,0.6)'; g.lineWidth = 2;
     g.beginPath(); g.arc(x + Player.x * k, y + Player.y * k, 6, 0, 7); g.stroke(); g.fill();
   },

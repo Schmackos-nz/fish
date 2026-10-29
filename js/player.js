@@ -25,6 +25,7 @@ const Player = {
   update(dt) {
     const F = Fishing.state;
     const k = Input.keys;
+    if (Seats.update(dt)) return; // sat down
     let ix = 0, iy = 0;
     if (k.has('KeyA') || k.has('ArrowLeft')) ix--;
     if (k.has('KeyD') || k.has('ArrowRight')) ix++;

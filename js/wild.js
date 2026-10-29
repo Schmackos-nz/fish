@@ -72,7 +72,7 @@ const Forage = {
   pick(e) {
     (Game.picked = Game.picked || {})[e.i] = Game.env.day;
     this.group.remove(e.m); this.shown.delete(e.i);
-    Game.pantry.push({ name: e.s.look, energy: e.s.food, shroom: e.s.id });
+    Game.pantry.push({ name: e.s.look, energy: e.s.food, shroom: e.s.id, raw: true });
     Sfx.tone(520, 0.06, 0.1, 'triangle', 700);
     Hud.toast('Picked a ' + e.s.look.toLowerCase() + '. Eat it from your bag (I)… if you\'re feeling lucky.', UI.accent, 2.2);
     Game.save();
@@ -384,7 +384,7 @@ const Ducks = {
       const dx = f.x + d.ox, dy = f.y + d.oy;
       if (U.dist(dx, dy, x, y) < 0.55) {
         d.dead = true; this.scare(f);
-        Game.pantry.push({ name: 'Wild duck', energy: 28 });
+        Game.pantry.push({ name: 'Wild duck', energy: 20, raw: true });
         Hud.toast('Duck down! A wild duck goes in your bag.', UI.good, 1.8);
         return true;
       }
@@ -524,5 +524,71 @@ const Hunters = {
       const [sx, sy, ok] = Scene3D.project(h.x, h.y, Scene3D.standH(h.x, h.y) + 1.9);
       if (ok) hud.pill(h.bubble, sx, sy, '#D8FF1A', 12);
     }
+  },
+};
+
+// ---------- crabs on the beach ----------
+const Crabs = {
+  list: [], group: null, spawnT: 2,
+  init() {
+    if (this.group) Scene3D.scene.remove(this.group);
+    this.group = new THREE.Group(); Scene3D.scene.add(this.group);
+    this.list = [];
+  },
+  mesh() {
+    const g = new THREE.Group(), P = (geo, c, o = 0.06) => Models.part(geo, c, o), col = Math.random() < 0.5 ? '#D8552E' : '#C0402A';
+    const body = P(new THREE.SphereGeometry(0.14, 10, 6), col); body.scale.set(1.3, 0.55, 1); body.position.y = 0.08; g.add(body);
+    for (const z of [-1, 1]) {
+      for (let k = 0; k < 3; k++) { const l = P(new THREE.BoxGeometry(0.03, 0.02, 0.16), U.shade(col, -0.2), 0.1); l.position.set(-0.08 + k * 0.08, 0.04, z * 0.14); l.rotation.x = z * 0.5; g.add(l); }
+      const claw = P(new THREE.SphereGeometry(0.06, 8, 6), col); claw.scale.set(1.4, 0.7, 1); claw.position.set(0.2, 0.08, z * 0.1); g.add(claw);
+      const eye = P(new THREE.SphereGeometry(0.02, 6, 4), '#111', 0); eye.position.set(0.12, 0.17, z * 0.04); g.add(eye);
+    }
+    return g;
+  },
+  update(dt) {
+    this.spawnT -= dt;
+    if (this.spawnT <= 0) {
+      this.spawnT = 3;
+      this.list = this.list.filter((c) => { const keep = !c.gone && U.dist(c.x, c.y, Player.x, Player.y) < 50; if (!keep) this.group.remove(c.mesh); return keep; });
+      const day = Game.env.daylight > 0.3 && Game.env.weather.id !== 'rain';
+      if (day && this.list.length < 5 && !Interior.active && Math.random() < 0.6) for (let t = 0; t < 30; t++) {
+        const a = Math.random() * 6.28, r = 8 + Math.random() * 22, x = Player.x + Math.cos(a) * r, y = Player.y + Math.sin(a) * r;
+        if (World.tileAt(Math.floor(x), Math.floor(y)) !== T.SAND || World.blocked(x, y)) continue;
+        // Crawl up out of the nearest water.
+        const s = World.nearestShore(x, y);
+        const c = { x: s.x, y: s.y, gx: x, gy: y, t: 0, ang: Math.random() * 6.28, state: 'out', life: 40 + Math.random() * 40 };
+        c.mesh = this.mesh(); this.group.add(c.mesh); this.list.push(c); break;
+      }
+    }
+    for (const c of this.list) {
+      c.t += dt; c.life -= dt;
+      const pd = U.dist(c.x, c.y, Player.x, Player.y);
+      if ((pd < 2.6 && !Player.crouch) || c.life <= 0) c.state = 'home'; // spooked (or bored): back to the water
+      let tx = c.gx, ty = c.gy;
+      if (c.state === 'home') { const s = World.nearestShore(c.x, c.y); tx = s.x + (s.x - c.x) * 0.5; ty = s.y + (s.y - c.y) * 0.5; }
+      else if (U.dist(c.x, c.y, c.gx, c.gy) < 0.3) { c.gx = c.x + (Math.random() - 0.5) * 3; c.gy = c.y + (Math.random() - 0.5) * 3; if (World.tileAt(Math.floor(c.gx), Math.floor(c.gy)) !== T.SAND) { c.gx = c.x; c.gy = c.y; } }
+      const a = Math.atan2(ty - c.y, tx - c.x), sp = (c.state === 'home' ? 1.6 : 0.5) * dt;
+      c.x += Math.cos(a) * sp; c.y += Math.sin(a) * sp; c.ang = a;
+      if (c.state === 'home' && World.isWater(c.x, c.y) && World.depthAt(c.x, c.y) > 0.2) c.gone = true;
+    }
+  },
+  render() {
+    for (const c of this.list) {
+      c.mesh.visible = !c.gone && !Interior.active;
+      // Crabs walk sideways: the body sits across the direction of travel, legs a-scuttle.
+      c.mesh.position.set(c.x, Scene3D.standH(c.x, c.y) + Math.abs(Math.sin(c.t * 18)) * 0.015, c.y);
+      c.mesh.rotation.y = -c.ang + Math.PI / 2;
+    }
+  },
+  interactions(add) {
+    for (const c of this.list) if (!c.gone && U.dist(c.x, c.y, Player.x, Player.y) < 1.4) add(c.x, c.y, 1.4, 'Pick up the crab', () => this.grab(c));
+  },
+  grab(c) {
+    if (Math.random() < 0.25) { Wanted.hurt(3, 'a crab'); Hud.toast('OW! It pinched you and scuttled off.', UI.bad, 1.8); c.state = 'home'; return; }
+    c.gone = true; this.group.remove(c.mesh);
+    Game.pantry.push({ name: 'Crab', energy: 15, raw: true });
+    Sfx.tone(700, 0.06, 0.1, 'triangle', 900);
+    Hud.toast('Got a crab! Cook it at a stove, BBQ or campfire.', UI.good, 2);
+    Game.save();
   },
 };

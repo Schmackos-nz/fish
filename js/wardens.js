@@ -199,6 +199,13 @@ const Jail = {
     if (sway !== 1) { days = Math.max(1, Math.round(days * sway)); reasons = reasons.concat([sway < 1 ? 'Good character (' + t.name + '): −' + Math.round((1 - sway) * 100) + '%' : 'Town opinion (' + t.name + '): +' + Math.round((sway - 1) * 100) + '%']); }
     const fine = Math.min(Game.money, 30 * Math.min(days, 90));
     const seized = Game.creel.length, bags = Game.weed || 0;
+    // The gun in your hand goes in an evidence bag (your hunting rifle comes back empty).
+    let gunTaken = null;
+    if (Tools.current === 'gun') {
+      const wpn = Arsenal.weapon();
+      if (wpn.id !== 'rifle') { Game.guns = Game.guns.filter((g) => g !== wpn.id); Game.weapon = 'rifle'; gunTaken = wpn.name; }
+      else if (Game.ammo) { gunTaken = Game.ammo + ' rifle rounds'; Game.ammo = 0; }
+    }
     Fishing.reelInFast(); Fight.end(); Sfx.setDrag(0);
     if (Bikes.riding) Bikes.dismount();
     // A stolen ride gets impounded and handed back to its owner.
@@ -221,7 +228,8 @@ const Jail = {
     el.querySelector('#jailTerms').innerHTML =
       `<div><span>Sentence</span><b>${this.term(days)}</b></div>` +
       `<div><span>Fine</span><b>${U.fmtMoney(fine)}</b></div>` +
-      `<div><span>Confiscated</span><b>${seized} fish${bags ? ' · ' + bags + ' bags of weed' : ''}${Game.seeds ? ' · ' + Game.seeds + ' seeds' : ''}</b></div>`;
+      `<div><span>Confiscated</span><b>${seized} fish${bags ? ' · ' + bags + ' bags of weed' : ''}${Game.seeds ? ' · ' + Game.seeds + ' seeds' : ''}${gunTaken ? ' · ' + gunTaken : ''}</b></div>` +
+      `<div><span>Untouched</span><b>Everything in your storage at home</b></div>`;
     const btn = el.querySelector('#jailBtn'), bar = el.querySelector('#jailBar');
     bar.style.width = '0%'; btn.disabled = false; btn.textContent = 'Serve your time';
     el.classList.remove('hidden');

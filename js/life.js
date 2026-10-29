@@ -14,7 +14,7 @@ const RECIPES = [
   { id: 'chips', label: 'Fish & chips', needs: 'batter', mult: 1.5, name: (sp) => sp.name + ' & chips' },
   { id: 'herb', label: 'Herb-butter', needs: 'herbs', mult: 1.8, name: (sp) => 'Herb-butter ' + sp.name },
 ];
-const emptyStorage = () => ({ creel: [], pantry: [], lures: {}, ammo: 0, spray: 0, weed: 0 });
+const emptyStorage = () => ({ creel: [], pantry: [], lures: {}, ammo: 0, spray: 0, weed: 0, seeds: 0, wood: 0, ammoX: {}, ingredients: {} });
 
 const Life = {
   warnedLow: false,
@@ -124,6 +124,15 @@ const Life = {
     }, 900);
   },
 
+  cookRaw(i) {
+    const f = Game.pantry[i]; if (!f || !f.raw) return;
+    const name = { 'Wild duck': 'Roast duck', Crab: 'Steamed crab' }[f.name] || 'Fried ' + f.name.toLowerCase();
+    Game.pantry[i] = { name, energy: Math.round(f.energy * 1.8), shroom: f.shroom }; // a poisonous mushroom is still poisonous, fried
+    Sfx.burst(0.6, 1800, 0.2, 'highpass');
+    Hud.toast('Cooked: ' + name + '. It\'s in your bag.', UI.good, 1.8);
+    Game.save();
+  },
+
   cook(i, recipe) {
     const c = Game.creel[i];
     if (!c) return;
@@ -135,7 +144,7 @@ const Life = {
     Game.pantry.push({ name: recipe.name(sp), energy });
     Game.stats.cooked = (Game.stats.cooked || 0) + 1;
     Sfx.burst(0.6, 1800, 0.2, 'highpass'); // sizzle
-    Hud.toast('Cooked ' + recipe.name(sp) + ' (+' + energy + ' food when eaten)', UI.good, 2);
+    Hud.toast('Cooked ' + recipe.name(sp) + ' — it\'s in your bag for later (+' + energy + ' food)', UI.good, 2.2);
     Game.save();
   },
 
@@ -143,10 +152,10 @@ const Life = {
   foreignHouse() { const r = Interior.active; return r && r.b.type === 'house' && !(Game.home && Game.home.id === r.b.id) ? r.b : null; },
   furnLabel(f) {
     if (!this.foreignHouse()) return this.ownLabel(f);
-    return { bed: 'Their bed', stove: 'Cook on their stove', chest: 'Rummage through their chest', toilet: 'Use their loo', safe: Thief.safeReady(this.foreignHouse()) ? 'Crack the safe (stethoscope)' : 'Safe (empty)' }[f.kind] || f.label;
+    return { bed: 'Their bed', stove: 'Cook on their stove', chest: 'Rummage through their chest', seat: 'Sit in their armchair', couch: 'Sit on their couch', toilet: 'Use their loo', safe: Thief.safeReady(this.foreignHouse()) ? 'Crack the safe (stethoscope)' : 'Safe (empty)' }[f.kind] || f.label;
   },
   ownLabel(f) {
-    return f.kind === 'bed' ? 'Sleep until morning' : f.label;
+    return f.kind === 'bed' ? 'Sleep until morning' : f.kind === 'seat' ? 'Sit in the armchair' : f.kind === 'couch' ? 'Sit on the couch' : f.label;
   },
 
   enterHouse(b) {
@@ -178,6 +187,10 @@ const Life = {
   },
 
   useFurniture(kind) {
+    if (kind === 'seat' || kind === 'couch') {
+      const f = Interior.near(); if (!f) return;
+      return Seats.sit(f.x + f.w / 2, f.y + f.h / 2, Math.PI / 2, 0.4, kind === 'seat' ? 'in the armchair' : 'on the couch');
+    }
     const fb = this.foreignHouse();
     if (fb) {
       if (kind === 'bed') Hud.toast('Better not — this isn\'t your bed.', UI.muted, 1.6);
@@ -226,8 +239,10 @@ const Life = {
       return `<div class="row"><div><b>${sp.name}</b> <span class="desc">${U.fmtKg(c.kg)} · ${c.cm} cm</span></div><div>${RECIPES.map((r) =>
         `<button data-cook="${i}:${r.id}" ${r.needs && !(Game.ingredients[r.needs] > 0) ? 'disabled' : ''}>${r.label} +${Math.round(base * r.mult)}</button>`).join(' ')}</div></div>`;
     }).join('');
-    this.panel(`<h2>Cook at ${where}</h2>${extra ? extra.html : ''}<div class="desc">Turn your catch into meals. Batter mix ×${Game.ingredients.batter || 0} · Butter &amp; herbs ×${Game.ingredients.herbs || 0} (from the General Store).</div>
-      <h3>Your creel</h3>${rows || '<div class="desc">No fish to cook — go catch some!</div>'}`, (el) => {
+    const raw = Game.pantry.map((f, i) => [f, i]).filter(([f]) => f.raw).map(([f, i]) => `<div class="row"><div><b>${f.name}</b> <span class="desc">raw · +${f.energy} food</span></div><button data-raw="${i}">Cook it → +${Math.round(f.energy * 1.8)}</button></div>`).join('');
+    this.panel(`<h2>Cook at ${where}</h2>${extra ? extra.html : ''}<div class="desc">Cooked food goes into your bag — eat it whenever you like (I). Batter mix ×${Game.ingredients.batter || 0} · Butter &amp; herbs ×${Game.ingredients.herbs || 0} (from the General Store).</div>
+      <h3>Your creel</h3>${rows || '<div class="desc">No fish to cook — go catch some!</div>'}${raw ? '<h3>Raw food</h3>' + raw : ''}`, (el) => {
+      el.querySelectorAll('[data-raw]').forEach((b) => { b.onclick = () => { this.cookRaw(+b.dataset.raw); this.openCook(where, extra); }; });
       el.querySelectorAll('[data-cook]').forEach((b) => { b.onclick = () => {
         const [i, rid] = b.dataset.cook.split(':');
         this.cook(+i, RECIPES.find((r) => r.id === rid));
@@ -260,37 +275,8 @@ const Life = {
     });
   },
 
-  openStorage() {
-    const S = Game.storage;
-    const fishRows = Game.creel.map((c, i) => `<div class="row"><div>${SPECIES_BY_ID[c.id].name} <span class="desc">${U.fmtKg(c.kg)}</span></div><button data-mv="creel:${i}:in">Store →</button></div>`).join('')
-      + S.creel.map((c, i) => `<div class="row"><div>${SPECIES_BY_ID[c.id].name} <span class="desc">${U.fmtKg(c.kg)} · stored</span></div><button data-mv="creel:${i}:out" ${Game.creel.length >= Game.creelMax ? 'disabled' : ''}>← Take</button></div>`).join('');
-    const foodRows = Game.pantry.map((f, i) => `<div class="row"><div>${f.name}</div><button data-mv="pantry:${i}:in">Store →</button></div>`).join('')
-      + S.pantry.map((f, i) => `<div class="row"><div>${f.name} <span class="desc">stored</span></div><button data-mv="pantry:${i}:out">← Take</button></div>`).join('');
-    const countRow = (key, label, carried, stored) => `<div class="row"><div><b>${label}</b> <span class="desc">carrying ${carried} · stored ${stored}</span></div><div>
-      <button data-cnt="${key}:in" ${carried ? '' : 'disabled'}>Store all →</button> <button data-cnt="${key}:out" ${stored ? '' : 'disabled'}>← Take all</button></div></div>`;
-    const lureRows = LURES.map((L) => countRow('lure-' + L.id, L.name, Game.lures[L.id] || 0, S.lures[L.id] || 0)).join('');
-    this.panel(`<h2>Storage chest</h2><div class="desc">Safe while you pay the rent. Get evicted and it's all gone.</div>
-      <h3>Fish</h3>${fishRows || '<div class="desc">No fish.</div>'}
-      <h3>Food</h3>${foodRows || '<div class="desc">No food.</div>'}
-      <h3>Gear</h3>${lureRows}${countRow('ammo', 'Rifle rounds', Game.ammo || 0, S.ammo)}${countRow('spray', 'Bug spray', Game.spray || 0, S.spray)}${countRow('weed', 'Bags of weed', Game.weed || 0, S.weed)}`, (el) => {
-      el.querySelectorAll('[data-mv]').forEach((b) => { b.onclick = () => {
-        const [list, i, dir] = b.dataset.mv.split(':');
-        const from = dir === 'in' ? Game[list] : S[list], to = dir === 'in' ? S[list] : Game[list];
-        to.push(from.splice(+i, 1)[0]);
-        Game.save(); this.openStorage();
-      }; });
-      el.querySelectorAll('[data-cnt]').forEach((b) => { b.onclick = () => {
-        const [key, dir] = b.dataset.cnt.split(':');
-        if (key.startsWith('lure-')) {
-          const id = key.slice(5);
-          if (dir === 'in') { S.lures[id] = (S.lures[id] || 0) + (Game.lures[id] || 0); Game.lures[id] = 0; }
-          else { Game.lures[id] = (Game.lures[id] || 0) + (S.lures[id] || 0); S.lures[id] = 0; }
-        } else if (dir === 'in') { S[key] += Game[key] || 0; Game[key] = 0; }
-        else { Game[key] = (Game[key] || 0) + S[key]; S[key] = 0; }
-        Game.save(); this.openStorage();
-      }; });
-    });
-  },
+  openStorage() { Inventory.openStorage(); },
+
 };
 
 // ---------- quick travel ----------
@@ -388,6 +374,7 @@ const Interact = {
       add(World.tim.x, World.tim.y, 2.6, 'Talk to Tim — tips & goals', () => Tim.open());
       if (!Weed.dustyKO.ko) add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
       Weed.interactions(add);
+      Seats.interactions(add); Crabs.interactions(add);
       Needs.interactions(add);
       Staff.interactions(add);
       Camp.interactions(cands);

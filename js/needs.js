@@ -241,10 +241,10 @@ const Needs = {
     if (!at) { Hud.toast('You can\'t dig there.', UI.muted, 1.2); return; }
     if (Game.energy < 6) { Hud.toast('Too tired to dig.', UI.muted, 1.4); return; }
     Game.energy -= 6;
-    this.busy = true; Menus.open = 'busy'; this.digT = 0;
-    const thunk = setInterval(() => { Sfx.thunk(); Sfx.burst(0.15, 600, 0.15, 'lowpass', 0.7, 200); this.digT += 0.4; }, 420);
+    this.busy = true; Menus.open = 'busy'; this.digT = 0; this.digAt = at; this.digStart = performance.now();
+    const thunk = setInterval(() => { Sfx.thunk(); Sfx.burst(0.15, 600, 0.15, 'lowpass', 0.7, 200); this.digT += 0.4; if (Gun.puffs) Gun.puff(at.x, at.y, false); }, 420);
     setTimeout(() => {
-      clearInterval(thunk);
+      clearInterval(thunk); this.digAt = null;
       this.busy = false; if (Menus.open === 'busy') Menus.open = null;
       (Game.holes = Game.holes || []).push({ x: at.x, y: at.y, day: Game.env.day });
       if (Game.holes.length > 40) Game.holes.shift();
@@ -274,10 +274,21 @@ const Needs = {
     this.spade.visible = show;
     if (show) {
       const h = Actors.handWorld || new THREE.Vector3(Player.x, Scene3D.standH(Player.x, Player.y) + 0.3, Player.y);
-      const dig = this.busy && this.digT !== undefined ? Math.sin(Game.time * 9) * 0.6 : 0;
-      this.spade.position.set(h.x, h.y - 0.1, h.z);
-      this.spade.rotation.set(0, -Player.face + Math.PI / 2, 0);
-      this.spade.rotateX(0.35 + dig);
+      if (this.digAt) {
+        // Dig cycle: lean in and plunge the blade, then lever the dirt up and over.
+        const t = (performance.now() - this.digStart) / 420 * Math.PI * 2, plunge = Math.max(0, Math.sin(t)), lift = Math.max(0, -Math.sin(t));
+        const rig = Actors.rig, a = Player.face, f = this.digAt;
+        rig.lean.rotation.z = -(0.25 + plunge * 0.3);
+        rig.armR.rotation.set(-0.2, 0, 0.9 + plunge * 0.6 - lift * 0.5); rig.armL.rotation.set(0.2, 0, 0.9 + plunge * 0.6 - lift * 0.5);
+        const gx = U.lerp(Player.x, f.x, 0.8), gy = U.lerp(Player.y, f.y, 0.8), y0 = Scene3D.groundH(gx, gy);
+        this.spade.position.set(gx, y0 + 0.25 - plunge * 0.18 + lift * 0.25, gy);
+        this.spade.rotation.set(0, -a + Math.PI / 2, 0);
+        this.spade.rotateX(-0.35 + lift * 0.9);
+      } else {
+        this.spade.position.set(h.x, h.y - 0.1, h.z);
+        this.spade.rotation.set(0, -Player.face + Math.PI / 2, 0);
+        this.spade.rotateX(0.35);
+      }
     }
     this.group.visible = !Interior.active;
     if (!this.dirty) return;

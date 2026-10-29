@@ -2,6 +2,15 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '2.1', name: 'Take a Seat', date: '30 Oct 2026', notes: [
+    ['new', 'Benches on the banks, facing the water. Sit and rest (and fish from them). Armchairs and sofas indoors too'],
+    ['new', 'Crabs scuttle up onto the beaches. Sneak up and pick them up (mind the pinch), then cook them'],
+    ['changed', 'The storage chest uses slots: your bag on top, the chest below, and a click moves a stack across'],
+    ['changed', 'Cooking puts the meal in your bag for later. You can cook raw food too (duck, crab, mushrooms)'],
+    ['new', 'Your rented home shows as a 🏠 on the minimap and the big map'],
+    ['changed', 'Arrests only take what you are carrying (fish, contraband, the gun in your hand). Your storage at home is safe'],
+    ['new', 'A proper digging animation: lean in, plunge the spade, and lever the dirt up'],
+  ] },
   { v: '2.0', name: 'Hands On', date: '30 Oct 2026', notes: [
     ['changed', 'The reel gauge is gone. Your reel cursor\'s outline now shows line tension: grey when slack, green when just right, amber when tight, flashing red when about to snap. Bail on B or middle-click, drag on the wheel or Z/X (buttons on mobile)'],
     ['changed', 'Bikers and kart drivers stick to tracks and open ground, steer clear of trees, and don\'t pick destinations deep in the forest'],

@@ -156,7 +156,7 @@ function buildWorld(seed, savedPos) {
   Floaters.init();
   Animals.init();
   Camp.init();
-  Forage.init(); Snakes.init(); Ducks.init(); Hunters.init(); Decay.init(); Staff.init(); Needs.init();
+  Forage.init(); Snakes.init(); Ducks.init(); Hunters.init(); Decay.init(); Staff.init(); Needs.init(); Seats.init(); Crabs.init();
   for (const n of Npcs.list) if (n.home && Math.random() < 0.2) { n.state = 'home'; n.homeT = Math.random() * 90; }
   if (savedPos && !World.blocked(savedPos.x, savedPos.y)) Player.place(savedPos.x, savedPos.y);
   else Player.place(World.spawn.x, World.spawn.y);
@@ -390,6 +390,7 @@ function frame(now) {
       Legends.update(dt);
       Staff.update(dt);
       Needs.update(dt);
+      Crabs.update(dt);
       Thief.update(dt);
       Forage.update(); Poison.update(dt); Snakes.update(dt); Ducks.update(dt); Hunters.update(dt);
       Swimmers.update(dt);
@@ -429,7 +430,7 @@ function frame(now) {
     Wanted.render(dt);
     Arsenal.render(dt);
     Camp.render(dt);
-    Snakes.render(); Ducks.render(); Hunters.render(); Decay.render(); Staff.render(); Needs.render();
+    Snakes.render(); Ducks.render(); Hunters.render(); Decay.render(); Staff.render(); Needs.render(); Crabs.render();
     Scene3D.render(Game.time);
     Hud.draw();
     saveT += dt;

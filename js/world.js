@@ -121,6 +121,7 @@ const World = {
     this.buildHills();
     this.paintLand(rng, moist);
     this.buildTown(rng);
+    this.placeBenches(rng);
     // Hills mustn't lift the banks above a bridge deck: level the ground around both ends.
     for (const b of this.bridges) {
       for (const [x, y] of [[b.x0, b.y0], [b.x1, b.y1], [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2]]) {
@@ -422,6 +423,25 @@ const World = {
     let lo = 1e9, hi = -1e9;
     for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) { const v = this.hillAt(xx, yy); lo = Math.min(lo, v); hi = Math.max(hi, v); }
     return hi - lo;
+  },
+
+  // Benches on lake and river banks, looking out over the water.
+  placeBenches(rng) {
+    this.benches = [];
+    for (let t = 0; t < 4000 && this.benches.length < 16; t++) {
+      const x = 5 + rng() * (this.W - 10), y = 5 + rng() * (this.H - 10);
+      const tl = this.tileAt(Math.floor(x), Math.floor(y));
+      if (![T.GRASS, T.SAND, T.MEADOW].includes(tl) || this.blocked(x, y) || this.buildingAt(x, y)) continue;
+      // Water 2–4 m away in some direction: face it.
+      let face = null;
+      for (let k = 0; k < 16 && face === null; k++) {
+        const a = k / 16 * Math.PI * 2;
+        if (this.isWater(x + Math.cos(a) * 3, y + Math.sin(a) * 3) && !this.isWater(x + Math.cos(a) * 1.2, y + Math.sin(a) * 1.2)) face = a;
+      }
+      if (face === null || this.benches.some((b) => U.dist(b.x, b.y, x, y) < 25)) continue;
+      const i = this.idx(Math.floor(x), Math.floor(y)); this.obj[i] = O.NONE;
+      this.benches.push({ x, y, face });
+    }
   },
 
   // Every tile in the rectangle is dry, buildable land.

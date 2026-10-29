@@ -156,11 +156,12 @@ const Actors = {
     let px = p.x, py = p.y, y = base + p.z;
     const S = riding ? seatOf(Game.bike.id) : null;
     if (riding) { const a = p.face; px += Math.cos(a) * S.seatX; py += Math.sin(a) * S.seatX; y += S.seatY; } // on the seat
+    if (Seats.sitting) y += Seats.sitting.h - 0.12; // on the seat
     this.player.position.set(px, y, py);
     this.rig.yaw.rotation.y = -p.face;
     Models.pose(this.rig, {
       moving: p.moving && !riding && !p.rolling, phase: p.walkT, t: Game.time, crouch: p.crouch && !p.rolling,
-      pose: riding ? S.pose : p.rolling ? 'slide' : holding ? 'grip' : 'normal',
+      pose: Seats.sitting ? 'kart' : riding ? S.pose : p.rolling ? 'slide' : holding ? 'grip' : 'normal',
     });
     if (Tools.punchT > 0) { // jab: right arm shoots straight out and back
       const k = Math.sin((1 - Tools.punchT / 0.4) * Math.PI);
@@ -186,7 +187,7 @@ const Actors = {
     const { hand, tip, ctrl } = this.rodPoints(p, base);
     Models.setRod(this.rod, hand, ctrl, tip);
     this.rod.material.color.set(Game.gear.rod.color);
-    this.rod.visible = Tools.current === 'rod';
+    this.rod.visible = Tools.current === 'rod' && !Interior.active; // rods stay outside
     this.tipScene = tip;
 
     // Aim ring: red marker for rifle hip-fire, gold landing marker for casts.
@@ -235,7 +236,7 @@ const Actors = {
       g.visible = true; g.position.copy(tip).y -= 0.3;
     }
 
-    if (Tools.current !== 'rod') { this.line.visible = false; for (const id in this.lures) this.lures[id].visible = false; }
+    if (Tools.current !== 'rod' || Interior.active) { this.line.visible = false; for (const id in this.lures) this.lures[id].visible = false; }
     else this.line.visible = !Interior.active;
 
     // Fish under the surface.
