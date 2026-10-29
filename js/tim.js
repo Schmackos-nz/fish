@@ -20,13 +20,18 @@ const Tim = {
   term() { return Math.floor((Game.env.day - 1) / GUIDE_TERM_DAYS); },
   // Each guide likes a slightly different patch of the dock end of the street.
   spot() {
-    const k = this.term(), base = World.timBase || (World.timBase = { ...World.tim });
-    const offs = [[0, 0], [2.6, 0.4], [-1.2, 1.6], [1.4, 2.2], [-2.2, -0.2], [3.4, 1.4]];
-    for (let j = 0; j < offs.length; j++) {
-      const [dx, dy] = offs[(k + j) % offs.length], x = base.x + dx, y = base.y + dy;
-      if (!World.blocked(x, y) && !World.isWater(x, y) && World.tileAt(Math.floor(x), Math.floor(y)) !== T.PLANK) return { x, y };
+    // Each guide sets up outside a different shop on the main street (always on dry, open ground).
+    const k = this.term(), shops = ['shop', 'store', 'ranger', 'bikes', 'clinic', 'gas'];
+    const ok = (x, y) => !World.blocked(x, y) && !World.isWater(x, y) && World.depthAt(x, y) <= 0 && !World.buildingAt(x, y) && World.tileAt(Math.floor(x), Math.floor(y)) !== T.PLANK;
+    for (let j = 0; j < shops.length; j++) {
+      const b = World.buildings.find((q) => q.type === shops[(k + j) % shops.length]); if (!b) continue;
+      const d = World.doorOf(b);
+      for (const [lx, lz] of [[2.2, 1.2], [-1.0, 1.4], [3.2, 1.6], [0.9, 2.4]]) {
+        const p = World.localToWorld(b, 0.9 + lx, World.depthOf(b) + lz);
+        if (ok(p.x, p.y) && U.dist(p.x, p.y, d.x, d.y) > 0.9) return p;
+      }
     }
-    return base;
+    return World.spawn;
   },
   // Called daily: a new guide (and spot) every two years.
   refresh(announce) {

@@ -3,6 +3,7 @@
 
 const PATCH_NOTES = [
   { v: '2.1', name: 'Take a Seat', date: '30 Oct 2026', notes: [
+    ['fixed', 'The fishing guide always sets up on dry ground outside one of the main-street shops (no more guides standing in the lake)'],
     ['new', 'Locals let one rip now and then, complete with a little green cloud. You only do when you are desperate for a poo (and the neighbours notice)'],
     ['changed', 'You stand to wee now (and squat to poo). Both get a jittery censor block: yellow with a trickle and puddle for a wee, brown with the drops for a poo'],
     ['changed', 'Women in the valley have a figure now. Always covered: by their shirt, or a bikini top for sunbathers and swimmers. Sunbathers now always wear swimwear bottoms too'],
