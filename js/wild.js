@@ -481,6 +481,7 @@ const Hunters = {
     }
   },
   step(h, goal, sp, dt) {
+    unstick(h, dt);
     const want = Math.atan2(goal.y - h.y, goal.x - h.x);
     for (const off of [0, 0.5, -0.5, 1, -1, 1.6, -1.6]) {
       const a = want + off, nx = h.x + Math.cos(a) * sp * dt, ny = h.y + Math.sin(a) * sp * dt;

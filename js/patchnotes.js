@@ -3,6 +3,7 @@
 
 const PATCH_NOTES = [
   { v: '1.8', name: 'Nature Calls', date: '30 Oct 2026', notes: [
+    ['fixed', 'Locals, staff, hunters, bikers on foot and beachgoers no longer get stuck in walls or wade into deep water. If they stop making progress they shuffle free'],
     ['new', 'Spade (key 6): dig holes and turn up worms, loose change, old bottles, or (rarely) a tin of buried coins'],
     ['new', 'Bladder and bowels fill over time, and eating fills your bowels faster. Wee behind a bush, poo in a hole you dug, or use a loo'],
     ['new', 'Every house has a loo (including other people\'s)'],

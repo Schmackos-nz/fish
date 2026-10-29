@@ -75,7 +75,8 @@ const Thief = {
       const gx = Player.x + Math.cos(n.mobAng) * 0.95, gy = Player.y + Math.sin(n.mobAng) * 0.95;
       const d = U.dist(n.x, n.y, gx, gy), a = Math.atan2(gy - n.y, gx - n.x), step = Math.min(3.1 * dt, d);
       const nx = n.x + Math.cos(a) * step, ny = n.y + Math.sin(a) * step;
-      if (!World.blocked(nx, ny)) { n.x = nx; n.y = ny; }
+      if (footOK(nx, ny)) { n.x = nx; n.y = ny; }
+      unstick(n, dt);
       n.face = Math.atan2(Player.y - n.y, Player.x - n.x); n.walkT = (n.walkT || 0) + dt;
       n.mobAng += dt * 0.4;
     }

@@ -18,6 +18,7 @@ function walkHome(e, dt) {
     e.x = nx; e.y = ny; e.heading = a; break;
   }
   e.walkPhase += dt * 1.35;
+  unstick(e, dt);
   return U.dist(e.x, e.y, e.home.x, e.home.y) < 1 || e.homeT > 150 || (e.homeT > 6 && U.dist(e.x, e.y, Player.x, Player.y) > 65);
 }
 

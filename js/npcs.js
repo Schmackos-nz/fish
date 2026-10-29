@@ -32,6 +32,33 @@ const SAY = {
   playerLoss: ['Ooh, tough break!', 'Should\'ve loosened your drag!', 'Happens to the best of us… mostly you, though.'],
 };
 
+// Anyone on foot: somewhere you can actually stand (not in a wall, not out of your depth).
+function footOK(x, y) { return !World.blocked(x, y) && World.depthAt(x, y) < 0.35; }
+
+// Called while someone's trying to walk somewhere. Every 1.5 s, if they've barely moved (wedged on a
+// tree, sliding along a wall) or they're standing somewhere they shouldn't be (in a wall, in deep
+// water), hop them to the nearest good footing. kx/ky name the position fields (bikers on foot use px/py).
+function unstick(e, dt, kx = 'x', ky = 'y') {
+  e._uT = (e._uT || 0) + dt;
+  const x0 = e[kx], y0 = e[ky], bad = !footOK(x0, y0);
+  if (e._uT < 1.5 && !bad) return false;
+  const moved = e._ux === undefined ? 99 : U.dist(x0, y0, e._ux, e._uy);
+  e._ux = x0; e._uy = y0; e._uT = 0;
+  if (moved > 0.35 && !bad) { e._stuckN = 0; return false; }
+  e._stuckN = (e._stuckN || 0) + 1;
+  for (let r = 0.6; r < 8; r += 0.4) for (let k = 0; k < 12; k++) {
+    const a = (k / 12) * Math.PI * 2 + e._stuckN * 0.7, x = x0 + Math.cos(a) * r, y = y0 + Math.sin(a) * r;
+    if (footOK(x, y)) { e[kx] = x; e[ky] = y; e._ux = x; e._uy = y; return true; }
+  }
+  // Way out in the middle of a lake: make for the nearest shore and find dry land there.
+  const sh = World.nearestShore(x0, y0);
+  for (let r = 0; r < 6; r += 0.4) for (let k = 0; k < 12; k++) {
+    const a = (k / 12) * Math.PI * 2, x = sh.x + Math.cos(a) * r, y = sh.y + Math.sin(a) * r;
+    if (footOK(x, y)) { e[kx] = x; e[ky] = y; e._ux = x; e._uy = y; return true; }
+  }
+  return false;
+}
+
 const Npcs = {
   list: [], spots: [], group: null, sil: null,
 
@@ -160,9 +187,10 @@ const Npcs = {
     const sp = 2.2 * dt;
     const nx = n.x + Math.cos(ang) * sp, ny = n.y + Math.sin(ang) * sp;
     let moved = false;
-    if (!World.blocked(nx, n.y)) { n.x = nx; moved = true; }
-    if (!World.blocked(n.x, ny)) { n.y = ny; moved = true; }
+    if (footOK(nx, n.y)) { n.x = nx; moved = true; }
+    if (footOK(n.x, ny)) { n.y = ny; moved = true; }
     n.face = ang; n.walkT += dt;
+    if (unstick(n, dt)) n.stuck = 0;
     n.stuck = moved ? 0 : (n.stuck || 0) + dt;
     // Wandering anglers don't pathfind; if they wedge against trees, they pick somewhere else.
     if ((n.stuck > 1.5 || n.walkT > 40) && n.goingBush) { n.x = s.x; n.y = s.y; n.state = 'bush'; return; }
