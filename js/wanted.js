@@ -70,6 +70,7 @@ const Wanted = {
 
   knockOut(t, crime = 1) {
     const o = t.o;
+    if (o.angry > 0) { crime *= 0.3; o.angry = 0; } // they were shooting at you
     const rap = this.rap || (this.rap = { ko: 0, cops: 0, booms: 0, thefts: 0 });
     if (t.kind === 'unit' || t.kind === 'warden') rap.cops++; else rap.ko++;
     Sfx.slap(1); Sfx.thunk();

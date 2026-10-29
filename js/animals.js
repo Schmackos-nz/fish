@@ -173,6 +173,14 @@ const Animals = {
   },
 
   collect(an) {
+    // Pinching a hunter's kill does not go down well.
+    const h = an.killer;
+    if (h && !h.ko && Hunters.list.includes(h)) {
+      h.angry = 30; h.prey = null; h.shotCD = 1.2;
+      Hunters.say(h, U.pick(Math.random, ['OI! I SHOT THAT!', 'That\'s MY kill, you thief!', 'Put that down or I\'ll put YOU down!']), 2.6);
+      Hud.toast(h.name + ' shot that ' + (an.type === 'boar' ? 'boar' : 'deer') + ' — and they\'ve seen you take it. Run!', UI.bad, 3);
+      Thief.record('kill', h.name);
+    }
     const val = an.type === 'boar' ? 35 + Math.round(Math.random() * 25) : 45 + Math.round(Math.random() * 35) + (an.buck ? 30 : 0);
     Game.money += val;
     if (an.kg) Contest.onKill('You', an.kg, an.type === 'boar' ? 'Wild boar' : an.buck ? 'Stag' : 'Deer');

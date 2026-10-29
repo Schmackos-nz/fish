@@ -430,6 +430,21 @@ const Hunters = {
       h.bubbleT = Math.max(0, h.bubbleT - dt);
       if (h.ko) { h.koT += dt; if (h.koT > 25) { h.ko = false; this.say(h, 'Ugh… who turned the lights off?'); } continue; }
       h.t -= dt;
+      // Someone pinched their kill: hunt the thief instead.
+      if (h.angry > 0) {
+        h.angry -= dt; h.shotCD = (h.shotCD || 0) - dt;
+        const d = U.dist(h.x, h.y, Player.x, Player.y);
+        h.face = Math.atan2(Player.y - h.y, Player.x - h.x);
+        if (Interior.active) { h.moving = false; continue; }
+        if (d > 9) this.step(h, Player, 2.6, dt); else h.moving = false;
+        if (d < 18 && h.shotCD <= 0) {
+          h.shotCD = 1.7 + Math.random();
+          Wanted.fireAt(h.x, h.y, d < 9 ? 0.4 : 0.25, 12, h.name + '\'s rifle');
+          if (Math.random() < 0.5) this.say(h, U.pick(Math.random, ['THAT WAS MY STAG!', 'Thieving mongrel!', 'Drop my kill!', 'You\'ll regret that!']), 1.6);
+        }
+        if (h.angry <= 0 || d > 60) { h.angry = 0; h.state = 'roam'; this.say(h, 'Bah. Not worth the bullets.', 2); }
+        continue;
+      }
       if (h.state === 'roam') {
         // Look for something worth shooting.
         const prey = Animals.list.filter((a) => a.state !== 'dead' && U.dist(a.x, a.y, h.x, h.y) < 45).sort((a, b) => U.dist(a.x, a.y, h.x, h.y) - U.dist(b.x, b.y, h.x, h.y))[0];
@@ -479,7 +494,7 @@ const Hunters = {
     Sfx.burst(0.08, 5000, U.clamp(0.5 - near / 70, 0.03, 0.5), 'highpass'); Sfx.tone(140, 0.2, U.clamp(0.35 - near / 80, 0.03, 0.35), 'square', 50);
     Fish.spookNear(h.x, h.y, 25); Ducks.onGunshot(h.x, h.y);
     if (Math.random() < 0.6) {
-      p.state = 'dead'; p.deadT = 45; p.speed = 0;
+      p.state = 'dead'; p.deadT = 45; p.speed = 0; p.killer = h;
       p.kg = p.type === 'boar' ? 45 + Math.random() * 75 : p.buck ? 65 + Math.random() * 55 : 35 + Math.random() * 35;
       h.state = 'collect';
     } else { Animals.startle(p); h.state = 'roam'; h.prey = null; if (near < 30) this.say(h, 'Bugger. Missed.'); }
@@ -494,6 +509,7 @@ const Hunters = {
       h.mesh.position.set(h.x, Scene3D.standH(h.x, h.y), h.y);
       rig.yaw.rotation.y = -h.face;
       if (h.ko) { Models.pose(rig, { t: 0 }); rig.lean.rotation.x = -Math.PI / 2; h.rifle.visible = false; continue; }
+      if (h.angry > 0) h.state = 'aim'; // rifle up, crouched, tracking you
       rig.lean.rotation.x = 0;
       Models.pose(rig, { moving: h.moving && h.state !== 'aim', phase: h.walkT, t: Game.time, pose: 'grip', crouch: h.state === 'stalk' || h.state === 'aim' });
       Models.handPos(rig, v); h.rifle.position.copy(v); h.rifle.rotation.set(0, -h.face, 0);
