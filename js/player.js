@@ -26,6 +26,7 @@ const Player = {
     const F = Fishing.state;
     const k = Input.keys;
     if (Seats.update(dt)) return; // sat down
+    if (Needs.busy) { this.moving = false; this.running = false; return; } // busy (toilet, digging): stay put
     let ix = 0, iy = 0;
     if (k.has('KeyA') || k.has('ArrowLeft')) ix--;
     if (k.has('KeyD') || k.has('ArrowRight')) ix++;

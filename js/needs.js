@@ -78,7 +78,7 @@ const Needs = {
 
   // ---------- doing your business ----------
   act(kind, label, secs, done) {
-    this.busy = true; Menus.open = 'busy';
+    this.busy = true;
     // Stand to wee, squat to poo (a loo is a seat either way).
     const was = Player.crouch; Player.crouch = kind === 'bowels' && !Interior.active;
     this.acting = { kind, t0: performance.now(), secs, loo: !!Interior.active };
@@ -86,7 +86,7 @@ const Needs = {
     const snd = this.sounds(kind, secs);
     setTimeout(() => {
       snd.forEach(clearTimeout); clearInterval(snd.loop); Player.crouch = was; this.acting = null;
-      this.busy = false; if (Menus.open === 'busy') Menus.open = null;
+      this.busy = false;
       done();
       Game.save();
     }, secs * 1000);
@@ -273,11 +273,11 @@ const Needs = {
     if (!at) { Hud.toast('You can\'t dig there.', UI.muted, 1.2); return; }
     if (Game.energy < 6) { Hud.toast('Too tired to dig.', UI.muted, 1.4); return; }
     Game.energy -= 6;
-    this.busy = true; Menus.open = 'busy'; this.digT = 0; this.digAt = at; this.digStart = performance.now();
+    this.busy = true; this.digT = 0; this.digAt = at; this.digStart = performance.now();
     const thunk = setInterval(() => { Sfx.thunk(); Sfx.burst(0.15, 600, 0.15, 'lowpass', 0.7, 200); this.digT += 0.4; if (Gun.puffs) Gun.puff(at.x, at.y, false); }, 420);
     setTimeout(() => {
       clearInterval(thunk); this.digAt = null;
-      this.busy = false; if (Menus.open === 'busy') Menus.open = null;
+      this.busy = false;
       (Game.holes = Game.holes || []).push({ x: at.x, y: at.y, day: Game.env.day });
       if (Game.holes.length > 40) Game.holes.shift();
       this.dirty = true;

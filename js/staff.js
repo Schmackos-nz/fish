@@ -176,6 +176,11 @@ const Staff = {
       h.dead = false; h.ko = false; h.koT = 0; h.state = 'roam'; h.name = U.pick(Math.random, ['Big Trev', 'Shazza', 'Mick', 'Jono', 'Raewyn', 'Hoppo']) + ' Jr';
       this.news.push(h.name + ' has taken up hunting in the hills.');
     }
+    for (const r of Bikes.riders) if (r.jailed && Game.env.day - (r.jailedDay || 0) >= 2) {
+      r.jailed = false; r.noBike = false; r.bike = Bikes.modelFor(r.bikeId); Bikes.group.add(r.bike);
+      r.state = 'ride'; r.fuel = 100; r.target = Bikes.pickTarget(r);
+      this.news.push((r.name || 'A rider') + ' is out of the cells and has paid to get the ' + BIKE_BY_ID[r.bikeId].name + ' back. Hopefully slower this time.');
+    }
     for (const r of Bikes.riders) if (r.dead && Math.random() < 0.5) {
       r.dead = false; r.ko = 0; r.name = U.pick(Math.random, ['Jase', 'Kayla', 'Benny', 'Tui', 'Dee', 'Robbo']); r.owner = r.name; r.plate = newPlate();
       if (r.noBike) { r.bike = Bikes.modelFor(r.bikeId); Bikes.group.add(r.bike); r.noBike = false; }

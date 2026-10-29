@@ -168,6 +168,31 @@ const Bikes = {
 
   blocked(x, y, id) { return World.blocked(x, y) || World.depthAt(x, y) > (id ? seatOf(id).wade : 0.45); },
 
+  // ---------- the law on wheels ----------
+  playerOffence(reason) {
+    const w = Wardens.list.find((x) => x.state === 'patrol' && U.dist(x.x, x.y, Player.x, Player.y) < 25);
+    if (w) Wardens.startChase(w, reason);
+  },
+
+  // A rider behaving like an idiot within sight of a warden gets pulled over, arrested and impounded.
+  offence(r, what) {
+    r.strikes = (r.strikes || 0) + 1; r.lastOffence = what;
+    if (r.pulledBy) return;
+    const w = Wardens.list.filter((x) => x.state === 'patrol' && U.dist(x.x, x.y, r.x, r.y) < 35).sort((a, b) => U.dist(a.x, a.y, r.x, r.y) - U.dist(b.x, b.y, r.x, r.y))[0];
+    if (!w) return;
+    w.state = 'pullover'; w.t = 0; w.rider = r; r.pulledBy = w;
+    Wardens.say(w, ['PULL OVER, ' + (r.name || 'MATE').toUpperCase() + '!', 'Oi! Stop right there!'], 2.6);
+    if (U.dist(r.x, r.y, Player.x, Player.y) < 30) { Sfx.tone(1400, 0.15, 0.2, 'square'); setTimeout(() => Sfx.tone(1100, 0.15, 0.2, 'square'), 180); }
+  },
+
+  // Called by the warden when they reach the rider.
+  arrestRider(r, w) {
+    r.pulledBy = null; r.jailed = true; r.jailedDay = Game.env.day; r.strikes = 0;
+    this.group.remove(r.bike); r.noBike = true; r.mesh.visible = false;
+    Wardens.say(w, ['Licence and registration… you\'re nicked.', 'That ' + BIKE_BY_ID[r.bikeId].name + '\'s going in the impound.'], 3);
+    if (U.dist(r.x, r.y, Player.x, Player.y) < 40) Hud.toast(w.name + ' arrested ' + (r.name || 'a rider') + ' for dangerous driving (' + (r.lastOffence || 'reckless riding') + '). The ' + BIKE_BY_ID[r.bikeId].name + ' has been impounded.', UI.accent, 3.4);
+  },
+
   // ---------- your bike ----------
   near() { return Game.bike && !this.riding && !Interior.active && U.dist(Player.x, Player.y, Game.bike.x, Game.bike.y) < 2; },
 
@@ -221,6 +246,14 @@ const Bikes = {
     }
     Game.bike.x = Player.x; Game.bike.y = Player.y;
     this.crashT = Math.max(0, this.crashT - dt);
+    // Riding into people.
+    if (speed > 4) for (const n of Npcs.list) {
+      if (n.away || ['home', 'bush', 'ko', 'dead'].includes(n.state) || U.dist(n.x, n.y, Player.x, Player.y) > 0.8 || (n.hitByBike && Game.time < n.hitByBike)) continue;
+      n.hitByBike = Game.time + 6;
+      const a = Math.atan2(n.y - Player.y, n.x - Player.x); if (footOK(n.x + Math.cos(a) * 1.2, n.y + Math.sin(a) * 1.2)) { n.x += Math.cos(a) * 1.2; n.y += Math.sin(a) * 1.2; }
+      Npcs.say(n, U.pick(Math.random, ['OI! WATCH IT!', 'Are you MAD?!', 'Learn to RIDE!']), 2.4); Sfx.thunk(); Rep.add(-2);
+      this.playerOffence('Dangerous driving (ran down ' + n.name + ')');
+    }
     // Wardens and police check plates: riding without a permit is an offence.
     this.lawT = Math.max(0, (this.lawT || 0) - dt);
     if (!this.permitted() && this.lawT <= 0) {
@@ -234,6 +267,7 @@ const Bikes = {
   },
 
   crash(speed) {
+    if (speed > 6 && World.buildingAt(Player.x + this.vel.x * 0.1, Player.y + this.vel.y * 0.1)) this.playerOffence('Dangerous driving (crashed into a building)');
     if (speed > 6 && this.crashT <= 0) { this.crashT = 1; Sfx.thunk(); Bugs.shake = 1; Hud.toast('Thud!', UI.bad, 0.8); }
     this.vel.x *= -0.3; this.vel.y *= -0.3;
   },
@@ -244,8 +278,12 @@ const Bikes = {
     for (const r of this.riders) {
       // In a run-down town some riders just stop coming round.
       r.away = this.riders.indexOf(r) >= cap && !this.onFoot(r) && U.dist(r.x, r.y, Player.x, Player.y) > 30;
-      if (r.away) continue;
+      if (r.away || r.jailed) continue;
       if (r.ko > 0) { r.ko -= dt; continue; } // knocked off their bike
+      if (r.pulledBy) { // pulled over: sit tight and wait for the warden
+        if (!Wardens.list.includes(r.pulledBy) || r.pulledBy.state !== 'pullover') { r.pulledBy = null; r.state = 'ride'; }
+        continue;
+      }
       r.bubbleT = Math.max(0, r.bubbleT - dt);
       if (this.parkedTick(r, dt)) continue;
       // Fuel: head for the pumps when low.
@@ -288,7 +326,7 @@ const Bikes = {
       const sharp = Math.abs(U.angDiff(r.ang, head)) > 0.7;
       const spd = r.speed * (sharp ? 0.45 : 1);
       const nx = r.x + Math.cos(r.ang) * spd * dt, ny = r.y + Math.sin(r.ang) * spd * dt;
-      if (this.blocked(nx, ny, r.bikeId)) r.ang += 0.8; else { r.x = nx; r.y = ny; }
+      if (this.blocked(nx, ny, r.bikeId)) { r.ang += 0.8; if (World.buildingAt(nx, ny) && spd > 4) this.offence(r, 'crashed into ' + (World.buildingAt(nx, ny).name || 'a building')); } else { r.x = nx; r.y = ny; }
       // Not getting any closer? Give up on that place and go somewhere else.
       r.progT = (r.progT || 0) + dt;
       if (r.progT > 6) { const d = U.dist(r.x, r.y, r.target.x, r.target.y); if (r.lastD !== undefined && d > r.lastD - 4 && r.state !== 'toGas') r.target = this.pickTarget(r); r.lastD = d; r.progT = 0; }
@@ -303,9 +341,18 @@ const Bikes = {
         for (let s = 0; s < 8; s++) { const x = Player.x + Math.cos(a) * 0.25, y = Player.y + Math.sin(a) * 0.25; if (World.blocked(x, y)) break; Player.x = x; Player.y = y; }
         if (Fishing.state !== 'idle' && Fishing.state !== 'fight') Fishing.reelInFast();
         Bugs.shake = 1; Sfx.thunk();
-        Hud.toast('A dirt biker clipped you! (Jump or slide to dodge them.)', UI.bad, 2.2);
+        Hud.toast((r.name || 'A biker') + ' clipped you! (Jump or slide to dodge them.)', UI.bad, 2.2);
+        this.offence(r, 'ran into you');
       }
       r.hitCool = Math.max(0, (r.hitCool || 0) - dt);
+      // Bowling over pedestrians.
+      for (const n of Npcs.list) {
+        if (n.away || ['home', 'bush', 'ko', 'dead'].includes(n.state) || U.dist(n.x, n.y, r.x, r.y) > 0.8 || (n.hitByBike && Game.time < n.hitByBike)) continue;
+        n.hitByBike = Game.time + 6;
+        const a = Math.atan2(n.y - r.y, n.x - r.x); if (footOK(n.x + Math.cos(a) * 1.2, n.y + Math.sin(a) * 1.2)) { n.x += Math.cos(a) * 1.2; n.y += Math.sin(a) * 1.2; }
+        Npcs.say(n, U.pick(Math.random, ['OI! WATCH IT!', 'You nearly KILLED me!', 'Hooligan!']), 2.4);
+        this.offence(r, 'knocked over ' + n.name);
+      }
       // Anglers do not appreciate it.
       for (const n of Npcs.list) {
         if (n.state === 'home' || n.state === 'bush' || U.dist(n.x, n.y, r.x, r.y) > 4 || (n.bikeYell && Game.time < n.bikeYell)) continue;
@@ -400,7 +447,7 @@ const Bikes = {
   // ---------- shooting vehicles ----------
   vehicles() {
     const out = [];
-    for (const r of this.riders) if (!r.noBike && !r.away) out.push({ x: r.x, y: r.y, o: r });
+    for (const r of this.riders) if (!r.noBike && !r.away && !r.jailed) out.push({ x: r.x, y: r.y, o: r });
     if (Game.bike && !this.riding) out.push({ x: Game.bike.x, y: Game.bike.y, o: 'mine' });
     return out;
   },
@@ -502,7 +549,7 @@ const Bikes = {
     const base = (x, y) => Scene3D.standH(x, y);
     let loud = 0, rpm = 60;
     for (const r of this.riders) {
-      const d = U.dist(r.x, r.y, Player.x, Player.y), vis = d < 70 && !Interior.active && !r.away;
+      const d = U.dist(r.x, r.y, Player.x, Player.y), vis = d < 70 && !Interior.active && !r.away && !r.jailed;
       r.mesh.visible = vis; r.bike.visible = vis && !r.noBike;
       if (r.pistol) r.pistol.visible = vis && r.armed && r.state === 'stranded' && r.chaseT > 0 && !(r.ko > 0);
       if (vis) {
@@ -569,8 +616,15 @@ const Bikes = {
       ${reg ? '<h3>Your ride</h3>' + reg : ''}
       <h3>Dirt bikes</h3>${BIKES.filter((b) => !b.kind).map(row).join('')}
       <h3>Go-karts</h3>${BIKES.filter((b) => b.kind === 'kart').map(row).join('')}
+      ${Game.impound ? `<h3>Impound yard</h3><div class="row"><div><b>Your ${BIKE_BY_ID[Game.impound.id].name} · plate ${Game.impound.plate}</b><div class="desc">Seized for dangerous driving. Pay the release fee and it's yours again.</div></div><button class="primary" data-unimpound ${Game.money < 150 ? 'disabled' : ''}>Release — ${U.fmtMoney(150)}</button></div>` : ''}
       <h3>Fuel &amp; the law</h3><div class="desc">Tank ${Math.round(Game.fuel)}% — fill up at the gas station at the bottom of the main street. The pump camera reads plates: a ride that isn't registered to you gets reported, and wardens check permits on sight.</div>
       ${Game.bike && !this.ownsIt() ? '<div class="desc" style="margin-top:8px">No trade-ins on stolen goods — buying a new ride leaves that one where it is.</div>' : ''}`, (el) => {
+      const ub = el.querySelector('[data-unimpound]');
+      if (ub) ub.onclick = () => {
+        Game.money -= 150; const shop = World.buildings.find((x) => x.type === 'bikes'), d = World.doorOf(shop);
+        Game.bike = { ...Game.impound, x: d.x - 2.6, y: d.y + 1.6, ang: Math.PI / 2 }; Game.impound = null;
+        this.syncMine(); Sfx.coin(); Hud.toast('Released from the impound. Ride nicely this time.', UI.good, 2.4); Game.save(); this.openShop();
+      };
       el.querySelectorAll('[data-bike]').forEach((btn) => { btn.onclick = () => {
         const b = BIKE_BY_ID[btn.dataset.bike];
         Game.money -= b.price - trade;

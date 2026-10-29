@@ -104,6 +104,11 @@ const Wardens = {
         w.lost = pd > 20 ? w.lost + dt : 0;
         if (pd < 1.2 && !Player.rolling) return Jail.sentence([w.reason], w);
         if (w.lost > 2.5 || w.t > 25) { this.say(w, WARDEN_SAY.lost); w.state = 'patrol'; w.t = 0; w.checkCool = 90; Hud.toast('You gave ' + w.name + ' the slip.', UI.good, 2); }
+      } else if (w.state === 'pullover') {
+        // Walking up to a rider they've pulled over.
+        const r = w.rider;
+        if (!r || r.jailed || r.ko > 0 || !Bikes.riders.includes(r)) { w.state = 'patrol'; w.t = 0; w.rider = null; }
+        else { tx = r.x; ty = r.y; speed = 3.6; if (U.dist(w.x, w.y, r.x, r.y) < 1.3) { Bikes.arrestRider(r, w); w.state = 'patrol'; w.t = 0; w.rider = null; w.checkCool = 30; } else if (w.t > 40) { w.state = 'patrol'; r.pulledBy = null; w.rider = null; } }
       } else if (w.state === 'chat') {
         if (w.t > 2.5) { w.state = 'patrol'; w.t = 0; }
       }
@@ -210,6 +215,10 @@ const Jail = {
     if (Bikes.riding) Bikes.dismount();
     // A stolen ride gets impounded and handed back to its owner.
     this.impounded = Game.bike && !Bikes.ownsIt() ? BIKE_BY_ID[Game.bike.id].name : null;
+    if (Game.bike && Bikes.ownsIt() && reasons.some((x) => /Dangerous driving/.test(x))) {
+      Game.impound = { ...Game.bike }; Game.bike = null; Bikes.syncMine();
+      reasons = reasons.concat(['Vehicle impounded (collect it from Revs)']);
+    }
     if (this.impounded) {
       const stolen = Game.bike, owner = Bikes.riders.find((r) => r.name === stolen.owner);
       Game.bike = null; Bikes.syncMine();

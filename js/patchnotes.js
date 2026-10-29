@@ -3,6 +3,9 @@
 
 const PATCH_NOTES = [
   { v: '2.1', name: 'Take a Seat', date: '30 Oct 2026', notes: [
+    ['new', 'Traffic enforcement: bikers and kart drivers who crash into buildings or run into people in front of a warden get pulled over, arrested, and their ride impounded for a couple of days'],
+    ['new', 'Same goes for you: crash into a building or mow someone down near a warden and they chase you. Get caught and your bike goes to the impound (Revs releases it for $150)'],
+    ['changed', 'Weeing, pooing and digging no longer pause the game. You just stay put while you do it'],
     ['fixed', 'The fishing guide always sets up on dry ground outside one of the main-street shops (no more guides standing in the lake)'],
     ['new', 'Locals let one rip now and then, complete with a little green cloud. You only do when you are desperate for a poo (and the neighbours notice)'],
     ['changed', 'You stand to wee now (and squat to poo). Both get a jittery censor block: yellow with a trickle and puddle for a wee, brown with the drops for a poo'],
