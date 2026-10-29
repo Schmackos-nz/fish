@@ -238,6 +238,7 @@ const Life = {
   },
 
   openBag() {
+    return Inventory.open(); // the slot inventory replaced the old list
     const home = Game.home ? World.houses[Game.home.id] : null;
     this.panel(`<h2>Your bag</h2>
       <div class="row"><div><b>Health · Food · Energy</b><div class="desc">Eat to stay fed; rest or sleep to recover energy.</div></div><b>${Math.round(Wanted.health)} · ${Math.round(Game.food)} · ${Math.round(Game.energy)}</b></div>

@@ -129,6 +129,23 @@
   .lock-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 10px; color: var(--muted); font-size: 12.5px; }
   #sleepFade { position: fixed; inset: 0; z-index: 40; background: #000; opacity: 0; pointer-events: none; transition: opacity .8s;
     display: grid; place-items: center; color: #F3EAD6; font: 400 34px "Lilita One", sans-serif; letter-spacing: 1px; }
+  .inv-grid { display: grid; gap: 6px; margin: 12px 0 4px; justify-content: start; }
+  .inv-slot { position: relative; width: 52px; height: 52px; border-radius: 8px; background: #2A2620; border: 2px solid #4A443A; box-shadow: inset 0 2px 0 rgba(0,0,0,0.35); display: grid; place-items: center; cursor: pointer; user-select: none; touch-action: none; }
+  .inv-slot:hover { border-color: #E3A945; }
+  .inv-slot.empty { cursor: default; background: #221F1A; }
+  .inv-slot.draggable { cursor: grab; }
+  .inv-slot img { width: 40px; height: 40px; pointer-events: none; }
+  .inv-emo { font-size: 26px; line-height: 1; pointer-events: none; }
+  .inv-n { position: absolute; right: 3px; bottom: 1px; font: 800 12px var(--font); color: #fff; text-shadow: 1px 1px 0 #000, -1px -1px 0 #000; pointer-events: none; }
+  .inv-hotbar { display: flex; gap: 6px; }
+  .inv-hotwrap { position: relative; }
+  .inv-slot.hot { background: #302A1E; border-color: #6A5A3A; }
+  .inv-slot.hot.sel { border-color: #E3A945; box-shadow: 0 0 0 2px rgba(227,169,69,0.35); }
+  .inv-key { position: absolute; left: 4px; top: 1px; font: 700 10px var(--font); color: var(--dim); font-style: normal; pointer-events: none; }
+  .inv-ghost { position: fixed; z-index: 60; pointer-events: none; opacity: 0.85; transform: scale(1.1); }
+  .inv-info { margin-top: 14px; min-height: 40px; }
+  .inv-info-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; background: var(--card-2); }
+  .inv-info-row .desc { flex: 1; }
   #repNote { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 9; padding: 7px 16px; border-radius: 999px; background: rgba(11,16,19,0.9); border: 1px solid var(--line); font: 700 13px var(--font); pointer-events: none; }
   #repNote.hidden { display: none; }
   #sleepFade.on { opacity: 1; pointer-events: auto; }
@@ -326,7 +343,7 @@
       <div><span>Rod · Gun · Spray · Binoculars</span><span><kbd>1</kbd>–<kbd>4</kbd></span></div>
       <div><span>Rifle scope</span><span>Hold right-click</span></div>
       <div><span>Switch guns</span><span>Press <kbd>2</kbd> again</span></div>
-      <div><span>Dig a hole</span><span><kbd>6</kbd> spade, click</span></div>
+      <div><span>Hotbar</span><span><kbd>1</kbd>–<kbd>5</kbd> (arrange in the inventory, <kbd>I</kbd>)</span></div>
       <div><span>Chop trees · campfire</span><span><kbd>5</kbd> axe, then <kbd>E</kbd></span></div>
       <div><span>Punch (empty hands)</span><span>Click</span></div>
       <div><span>Swat a bug</span><span>Click it</span></div>
@@ -406,56 +423,57 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=87"></script>
-<script src="js/data.js?v=87"></script>
-<script src="js/audio.js?v=87"></script>
-<script src="js/music.js?v=87"></script>
-<script src="js/voice.js?v=87"></script>
-<script src="js/world.js?v=87"></script>
-<script src="js/scene-sprites.js?v=87"></script>
-<script src="js/toon.js?v=87"></script>
-<script src="js/scene.js?v=87"></script>
-<script src="js/folk.js?v=87"></script>
-<script src="js/models.js?v=87"></script>
-<script src="js/actors.js?v=87"></script>
-<script src="js/fish.js?v=87"></script>
-<script src="js/legends.js?v=87"></script>
-<script src="js/fishing.js?v=87"></script>
-<script src="js/fight.js?v=87"></script>
-<script src="js/linedrag.js?v=87"></script>
-<script src="js/player.js?v=87"></script>
-<script src="js/npcs.js?v=87"></script>
-<script src="js/path.js?v=87"></script>
-<script src="js/gun.js?v=87"></script>
-<script src="js/arsenal.js?v=87"></script>
-<script src="js/camp.js?v=87"></script>
-<script src="js/wild.js?v=87"></script>
-<script src="js/decay.js?v=87"></script>
-<script src="js/contest.js?v=87"></script>
-<script src="js/bugs.js?v=87"></script>
-<script src="js/floaters.js?v=87"></script>
-<script src="js/animals.js?v=87"></script>
-<script src="js/wardens.js?v=87"></script>
-<script src="js/interiors.js?v=87"></script>
-<script src="js/life.js?v=87"></script>
-<script src="js/weed.js?v=87"></script>
-<script src="js/markers.js?v=87"></script>
-<script src="js/swimmers.js?v=87"></script>
-<script src="js/couples.js?v=87"></script>
-<script src="js/tim.js?v=87"></script>
-<script src="js/bikes.js?v=87"></script>
-<script src="js/lockpick.js?v=87"></script>
-<script src="js/wanted.js?v=87"></script>
-<script src="js/tools.js?v=87"></script>
-<script src="js/hud.js?v=87"></script>
-<script src="js/share.js?v=87"></script>
-<script src="js/menus.js?v=87"></script>
-<script src="js/mobile.js?v=87"></script>
-<script src="js/patchnotes.js?v=87"></script>
-<script src="js/staff.js?v=87"></script>
-<script src="js/thief.js?v=87"></script>
-<script src="js/needs.js?v=87"></script>
-<script src="js/main.js?v=87"></script>
-<script src="js/rep.js?v=87"></script>
+<script src="js/util.js?v=88"></script>
+<script src="js/data.js?v=88"></script>
+<script src="js/audio.js?v=88"></script>
+<script src="js/music.js?v=88"></script>
+<script src="js/voice.js?v=88"></script>
+<script src="js/world.js?v=88"></script>
+<script src="js/scene-sprites.js?v=88"></script>
+<script src="js/toon.js?v=88"></script>
+<script src="js/scene.js?v=88"></script>
+<script src="js/folk.js?v=88"></script>
+<script src="js/models.js?v=88"></script>
+<script src="js/actors.js?v=88"></script>
+<script src="js/fish.js?v=88"></script>
+<script src="js/legends.js?v=88"></script>
+<script src="js/fishing.js?v=88"></script>
+<script src="js/fight.js?v=88"></script>
+<script src="js/linedrag.js?v=88"></script>
+<script src="js/player.js?v=88"></script>
+<script src="js/npcs.js?v=88"></script>
+<script src="js/path.js?v=88"></script>
+<script src="js/gun.js?v=88"></script>
+<script src="js/arsenal.js?v=88"></script>
+<script src="js/camp.js?v=88"></script>
+<script src="js/wild.js?v=88"></script>
+<script src="js/decay.js?v=88"></script>
+<script src="js/contest.js?v=88"></script>
+<script src="js/bugs.js?v=88"></script>
+<script src="js/floaters.js?v=88"></script>
+<script src="js/animals.js?v=88"></script>
+<script src="js/wardens.js?v=88"></script>
+<script src="js/interiors.js?v=88"></script>
+<script src="js/life.js?v=88"></script>
+<script src="js/weed.js?v=88"></script>
+<script src="js/markers.js?v=88"></script>
+<script src="js/swimmers.js?v=88"></script>
+<script src="js/couples.js?v=88"></script>
+<script src="js/tim.js?v=88"></script>
+<script src="js/bikes.js?v=88"></script>
+<script src="js/lockpick.js?v=88"></script>
+<script src="js/wanted.js?v=88"></script>
+<script src="js/tools.js?v=88"></script>
+<script src="js/hud.js?v=88"></script>
+<script src="js/share.js?v=88"></script>
+<script src="js/menus.js?v=88"></script>
+<script src="js/mobile.js?v=88"></script>
+<script src="js/patchnotes.js?v=88"></script>
+<script src="js/staff.js?v=88"></script>
+<script src="js/thief.js?v=88"></script>
+<script src="js/needs.js?v=88"></script>
+<script src="js/inventory.js?v=88"></script>
+<script src="js/main.js?v=88"></script>
+<script src="js/rep.js?v=88"></script>
 </body>
 </html>

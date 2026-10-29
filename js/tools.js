@@ -120,14 +120,17 @@ const Tools = {
 
   drawBar(hud, cx, y) {
     const g = hud.g, sw = 74, gap = 8;
-    const x0 = cx - (TOOLS.length * sw + (TOOLS.length - 1) * gap) / 2;
+    // The hotbar: five slots you arrange in the inventory (I).
+    const bar = Inventory.hotbar(), n = bar.length;
+    const x0 = cx - (n * sw + (n - 1) * gap) / 2;
     hud.toolSlots = [];
-    TOOLS.forEach((t, i) => {
-      const sx = x0 + i * (sw + gap), sel = this.current === t.id;
+    bar.forEach((id, i) => {
+      const sx = x0 + i * (sw + gap), t = TOOLS.find((q) => q.id === id), sel = !!t && this.current === id;
+      if (!t) { hud.slot(sx, y, sw, 64, false); if (!Mobile.active) hud.text(String(i + 1), sx + 9, y + 16, UI.dim, 11, 'left', 700); hud.toolSlots.push({ x: sx, y, w: sw, h: 64, id: null }); return; }
       hud.toolSlots.push({ x: sx, y, w: sw, h: 64, id: t.id });
       hud.slot(sx, y, sw, 64, sel);
+      if (!Mobile.active) hud.text(String(i + 1), sx + 9, y + 16, sel ? UI.accent : UI.dim, 11, 'left', 700);
       this.icon(g, t.id, sx + sw / 2, y + 26, 1.05);
-      if (!Mobile.active) hud.text(t.key, sx + 9, y + 16, sel ? UI.accent : UI.dim, 11, 'left', 700);
       const c = this.count(t.id);
       if (c !== null) hud.text(String(c), sx + sw - 9, y + 16, c ? UI.muted : UI.bad, 11, 'right', 600);
       hud.text(t.id === 'gun' ? Arsenal.weapon().short : t.name, sx + sw / 2, y + 56, sel ? UI.ink : UI.muted, 10, 'center', sel ? 600 : 400);

@@ -378,7 +378,7 @@ const Hud = {
       for (const b of this.dragBtns || []) if (hit(b)) { Fight.setDrag(Game.drag + b.d); return true; }
       if (U.dist(x, y, this.reel.cx, this.reel.cy) < this.reel.r) return true; // display only now
     }
-    for (const s of this.toolSlots) if (hit(s)) { Tools.select(s.id); return true; }
+    for (const s of this.toolSlots) if (hit(s)) { if (s.id) Tools.select(s.id); else Inventory.open(); return true; }
     for (const s of this.slots) if (hit(s)) { Fishing.selectLure(s.id); return true; }
     return false;
   },

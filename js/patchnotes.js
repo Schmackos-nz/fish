@@ -3,6 +3,8 @@
 
 const PATCH_NOTES = [
   { v: '2.0', name: 'Hands On', date: '30 Oct 2026', notes: [
+    ['new', 'Slot inventory (I): everything you carry in a grid of stacks (tools, lures, ammo, food, fish, wood…). Click an item to use, eat or tie it on'],
+    ['changed', 'The action bar is now a 5-slot hotbar. Drag tools between your bag and the hotbar to arrange them. Binoculars start in the bag'],
     ['new', 'Step in a poo and you track brown footprints everywhere. Locals who tread in yours are FURIOUS (and they know it was you)'],
     ['changed', 'With your line out you can shuffle along the bank again: slowly, and only a few metres from where you cast'],
     ['changed', 'Healing and catching your breath now burn food, and the fuller you are, the sooner nature calls'],
