@@ -28,7 +28,7 @@ const LineDrag = {
     if (!this.active()) { this.grabbing = false; Input.reelGrab = false; return; }
     const t = this.target(), m = Input.mouse;
     this.hover = this.near(t);
-    if (!this.told) { this.told = true; Hud.toast('Grab the lure and drag it toward you to reel · double-tap it to strike · wheel = drag · middle-click = bail', UI.accent, 4.5); }
+    if (!this.told) { this.told = true; Hud.toast(Mobile.active ? 'Drag the lure toward you to reel · double-tap it to strike · Bail and Drag ± buttons on the right' : 'Grab the lure and drag it toward you to reel · double-tap it to strike · wheel = drag · middle-click = bail', UI.accent, 4.5); }
     // Middle-click: bail. Wheel: drag/tension (the fight handles its own wheel).
     if (Input.mPressed || Input.pressed('KeyB')) Fishing.toggleBail();
     if (Input.pressed('KeyZ')) Fight.setDrag(Game.drag - 0.25);
@@ -79,7 +79,17 @@ const LineDrag = {
   draw(hud) {
     const cv = hud.cv, on = this.active();
     if (on !== this.cursorOff) { cv.style.cursor = on ? 'none' : ''; this.cursorOff = on; }
-    if (!on || Mobile.active) return;
+    if (!on) return;
+    if (Mobile.active) {
+      // No cursor on a touchscreen: put the tension ring round the lure instead.
+      const t = this.target(); if (!t) return;
+      const [sx, sy, ok] = Scene3D.project(t.x, t.y, Fishing.state === 'fight' ? -0.2 : 0);
+      if (!ok) return;
+      const g = hud.g; g.strokeStyle = this.tensionColor(); g.lineWidth = 4;
+      g.beginPath(); g.arc(sx, sy, 22, 0, 7); g.stroke();
+      hud.text('drag ' + Game.drag.toFixed(2) + ' kg' + (Fishing.bailOpen ? ' · bail OPEN' : ''), sx, sy + 38, Fishing.bailOpen ? UI.bad : UI.ink, 11, 'center', 600);
+      return;
+    }
     const g = hud.g, m = Input.mouse, t = this.target();
     if (t) {
       const [sx, sy, ok] = Scene3D.project(t.x, t.y, Fishing.state === 'fight' ? -0.2 : 0);

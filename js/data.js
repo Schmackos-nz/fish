@@ -87,15 +87,15 @@ const PERMITS = [
 // sink: m/s when idle (negative floats up). Depth behaviour handled in fishing.js.
 const LURES = [
   { id: 'spinner', key: '1', name: 'Inline Spinner', price: 15, pack: 1, sink: 0.35, sight: 6, snag: 0.5,
-    color: '#d9d9e0', accent: '#e8b33a', tip: 'Steady medium crank (1–3 turns/s) keeps the blade thumping.' },
+    color: '#d9d9e0', accent: '#e8b33a', tip: 'Drag it in at a steady pace to keep the blade thumping.' },
   { id: 'spoon', key: '2', name: 'Casting Spoon', price: 22, pack: 1, sink: 0.9, sight: 7, snag: 0.8,
-    color: '#e8c34a', accent: '#d2412e', tip: 'Crank, pause, crank. Fish hit it fluttering on the drop.' },
+    color: '#e8c34a', accent: '#d2412e', tip: 'Drag, pause, drag. Fish hit it fluttering on the drop.' },
   { id: 'crank', key: '3', name: 'Diving Crankbait', price: 30, pack: 1, sink: -0.25, sight: 5, snag: 1.1,
-    color: '#6fbf4a', accent: '#f0e14a', tip: 'Floats at rest, dives deeper the faster you crank. Ticks the bottom.' },
+    color: '#6fbf4a', accent: '#f0e14a', tip: 'Floats at rest, dives deeper the faster you drag it. Ticks the bottom.' },
   { id: 'popper', key: '4', name: 'Topwater Popper', price: 25, pack: 1, sink: -1, sight: 6, snag: 0.05,
     color: '#f2f0e8', accent: '#d23a3a', tip: 'Let the rings settle, then right-click to pop it. Deadly at dawn and dusk.' },
   { id: 'worm', key: '5', name: 'Worm & Bobber', price: 10, pack: 15, sink: 0, sight: 3.5, snag: 0.1,
-    color: '#c95f6f', accent: '#e83a3a', tip: 'Cast and wait. Click when the bobber goes UNDER — not when it twitches.' },
+    color: '#c95f6f', accent: '#e83a3a', tip: 'Cast and wait. Double-tap the bobber when it goes UNDER — not when it twitches.' },
 ];
 const LURE_BY_ID = Object.fromEntries(LURES.map((l) => [l.id, l]));
 

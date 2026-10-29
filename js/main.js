@@ -230,7 +230,7 @@ function enterPlay() {
   Scene3D.camDist = Settings.zoom;
   Scene3D.target.set(Player.x, Scene3D.standH(Player.x, Player.y), Player.y);
   Game.save();
-  if (!Game.stats.caught) Hud.toast('Say g\'day to Tim by the dock — he\'ll show you the ropes', UI.ink, 4.5);
+  if (!Game.stats.caught) Hud.toast('Say g\'day to ' + Tim.guide().name + ' by the dock — he\'ll show you the ropes', UI.ink, 4.5);
 }
 
 function newValley() {

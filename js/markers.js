@@ -26,7 +26,7 @@ const Markers = {
       else if (b.type === 'house' && b.vacant) out.push({ x: d.x, y: d.y, label: 'For rent · ' + U.fmtMoney(b.rent) + '/day', icon: '🔑', color: '#7FC4D4' });
     }
     out.push({ x: World.bbq.x, y: World.bbq.y + 0.9, label: 'BBQ', icon: '🔥', color: '#F2802A' });
-    out.push({ x: World.tim.x, y: World.tim.y + 0.9, label: 'Tim · Guide', icon: '🧢', color: '#7DC383' });
+    out.push({ x: World.tim.x, y: World.tim.y + 0.9, label: Tim.guide().name + ' · Guide', icon: '🧢', color: '#7DC383' });
     return out;
   },
 

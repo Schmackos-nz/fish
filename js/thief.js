@@ -126,8 +126,8 @@ const Thief = {
       <div class="desc">You fish your trusty stethoscope out of your pocket (as you do). Turn the dial slowly and listen — the tumbler <b>clunks</b> when you're on the number. ${n} numbers.${owner && owner.state === 'home' ? ' <b style="color:var(--bad)">Someone\'s home — be quick.</b>' : ''}</div>
       <div class="lock-alert"><span>Alert</span><div class="lock-bar"><div id="lockFill"></div></div><b id="lockPct">0%</b></div>
       <canvas id="safeCv" width="560" height="300" class="lock-cv"></canvas>
-      <div class="safe-ctl"><button id="sL">◀ Turn</button><button class="primary" id="sTry">Try this number</button><button id="sR">Turn ▶</button></div>
-      <div class="lock-foot"><span id="safeStage"></span><button id="sQuit">Walk away</button></div>`, (el) => {
+      <div class="safe-ctl"><button id="sL">◀ Turn</button><button class="primary" id="sTry">Try this number</button><button id="sR">Turn ▶</button><button id="sQuit">Walk away</button></div>
+      <div class="lock-foot"><span id="safeStage"></span></div>`, (el) => {
       const hold = (id, dir) => { const b2 = el.querySelector(id); const on = (e) => { e.preventDefault(); this.safe.turn = dir; }, off = () => { if (this.safe) this.safe.turn = 0; };
         b2.addEventListener('pointerdown', on); b2.addEventListener('pointerup', off); b2.addEventListener('pointerleave', off); };
       hold('#sL', -1); hold('#sR', 1);

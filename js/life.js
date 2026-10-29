@@ -55,7 +55,7 @@ const Life = {
   // Rent is charged once per new day.
   processDays() {
     if (Game.lastDay === undefined) Game.lastDay = Game.env.day;
-    while (Game.lastDay < Game.env.day) { Game.lastDay++; this.payRent(); Decay.age(1, false); Staff.daily(); Thief.daily(); Rep.daily(); Game.shame = Math.max(0, (Game.shame || 0) - 1); }
+    while (Game.lastDay < Game.env.day) { Game.lastDay++; this.payRent(); Decay.age(1, false); Staff.daily(); Thief.daily(); Rep.daily(); Tim.refresh(true); Game.shame = Math.max(0, (Game.shame || 0) - 1); }
   },
 
   payRent() {
@@ -363,6 +363,8 @@ const Interact = {
       }
       for (const r of Bikes.riders) {
         if ((r.state === 'refuel' || r.state === 'break') && !(r.ko > 0) && !r.away) add(r.x, r.y, 1.8, 'Attempt to steal ' + r.name + '\'s ' + BIKE_BY_ID[r.bikeId].name, () => LockPick.open(r));
+        // Shot or knocked off it mid-ride: the engine's still running, just hop on.
+        else if (r.ko > 0 && !r.noBike && !r.away && r.state === 'ride') add(r.x, r.y, 1.8, 'Hop on ' + r.name + '\'s ' + BIKE_BY_ID[r.bikeId].name + ' (still running)', () => { Bikes.steal(r, true); r.bubbleT = 0; Wanted.crime(1); });
       }
       if (Bikes.near()) add(Game.bike.x, Game.bike.y, 2, (Bikes.ownsIt() ? 'Ride your ' : 'Ride the stolen ') + BIKE_BY_ID[Game.bike.id].name, () => Bikes.mount());
       add(World.bbq.x, World.bbq.y, 2, 'BBQ — cook your catch', () => Life.openCook('the BBQ'));
@@ -371,7 +373,7 @@ const Interact = {
         if (Game.bike && U.dist(Game.bike.x, Game.bike.y, p.x, p.y) < 4.5 && U.dist(P.x, P.y, p.x, p.y) < 2.2 && Game.fuel < 99) cands.push({ d: -1, x: p.x, y: p.y, label: 'Fill up your bike — ' + U.fmtMoney(Math.ceil((100 - Game.fuel) * 0.2)), run: () => Bikes.fillUp() });
         else add(p.x, p.y, 2.2, 'Gas pump', () => Hud.toast(Game.bike ? 'Bring your bike over to the pump.' : 'You\'ll need a bike first — Dirt Cheap Bikes is up the street.', UI.muted, 2));
       }
-      add(World.tim.x, World.tim.y, 2.6, 'Talk to Tim — tips & goals', () => Tim.open());
+      add(World.tim.x, World.tim.y, 2.6, 'Talk to ' + Tim.guide().name + ' — tips & goals', () => Tim.open());
       if (!Weed.dustyKO.ko) add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
       Weed.interactions(add);
       Seats.interactions(add); Crabs.interactions(add);

@@ -157,7 +157,7 @@ const Npcs = {
     if (Legends.current || Math.random() < 0.2) lines.push('My cousin swears he saw the Bunyip once.', 'They say there\'s something HUGE in the deep water.');
     if (Game.thief && Thief.recent()) lines.push('Lock your doors. Thief about.');
     if ((Game.shame || 0) > 0) lines.push('Heard someone did their business right out in the open. Animals.');
-    lines.push('Tim reckons the dawn bite\'s the best.', 'Dusty\'s up to no good out in those woods, mark my words.', 'Those bikers nearly ran me over again.', 'Rent\'s gone up again, I hear.', 'You see the ducks on the pond? Cheeky buggers.');
+    lines.push(Tim.guide().name + ' reckons the dawn bite\'s the best.', 'Dusty\'s up to no good out in those woods, mark my words.', 'Those bikers nearly ran me over again.', 'Rent\'s gone up again, I hear.', 'You see the ducks on the pond? Cheeky buggers.');
     return U.pick(Math.random, lines);
   },
 

@@ -161,7 +161,8 @@
   #title #saveInfo { color: #CFC8DA; font: 600 13px var(--font); letter-spacing: 1px; margin: 0 0 10px; }
   .gta-menu { display: flex; flex-direction: column; gap: 2px; width: min(380px, 40vw); }
   .gta-menu button { all: unset; cursor: pointer; padding: 8px 18px; font: 400 clamp(20px, 2.1vw, 30px) "Anton", Impact, sans-serif; letter-spacing: 1.5px; text-transform: uppercase; color: #F4F0FA; border-left: 6px solid transparent; transition: background .12s, color .12s, padding .12s; }
-  .gta-menu button:hover, .gta-menu button:focus-visible, .gta-menu button.on { background: #F4F0FA; color: #10081C; border-left-color: #FF5FA2; padding-left: 26px; }
+  .gta-menu button:hover, .gta-menu button:focus-visible, .gta-menu button.on { background: #F4F0FA !important; color: #10081C !important; border-left-color: #FF5FA2; padding-left: 26px; }
+  .gta-menu button.on span, .gta-menu button:hover span { color: #10081C !important; }
   .gta-menu button.danger { color: #FF8A8A; }
   .gta-menu button.danger:hover { color: #B8202A; }
   .gta-collage { position: absolute; right: 3vw; top: 6vh; bottom: 10vh; width: 46vw; z-index: 1; display: grid; grid-template-columns: 1.15fr 1fr; grid-template-rows: 1fr 1fr 0.8fr; gap: 14px; pointer-events: none; }
@@ -176,6 +177,20 @@
   .gta-panel.p4 b { font-size: clamp(22px, 2.6vw, 40px); color: #FFD447; letter-spacing: 4px; -webkit-text-stroke: 1.5px #000; }
   .gta-panel.p5 { transform: rotate(-1deg); background: linear-gradient(160deg, #7DC383, #2A8A5A); animation-delay: .45s; }
   @keyframes gtaIn { from { opacity: 0; transform: translateY(30px) rotate(0deg) scale(0.9); } }
+  @media (max-height: 520px) {
+    #title .gta-left { justify-content: flex-start; padding-top: 3vh; }
+    .gta-logo { margin-bottom: 1.5vh; }
+    .gta-logo .gl1 { font-size: 13vh; } .gta-logo .gl2 { font-size: 9.5vh; } .gta-logo .gl3 { font-size: 24vh; }
+    .gta-logo .gta-tag { font-size: 4.2vh; padding: 3px 10px; }
+    .gta-menu button { font-size: 5.2vh; padding: 3px 14px; }
+    #title #saveInfo { margin: 0 0 4px; font-size: 11px; }
+    #title footer { bottom: 8px; }
+    .inv-slot { width: 42px; height: 42px; }
+    .inv-slot img { width: 32px; height: 32px; }
+    .inv-emo { font-size: 21px; }
+    .inv-grid { grid-template-columns: repeat(9, 42px) !important; gap: 4px; margin: 6px 0 2px; }
+    .inv-hotbar { gap: 4px; }
+  }
   @media (max-width: 820px), (max-height: 520px) { .gta-collage { width: 44vw; top: 4vh; bottom: 14vh; gap: 8px; } .gta-panel { border-width: 4px; } #title .gta-left { padding-left: 4vw; } }
   #repNote { position: fixed; left: 50%; bottom: 14px; transform: translateX(-50%); z-index: 9; padding: 7px 16px; border-radius: 999px; background: rgba(11,16,19,0.9); border: 1px solid var(--line); font: 700 13px var(--font); pointer-events: none; }
   #repNote.hidden { display: none; }
@@ -465,59 +480,59 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=96"></script>
-<script src="js/data.js?v=96"></script>
-<script src="js/audio.js?v=96"></script>
-<script src="js/music.js?v=96"></script>
-<script src="js/voice.js?v=96"></script>
-<script src="js/world.js?v=96"></script>
-<script src="js/scene-sprites.js?v=96"></script>
-<script src="js/toon.js?v=96"></script>
-<script src="js/scene.js?v=96"></script>
-<script src="js/folk.js?v=96"></script>
-<script src="js/models.js?v=96"></script>
-<script src="js/actors.js?v=96"></script>
-<script src="js/fish.js?v=96"></script>
-<script src="js/legends.js?v=96"></script>
-<script src="js/fishing.js?v=96"></script>
-<script src="js/fight.js?v=96"></script>
-<script src="js/linedrag.js?v=96"></script>
-<script src="js/player.js?v=96"></script>
-<script src="js/npcs.js?v=96"></script>
-<script src="js/path.js?v=96"></script>
-<script src="js/gun.js?v=96"></script>
-<script src="js/arsenal.js?v=96"></script>
-<script src="js/camp.js?v=96"></script>
-<script src="js/wild.js?v=96"></script>
-<script src="js/decay.js?v=96"></script>
-<script src="js/contest.js?v=96"></script>
-<script src="js/bugs.js?v=96"></script>
-<script src="js/floaters.js?v=96"></script>
-<script src="js/animals.js?v=96"></script>
-<script src="js/wardens.js?v=96"></script>
-<script src="js/interiors.js?v=96"></script>
-<script src="js/life.js?v=96"></script>
-<script src="js/weed.js?v=96"></script>
-<script src="js/markers.js?v=96"></script>
-<script src="js/swimmers.js?v=96"></script>
-<script src="js/couples.js?v=96"></script>
-<script src="js/tim.js?v=96"></script>
-<script src="js/bikes.js?v=96"></script>
-<script src="js/lockpick.js?v=96"></script>
-<script src="js/wanted.js?v=96"></script>
-<script src="js/tools.js?v=96"></script>
-<script src="js/hud.js?v=96"></script>
-<script src="js/share.js?v=96"></script>
-<script src="js/menus.js?v=96"></script>
-<script src="js/mobile.js?v=96"></script>
-<script src="js/patchnotes.js?v=96"></script>
-<script src="js/staff.js?v=96"></script>
-<script src="js/thief.js?v=96"></script>
-<script src="js/needs.js?v=96"></script>
-<script src="js/seats.js?v=96"></script>
-<script src="js/waypoint.js?v=96"></script>
-<script src="js/inventory.js?v=96"></script>
-<script src="js/main.js?v=96"></script>
-<script src="js/rep.js?v=96"></script>
+<script src="js/util.js?v=99"></script>
+<script src="js/data.js?v=99"></script>
+<script src="js/audio.js?v=99"></script>
+<script src="js/music.js?v=99"></script>
+<script src="js/voice.js?v=99"></script>
+<script src="js/world.js?v=99"></script>
+<script src="js/scene-sprites.js?v=99"></script>
+<script src="js/toon.js?v=99"></script>
+<script src="js/scene.js?v=99"></script>
+<script src="js/folk.js?v=99"></script>
+<script src="js/models.js?v=99"></script>
+<script src="js/actors.js?v=99"></script>
+<script src="js/fish.js?v=99"></script>
+<script src="js/legends.js?v=99"></script>
+<script src="js/fishing.js?v=99"></script>
+<script src="js/fight.js?v=99"></script>
+<script src="js/linedrag.js?v=99"></script>
+<script src="js/player.js?v=99"></script>
+<script src="js/npcs.js?v=99"></script>
+<script src="js/path.js?v=99"></script>
+<script src="js/gun.js?v=99"></script>
+<script src="js/arsenal.js?v=99"></script>
+<script src="js/camp.js?v=99"></script>
+<script src="js/wild.js?v=99"></script>
+<script src="js/decay.js?v=99"></script>
+<script src="js/contest.js?v=99"></script>
+<script src="js/bugs.js?v=99"></script>
+<script src="js/floaters.js?v=99"></script>
+<script src="js/animals.js?v=99"></script>
+<script src="js/wardens.js?v=99"></script>
+<script src="js/interiors.js?v=99"></script>
+<script src="js/life.js?v=99"></script>
+<script src="js/weed.js?v=99"></script>
+<script src="js/markers.js?v=99"></script>
+<script src="js/swimmers.js?v=99"></script>
+<script src="js/couples.js?v=99"></script>
+<script src="js/tim.js?v=99"></script>
+<script src="js/bikes.js?v=99"></script>
+<script src="js/lockpick.js?v=99"></script>
+<script src="js/wanted.js?v=99"></script>
+<script src="js/tools.js?v=99"></script>
+<script src="js/hud.js?v=99"></script>
+<script src="js/share.js?v=99"></script>
+<script src="js/menus.js?v=99"></script>
+<script src="js/mobile.js?v=99"></script>
+<script src="js/patchnotes.js?v=99"></script>
+<script src="js/staff.js?v=99"></script>
+<script src="js/thief.js?v=99"></script>
+<script src="js/needs.js?v=99"></script>
+<script src="js/seats.js?v=99"></script>
+<script src="js/waypoint.js?v=99"></script>
+<script src="js/inventory.js?v=99"></script>
+<script src="js/main.js?v=99"></script>
+<script src="js/rep.js?v=99"></script>
 </body>
 </html>

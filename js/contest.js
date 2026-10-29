@@ -83,7 +83,7 @@ const Contest = {
     const st = this.state(cur.week), C = CONTESTS[st.type];
     if (cur.live && !st.announced) {
       st.announced = true;
-      Hud.toast(C.icon + ' The ' + C.name + ' is ON until Monday dawn! ' + (st.entered ? 'Good luck!' : 'Enter with Tim — ' + U.fmtMoney(C.fee) + '.'), UI.accent, 4);
+      Hud.toast(C.icon + ' The ' + C.name + ' is ON until Monday dawn! ' + (st.entered ? 'Good luck!' : 'Enter with ' + Tim.guide().name + ' — ' + U.fmtMoney(C.fee) + '.'), UI.accent, 4);
     }
     // Off-screen rivals: hunters out in the hills (and the odd angler luck the valley doesn't see).
     if (cur.live) {
@@ -138,7 +138,7 @@ const Contest = {
     hud.text(Math.ceil(left) + 'h left', x + w / 2 - 12, y + 20, UI.muted, 11, 'right', 600);
     hud.text(lead ? 'Leader: ' + (lead.you ? 'YOU' : lead.name) + ' ' + lead.kg.toFixed(1) + ' kg' : 'No weigh-ins yet', x - w / 2 + 12, y + 38, UI.ink, 11, 'left', 500);
     if (c.entered) hud.text('You: ' + (c.you ? c.you.toFixed(1) + ' kg · ' + ordinal(place) : 'nothing yet'), x - w / 2 + 12, y + 55, place === 1 ? UI.good : UI.muted, 11, 'left', 600);
-    else hud.text('Not entered — see Tim (' + U.fmtMoney(C.fee) + ')', x - w / 2 + 12, y + 55, UI.dim, 11, 'left', 500);
+    else hud.text('Not entered — see ' + Tim.guide().name + ' (' + U.fmtMoney(C.fee) + ')', x - w / 2 + 12, y + 55, UI.dim, 11, 'left', 500);
   },
 };
 

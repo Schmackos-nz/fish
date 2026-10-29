@@ -439,7 +439,7 @@ const Hud = {
     g.fillStyle = 'rgba(4,7,9,0.6)'; g.fillRect(0, 0, W, H);
     this.card(x - 16, y - 52, size + 32, size + 68, { fill: UI.cardHi, r: 18 });
     this.text('The Valley', x, y - 22, UI.ink, 20, 700);
-    this.text('Click a place to set a waypoint · click a label to travel there (costs time) · M to close', x + size, y - 22, UI.dim, 12, 'right');
+    this.text(Mobile.active ? 'Tap: waypoint · tap a label: travel' : 'Click a place to set a waypoint · click a label to travel there (costs time) · M to close', x + size, y - 22, UI.dim, 12, 'right');
     this.mapRect = { x, y, size, k };
     g.save(); g.beginPath(); g.roundRect(x, y, size, size, 10); g.clip();
     g.imageSmoothingEnabled = false;

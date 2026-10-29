@@ -3,6 +3,9 @@
 
 const PATCH_NOTES = [
   { v: '2.1', name: 'Take a Seat', date: '30 Oct 2026', notes: [
+    ['new', 'Every two years the valley gets a new fishing guide (alternating women and men, each with their own look), set up in a slightly different spot by the dock. Tim was just the first'],
+    ['new', 'Shoot or knock a rider off their bike or kart and its engine is still running: hop straight on, no lockpicking'],
+    ['fixed', 'Phones: the title fits the screen, the highlighted menu item is readable, inventory and storage slots fit, fishing shows a tension ring round the lure (with touch-friendly tips), the big-map header no longer overlaps, and the safe\'s Walk away button is reachable'],
     ['new', 'Waypoints: click anywhere on the big map (M) to set one. A purple beam marks the spot, an arrow at your feet points the way with the distance, and the minimap traces the route'],
     ['changed', 'A brand-new title screen in proper crime-epic style, now the 2.0 Crab Edition 🦀'],
     ['changed', 'Sharper ground: the terrain is drawn in high-resolution chunks with twice the mesh detail, so slopes curve smoothly'],
