@@ -3,6 +3,8 @@
 
 const PATCH_NOTES = [
   { v: '2.0', name: 'Hands On', date: '30 Oct 2026', notes: [
+    ['changed', 'More detailed buildings: window frames and shutters, flower boxes, chimneys, front steps, door frames and knobs, and trim'],
+    ['changed', 'Real furniture indoors: beds with pillows and blankets, ovens with doors and a pot, a table with chairs, sofas, toilets with cisterns, iron-banded chests, safes with dials, and shop counters with tills'],
     ['new', 'Slot inventory (I): everything you carry in a grid of stacks (tools, lures, ammo, food, fish, wood…). Click an item to use, eat or tie it on'],
     ['changed', 'The action bar is now a 5-slot hotbar. Drag tools between your bag and the hotbar to arrange them. Binoculars start in the bag'],
     ['new', 'Step in a poo and you track brown footprints everywhere. Locals who tread in yours are FURIOUS (and they know it was you)'],

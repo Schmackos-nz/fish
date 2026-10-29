@@ -75,6 +75,86 @@ const Interior = {
     return this.rooms.get(b);
   },
 
+  // Detailed furniture. Returns true if it built the piece (otherwise a plain block is used).
+  furnish(g, f, hgt) {
+    const L = (c) => new THREE.MeshLambertMaterial({ color: c });
+    const B = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), L(c)); m.position.set(f.x + x, y, f.y + z); g.add(m); return m; };
+    const C = (r, h, c, x, y, z, seg = 12) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, seg), L(c)); m.position.set(f.x + x, y, f.y + z); g.add(m); return m; };
+    const shade = (c, k) => new THREE.Color(c).multiplyScalar(k).getHex();
+    const W = f.w, D = f.h, col = f.color;
+    switch (f.kind) {
+      case 'bed': {
+        for (const [x, z] of [[0.08, 0.08], [W - 0.08, 0.08], [0.08, D - 0.08], [W - 0.08, D - 0.08]]) B(0.1, 0.25, 0.1, 0x5a3a22, x, 0.12, z);
+        B(W, 0.14, D, 0x6a4a2a, W / 2, 0.3, D / 2); // frame
+        B(W - 0.1, 0.16, D - 0.1, 0xf4f0e6, W / 2, 0.45, D / 2); // mattress
+        B(W - 0.06, 0.06, D * 0.62, col, W / 2, 0.55, D * 0.66); // blanket
+        B(W - 0.06, 0.07, 0.12, shade(col, 1.25), W / 2, 0.56, D * 0.35); // folded edge
+        B(W * 0.38, 0.12, 0.32, 0xffffff, W * 0.28, 0.6, 0.25); B(W * 0.38, 0.12, 0.32, 0xffffff, W * 0.72, 0.6, 0.25); // pillows
+        B(W, 0.9, 0.08, 0x5a3a22, W / 2, 0.45, 0.04); // headboard
+        return true;
+      }
+      case 'stove': {
+        B(W, 0.86, D, 0xe8e4dc, W / 2, 0.43, D / 2);
+        B(W - 0.1, 0.04, D - 0.1, 0x2a2a2e, W / 2, 0.88, D / 2);
+        B(W * 0.7, 0.4, 0.02, 0x2a2a2e, W / 2, 0.35, D + 0.01); // oven door
+        B(W * 0.5, 0.03, 0.04, 0xb8b8b0, W / 2, 0.6, D + 0.04); // handle
+        for (const ox of [0.3, W - 0.3]) for (const oz of [0.22, D - 0.22]) C(0.12, 0.02, 0x8a2a1a, ox, 0.91, oz);
+        B(0.5, 0.35, 0.3, 0x9aa3aa, W - 0.3, 1.1, D / 2).rotation.y = 0.2; // a pot
+        return true;
+      }
+      case 'chest': {
+        B(W, hgt * 0.75, D, col, W / 2, hgt * 0.375, D / 2);
+        const lid = B(W + 0.04, hgt * 0.25, D + 0.04, shade(col, 1.15), W / 2, hgt * 0.87, D / 2);
+        for (const x of [0.15, W - 0.15]) B(0.06, hgt + 0.02, D + 0.06, 0x3a3a3e, x, hgt / 2, D / 2); // iron bands
+        B(0.12, 0.14, 0.04, 0xd9b44a, W / 2, hgt * 0.72, D + 0.03); // clasp
+        return !!lid;
+      }
+      case 'table': {
+        B(W, 0.07, D, col, W / 2, 0.74, D / 2);
+        for (const [x, z] of [[0.08, 0.08], [W - 0.08, 0.08], [0.08, D - 0.08], [W - 0.08, D - 0.08]]) B(0.07, 0.72, 0.07, shade(col, 0.75), x, 0.36, z);
+        // Two chairs and a mug.
+        for (const z of [-0.45, D + 0.45]) { B(0.42, 0.05, 0.42, shade(col, 0.9), W / 2, 0.45, z); B(0.42, 0.45, 0.05, shade(col, 0.9), W / 2, 0.68, z < 0 ? z - 0.19 : z + 0.19); for (const [dx, dz] of [[-0.18, -0.18], [0.18, -0.18], [-0.18, 0.18], [0.18, 0.18]]) B(0.04, 0.44, 0.04, shade(col, 0.7), W / 2 + dx, 0.22, z + dz); }
+        C(0.06, 0.12, 0xe2584d, W * 0.3, 0.84, D * 0.4, 8);
+        return true;
+      }
+      case 'couch': {
+        B(W, 0.3, D, col, W / 2, 0.2, D / 2);
+        B(W, 0.55, 0.22, shade(col, 0.85), W / 2, 0.45, D - 0.11); // back
+        for (const x of [0.11, W - 0.11]) B(0.22, 0.42, D, shade(col, 0.85), x, 0.32, D / 2); // arms
+        for (let k = 0; k < 2; k++) B(W / 2 - 0.24, 0.12, D - 0.28, shade(col, 1.12), 0.23 + (W / 2 - 0.12) * k + (W / 4 - 0.12), 0.42, (D - 0.22) / 2);
+        return true;
+      }
+      case 'toilet': {
+        C(0.17, 0.32, 0xf4f4f0, W / 2, 0.16, D * 0.55, 14);
+        const seat = C(0.2, 0.05, 0xe8e8e4, W / 2, 0.35, D * 0.55, 14); seat.scale.z = 1.15;
+        B(W * 0.75, 0.38, 0.16, 0xf4f4f0, W / 2, 0.55, 0.08); // cistern
+        B(0.08, 0.03, 0.03, 0xb8b8b0, W * 0.75, 0.74, 0.17); // flush lever
+        return true;
+      }
+      case 'safe': {
+        B(W, hgt, D, 0x3a3e42, W / 2, hgt / 2, D / 2);
+        B(W - 0.12, hgt - 0.12, 0.03, 0x2a2c30, W / 2, hgt / 2, D + 0.01);
+        const dial = C(0.12, 0.05, 0xb8bcc0, W / 2, hgt * 0.55, D + 0.04, 16); dial.rotation.x = Math.PI / 2;
+        B(0.06, 0.2, 0.04, 0xb8bcc0, W * 0.82, hgt * 0.5, D + 0.04); // handle
+        return true;
+      }
+      case 'counter': {
+        B(W, hgt - 0.06, D, col, W / 2, (hgt - 0.06) / 2, D / 2);
+        B(W + 0.1, 0.06, D + 0.1, shade(col, 1.25), W / 2, hgt - 0.03, D / 2); // worktop
+        for (let k = 0; k < Math.floor(W / 0.7); k++) B(0.5, hgt * 0.6, 0.02, shade(col, 0.85), 0.4 + k * 0.7, hgt * 0.45, D + 0.01); // panels
+        B(0.35, 0.22, 0.3, 0x2a2a2e, W * 0.75, hgt + 0.11, D / 2); // till
+        return true;
+      }
+      case 'cot': {
+        B(W, 0.12, D, 0xb8bcc0, W / 2, 0.4, D / 2);
+        for (const [x, z] of [[0.06, 0.06], [W - 0.06, 0.06], [0.06, D - 0.06], [W - 0.06, D - 0.06]]) C(0.03, 0.4, 0x8a9096, x, 0.2, z, 6);
+        B(W - 0.1, 0.1, D - 0.1, 0xf4f8fa, W / 2, 0.5, D / 2); B(W * 0.7, 0.08, 0.3, 0xffffff, W / 2, 0.58, 0.22);
+        return true;
+      }
+    }
+    return false;
+  },
+
   // Floorboards, three walls (front is cut away so the camera can see in), furniture blocks.
   build(r) {
     const g = new THREE.Group();
@@ -102,6 +182,7 @@ const Interior = {
     win.position.set(r.x0 + r.w - 2, 1.4, r.y0 + 0.01); g.add(win);
     for (const f of r.furn) {
       const hgt = { shelf: 1.7, board: 1.2, counter: 0.9, grocer: 1.3, fridge: 1.8, bed: 0.5, stove: 0.9, chest: 0.6, table: 0.75, bikepad: 0.15, safe: 0.85, couch: 0.6, cot: 0.5, toilet: 0.45 }[f.kind];
+      if (this.furnish(g, f, hgt)) continue; // detailed model
       const m = new THREE.Mesh(new THREE.BoxGeometry(f.w, hgt, f.h), new THREE.MeshLambertMaterial({ color: f.color }));
       m.position.set(f.x + f.w / 2, hgt / 2, f.y + f.h / 2); g.add(m);
       if (f.kind === 'shelf' || f.kind === 'grocer') {
@@ -132,7 +213,7 @@ const Interior = {
     Player.face = -Math.PI / 2;
     Scene3D.target.set(Player.x, 0, Player.y);
     Sfx.tone(520, 0.12, 0.15, 'triangle'); // door bell
-    Hud.toast(b.type === 'house' ? 'Home sweet home.' : 'Welcome to ' + b.name + '.', UI.ink, 1.4);
+    if (b.type !== 'house' || (Game.home && Game.home.id === b.id)) Hud.toast(b.type === 'house' ? 'Home sweet home.' : 'Welcome to ' + b.name + '.', UI.ink, 1.4);
   },
 
   exit() {

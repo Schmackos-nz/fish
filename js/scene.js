@@ -403,6 +403,28 @@ const Scene3D = {
     const win = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.7), winMat);
     win.position.set(W - 1.3, house ? 1.0 : 1.25, D + 0.01);
     g.add(win);
+    // Details: frames and crossbars, shutters, a step, a door knob, trim along the eaves, a chimney.
+    const M = (c) => new THREE.MeshLambertMaterial({ color: c });
+    const box = (w, h, d, c, x, y, z) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), M(c)); m.position.set(x, y, z); g.add(m); return m; };
+    const trim = 0xf4f0e6, wy = house ? 1.0 : 1.25, dark = new THREE.Color(st.wall).multiplyScalar(0.7).getHex();
+    const frame = (x, y, w, h) => { box(w + 0.12, 0.07, 0.05, trim, x, y + h / 2, D + 0.02); box(w + 0.12, 0.07, 0.05, trim, x, y - h / 2, D + 0.02); box(0.07, h, 0.05, trim, x - w / 2, y, D + 0.02); box(0.07, h, 0.05, trim, x + w / 2, y, D + 0.02); box(0.04, h, 0.04, trim, x, y, D + 0.03); box(w, 0.04, 0.04, trim, x, y, D + 0.03); };
+    frame(W - 1.3, wy, 0.9, 0.7);
+    if (house) {
+      const sh = [0x3a5a7a, 0x5a7a3a, 0x7a3a2a, 0x2a4a3a][Math.floor(b.hue * 4) % 4];
+      for (const dx of [-0.6, 0.6]) box(0.28, 0.76, 0.04, sh, W - 1.3 + dx, wy, D + 0.03);
+      box(1.0, 0.14, 0.18, 0x7a5232, W - 1.3, wy - 0.45, D + 0.1); // flower box
+      for (let k = 0; k < 4; k++) { const fl = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 4), M([0xE2584D, 0xF2C14E, 0xE86A8A, 0xFFFFFF][k])); fl.position.set(W - 1.7 + k * 0.26, wy - 0.33, D + 0.1); g.add(fl); }
+      if (W > 4.5) { const w2 = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.7), winMat); w2.position.set(2.4, wy, D + 0.01); g.add(w2); frame(2.4, wy, 0.9, 0.7); }
+      // Chimney on the roof.
+      box(0.4, 1.1, 0.4, 0x8a5a4a, W * 0.75, wallH + 0.75, D * 0.35);
+      box(0.5, 0.1, 0.5, 0x5a3a2a, W * 0.75, wallH + 1.32, D * 0.35);
+    }
+    box(1.1, 0.12, 0.4, 0x9a9a92, 0.9, 0.06, D + 0.18); // front step
+    box(0.95, 0.08, 0.05, trim, 0.9, 1.34, D + 0.02); // door frame top
+    for (const dx of [-0.44, 0.44]) box(0.07, 1.34, 0.05, trim, 0.9 + dx, 0.67, D + 0.02);
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), M(0xd9b44a)); knob.position.set(1.15, 0.65, D + 0.05); g.add(knob);
+    box(W + 0.8, 0.08, 0.08, dark, W / 2, wallH + 0.02, D + 0.12); // eave trim
+    box(0.12, wallH, 0.12, dark, 0.04, wallH / 2, D - 0.02); box(0.12, wallH, 0.12, dark, W - 0.04, wallH / 2, D - 0.02); // corner posts
     const signText = st.sign || (b.vacant ? ['FOR RENT', '#f4efe2', '#b83a32'] : null);
     if (signText) {
       const c = document.createElement('canvas'); c.width = 128; c.height = 32;
