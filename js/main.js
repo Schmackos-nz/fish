@@ -182,16 +182,18 @@ function drawTitleTim() {
   if (!c) return;
   const g = c.getContext('2d');
   g.clearRect(0, 0, c.width, c.height);
-  // Rod from his hand up and over, line down to a big trout.
+  // Body first, then the rod held up in front of him (his hand drawn over the grip), the line and a big trout.
+  g.save(); g.translate(12, 20); g.scale(4.6, 4.6);
+  Folk.draw(g, TIM_PAL, 'down', 0, 'grip');
+  g.restore();
   const hx = 40 * 4.6 + 12, hy = 58 * 4.6 + 20;
   g.lineCap = 'round';
   g.strokeStyle = '#1a1410'; g.lineWidth = 9; g.beginPath(); g.moveTo(hx, hy); g.quadraticCurveTo(hx + 70, hy - 210, hx + 96, hy - 250); g.stroke();
   g.strokeStyle = '#C9A86A'; g.lineWidth = 5; g.beginPath(); g.moveTo(hx, hy); g.quadraticCurveTo(hx + 70, hy - 210, hx + 96, hy - 250); g.stroke();
   g.strokeStyle = '#EEE7D7'; g.lineWidth = 2; g.beginPath(); g.moveTo(hx + 96, hy - 250); g.lineTo(hx + 92, hy - 150); g.stroke();
   Fish.drawPortrait(g, SPECIES_BY_ID.rainbow, hx + 92, hy - 110, 130, false, Math.PI / 2 - 0.2);
-  g.save(); g.translate(12, 20); g.scale(4.6, 4.6);
-  Folk.draw(g, TIM_PAL, 'down', 0, 'grip');
-  g.restore();
+  // His fist wrapped round the rod butt.
+  g.fillStyle = TIM_PAL.vest; g.strokeStyle = '#1a1410'; g.lineWidth = 4; g.beginPath(); g.arc(hx, hy, 15, 0, 7); g.fill(); g.stroke();
 }
 
 function refreshTitle() {
