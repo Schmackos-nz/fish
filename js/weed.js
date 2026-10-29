@@ -10,6 +10,7 @@ const WEED_SAY = {
 };
 
 const Weed = {
+  dustyKO: { ko: false, koT: 0 },
   group: null, plantMeshes: [], tex: null,
 
   init() {
@@ -18,6 +19,7 @@ const Weed = {
     Scene3D.scene.add(this.group);
     if (!this.tex) this.tex = this.paintPlant();
     this.dusty = standee(DUSTY_PAL, World.dusty.x, World.dusty.y);
+    this.dustyKO = { ko: false, koT: 0 };
     this.group.add(this.dusty);
     this.sync();
   },

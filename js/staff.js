@@ -61,7 +61,7 @@ const Staff = {
   offToday(st) { return this.weekday() === st.offDay; },
   // Who's behind the counter right now (null if shut).
   onShift(type) {
-    const st = this.by(type); if (!st) return null;
+    const st = this.by(type); if (!st || st.ko) return null;
     if (st.state === 'cover') return st.cover; // someone's minding it while they're off
     if (st.state !== 'work') return null;
     return st.name;
@@ -82,6 +82,9 @@ const Staff = {
 
   update(dt) {
     this.newsT -= dt;
+    // Knocked-out people come round eventually (and Dusty, who's had worse).
+    for (const st of this.list) if (st.ko && (st.koT += dt) > 35) { st.ko = false; if (Interior.active && Interior.active.b === st.b) Hud.toast((Staff.onShift(st.type) || st.name) + ' staggers back up. "Get OUT of my shop!"', UI.bad, 2.4); }
+    const dk = Weed.dustyKO; if (dk.ko && (dk.koT += dt) > 45) dk.ko = false;
     if (this.news.length && this.newsT <= 0) { Hud.toast(this.news.shift(), UI.accent, 3.2); this.newsT = 3.4; }
     for (const st of this.list) {
       const want = this.desired(st);
@@ -201,6 +204,7 @@ const Staff = {
     const v = this._v || (this._v = new THREE.Vector3());
     // The old fixed vendor models are retired; staff are drawn here.
     for (const m of [Actors.keeper, Wardens.ranger, Interior.clerk, Interior.revs, Interior.nurse]) if (m) m.visible = false;
+    if (Weed.dusty) { Weed.dusty.userData.rig.lean.rotation.x = Weed.dustyKO.ko ? -Math.PI / 2 : 0; }
     const spots = { shop: World.shopkeeper, ranger: World.ranger, store: World.clerk, bikes: World.revs, clinic: World.nurse };
     for (const st of this.list) {
       const rig = st.mesh.userData.rig, crig = st.coverMesh.userData.rig;
@@ -210,12 +214,12 @@ const Staff = {
         // Behind the counter (interior coordinates).
         const m = this.offToday(st) ? st.coverMesh : st.mesh, r = m.userData.rig;
         m.visible = !!Interior.active && Interior.active.b === st.b;
-        m.position.set(spot.x, 0.04, spot.y); r.yaw.rotation.y = -Math.PI / 2; r.lean.rotation.x = 0;
-        Models.pose(r, { t: Game.time });
+        m.position.set(spot.x, 0.04, spot.y); r.yaw.rotation.y = -Math.PI / 2;
+        Models.pose(r, { t: st.ko ? 0 : Game.time }); r.lean.rotation.x = st.ko ? -Math.PI / 2 : 0; if (st.ko) m.position.y = 0.15;
       } else if (st.state === 'cover') {
         // Off-duty — and the cover worker is in the shop.
         st.coverMesh.visible = !!Interior.active && Interior.active.b === st.b;
-        st.coverMesh.position.set(spot.x, 0.04, spot.y); crig.yaw.rotation.y = -Math.PI / 2; Models.pose(crig, { t: Game.time });
+        st.coverMesh.position.set(spot.x, 0.04, spot.y); crig.yaw.rotation.y = -Math.PI / 2; Models.pose(crig, { t: st.ko ? 0 : Game.time }); crig.lean.rotation.x = st.ko ? -Math.PI / 2 : 0;
         const vis = !Interior.active && U.dist(st.x, st.y, Player.x, Player.y) < 60;
         st.mesh.visible = st.prop.visible = vis;
         if (!vis) continue;

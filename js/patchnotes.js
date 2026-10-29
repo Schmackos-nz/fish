@@ -3,6 +3,9 @@
 
 const PATCH_NOTES = [
   { v: '1.5', name: 'Hard Time', date: '30 Oct 2026', notes: [
+    ['changed', 'Black out while wanted and the police are waiting at your clinic bed: once you are patched up, they arrest you on your full rap sheet'],
+    ['changed', 'Guns work indoors now (anyone in the shop will call the cops). Shopkeepers can be knocked out, which shuts the shop till they come round'],
+    ['changed', 'Dusty can be knocked out too, and he drops whatever weed he was carrying'],
     ['fixed', 'Mosquitoes and sandflies now fly in the world instead of being stuck to the screen: they no longer chase your fishing line or snap back when you reel in, and you can walk or run away from them'],
     ['new', 'Shops keep opening hours. Staff walk in from their own houses to unlock in the morning and lock up at night (and boot you out at closing)'],
     ['new', 'Staff take days off: someone else minds the shop while they go fishing, hunting or sunbathing (say g\'day if you find them)'],

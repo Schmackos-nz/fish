@@ -52,6 +52,11 @@ const Wanted = {
     for (const r of Bikes.riders) if (!(r.ko > 0) && !r.away) { const p = Bikes.riderPos(r); out.push({ x: p.x, y: p.y, kind: 'biker', o: r }); }
     for (const u of this.units) if (!u.ko) out.push({ x: u.x, y: u.y, kind: 'unit', o: u });
     for (const h of Hunters.list) if (!h.ko) out.push({ x: h.x, y: h.y, kind: 'hunter', o: h });
+    if (World.dusty && !Weed.dustyKO.ko && !Interior.active) out.push({ x: World.dusty.x, y: World.dusty.y, kind: 'dusty', o: Weed.dustyKO });
+    if (Interior.active && typeof Staff !== 'undefined') {
+      const spots = { shop: World.shopkeeper, ranger: World.ranger, store: World.clerk, bikes: World.revs, clinic: World.nurse };
+      for (const st of Staff.list) if (st.b === Interior.active.b && Staff.onShift(st.type) && !st.ko) { const sp = spots[st.type]; out.push({ x: sp.x, y: sp.y, kind: 'staff', o: st }); }
+    }
     return out;
   },
 
@@ -78,7 +83,15 @@ const Wanted = {
       this.crime(1.3 * crime);
     } else if (t.kind === 'warden') { o.state = 'ko'; o.t = 0; this.crime(1.6 * crime); }
     else if (t.kind === 'biker') { o.ko = 25; this.crime(1.3 * crime); }
-    else { o.ko = true; o.koT = 0; this.crime(0.8 * crime); }
+    else if (t.kind === 'dusty') {
+      o.ko = true; o.koT = 0; this.crime(1.2 * crime);
+      // He drops what he was carrying.
+      const bags = 1 + ((Math.random() * 3) | 0); Game.weed = (Game.weed || 0) + bags;
+      Hud.toast('Dusty goes down — and ' + bags + ' bag' + (bags > 1 ? 's' : '') + ' of weed fall out of his jacket. Into your pocket they go.', UI.bad, 2.6);
+    } else if (t.kind === 'staff') {
+      o.ko = true; o.koT = 0; this.crime(1.5 * crime);
+      Hud.toast((Staff.onShift(o.type) || o.name) + ' is out cold behind the counter. The shop\'s shut till they come round.', UI.bad, 2.6);
+    } else { o.ko = true; o.koT = 0; this.crime(0.8 * crime); }
     this.panic(t.x, t.y);
   },
 
@@ -153,6 +166,15 @@ const Wanted = {
 
   update(dt) {
     this.hurtT = Math.max(0, this.hurtT - dt);
+    if (this.pendingArrest && !Menus.open && !this.blackingOut) {
+      const p = this.pendingArrest; this.pendingArrest = null;
+      for (const m of this.escort || []) this.group.remove(m);
+      this.escort = null;
+      this.rap = p.rap; this.peak = p.peak; this.heat = p.level; this.level = p.level;
+      Hud.toast('"You\'re coming with us." The officers cuff you on the way out of the clinic.', UI.bad, 3);
+      this.arrest();
+      return;
+    }
     this.hidden = this.isHidden();
     // Seen by any conscious unit (or a chasing warden) close enough, unless hidden.
     this.seen = this.level > 0 && this.units.some((u) => !u.ko && U.dist(u.x, u.y, Player.x, Player.y) < (this.hidden ? 2.2 : 18));
@@ -281,6 +303,8 @@ const Wanted = {
     this.dmgLog = {};
     const bill = Math.min(Game.money, 40 + Math.round(Game.money * 0.15));
     Game.money -= bill;
+    // Wanted when you went down? The cops will be waiting when you wake up.
+    this.pendingArrest = this.level > 0 ? { rap: this.rap, peak: Math.max(this.peak || 0, this.heat), level: this.level } : null;
     this.clear(); this.health = 100; Game.poison = null;
     if (Bikes.riding) Bikes.dismount();
     Fishing.reelInFast();
@@ -297,7 +321,12 @@ const Wanted = {
       fade.classList.remove('on');
       this.blackingOut = false;
       this.clear(); // anything that went off while you were out doesn't count
-      Clinic.wakeUp(log, last, bill);
+      if (this.pendingArrest && clinic) {
+        // Two officers waiting by the cot.
+        this.escort = [standee(COP_PAL, World.nurse.x + 2.6, World.nurse.y + 1.2, Math.PI), standee(COP_PAL, World.nurse.x + 0.4, World.nurse.y + 2.4, 0)];
+        this.escort.forEach((m) => this.group.add(m));
+      }
+      Clinic.wakeUp(log, last, bill, !!this.pendingArrest);
       Game.save();
     }, 1800);
   },

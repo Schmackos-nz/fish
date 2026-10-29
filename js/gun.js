@@ -138,7 +138,6 @@ const Gun = {
 
   shoot() {
     if (this.cooldown > 0) return;
-    if (Interior.active) { Hud.toast('Not indoors!', UI.bad, 1.2); return; }
     // Never at people. Not even the ones on lilos.
     let a = this.aimPoint();
     const lilo = Floaters.near(a.x, a.y, 1.6);
@@ -186,6 +185,7 @@ const Gun = {
     Floaters.onGunshot();
     Animals.onGunshot(a.x, a.y); Ducks.onGunshot(a.x, a.y);
     Wanted.onGunshot(a.x, a.y);
+    if (Interior.active && !this.indoorWarned) { this.indoorWarned = true; setTimeout(() => { this.indoorWarned = false; }, 4000); Wanted.crime(1); Hud.toast('Shots fired inside ' + Interior.active.b.name + '! Someone\'s calling the cops.', UI.bad, 2.2); }
     Game.save();
   },
 

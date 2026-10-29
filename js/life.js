@@ -372,7 +372,7 @@ const Interact = {
         else add(p.x, p.y, 2.2, 'Gas pump', () => Hud.toast(Game.bike ? 'Bring your bike over to the pump.' : 'You\'ll need a bike first — Dirt Cheap Bikes is up the street.', UI.muted, 2));
       }
       add(World.tim.x, World.tim.y, 2.6, 'Talk to Tim — tips & goals', () => Tim.open());
-      add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
+      if (!Weed.dustyKO.ko) add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
       Weed.interactions(add);
       Staff.interactions(add);
       Camp.interactions(cands);
