@@ -34,7 +34,7 @@ const Tim = {
     if (this.termShown === k) return;
     const prev = this.termShown; this.termShown = k;
     const s = this.spot(); World.tim.x = s.x; World.tim.y = s.y;
-    if (this.mesh) { this.group.remove(this.mesh); this.mesh = Models.person(this.guide().pal); this.mesh.userData.rig.yaw.rotation.y = -Math.PI / 2; this.group.add(this.mesh); }
+    if (this.mesh) { this.group.remove(this.mesh); this.mesh = Models.person({ ...this.guide().pal, female: this.guide().she }); this.mesh.userData.rig.yaw.rotation.y = -Math.PI / 2; this.group.add(this.mesh); }
     if (Markers.refresh) Markers.refresh();
     if (announce && prev !== undefined) {
       const g = this.guide(), old = GUIDES[prev % GUIDES.length];
@@ -72,7 +72,7 @@ const Tim = {
     this.group = new THREE.Group();
     Scene3D.scene.add(this.group);
     this.termShown = undefined;
-    this.mesh = Models.person(this.guide().pal);
+    this.mesh = Models.person({ ...this.guide().pal, female: this.guide().she });
     this.mesh.userData.rig.yaw.rotation.y = -Math.PI / 2;
     // Umbrella: striped canopy on a hooked handle, held over his head when it rains.
     const u = new THREE.Group();

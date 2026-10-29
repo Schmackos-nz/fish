@@ -74,7 +74,8 @@ const Floaters = {
     const pad = P(new THREE.BoxGeometry(0.95, 0.16, 2.1), main, 0.03); pad.position.y = 0.08; g.add(pad);
     for (let k = 0; k < 6; k++) { const r = P(new THREE.CylinderGeometry(0.08, 0.08, 0.93, 8), rib, 0); r.rotation.z = Math.PI / 2; r.position.set(0, 0.15, -0.75 + k * 0.32); g.add(r); }
     const pillow = P(new THREE.CylinderGeometry(0.13, 0.13, 0.9, 10), U.shade(main, 0.3), 0.05); pillow.rotation.z = Math.PI / 2; pillow.position.set(0, 0.2, -0.92); g.add(pillow);
-    const p = Models.person({ hatStyle: 'hair', hair: '#5A3A1E', shirt: f.skin, pants: f.skin, skin: f.skin, mitt: f.skin });
+    if (f.female === undefined) f.female = Math.random() < 0.5;
+    const p = Models.person({ female: f.female, bust: 0.8 + Math.random() * 0.45, bra: f.lilo[0], hatStyle: 'hair', hair: '#5A3A1E', shirt: f.skin, pants: f.lilo[1] /* swimwear bottoms, always */, skin: f.skin, mitt: f.skin });
     if (f.shades) for (const z of [-0.085, 0.085]) { const s = P(new THREE.BoxGeometry(0.04, 0.09, 0.13), '#151515', 0); s.position.set(0.3, 0.035, z); p.userData.rig.head.add(s); }
     // Carrying it home: tucked under the arm, long side forward.
     f.carry = new THREE.Group(); f.carry.rotation.z = Math.PI / 2; f.carry.position.set(0.02, 0.5, 0.46); f.carry.scale.setScalar(0.62);

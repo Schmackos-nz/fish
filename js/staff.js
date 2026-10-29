@@ -48,7 +48,7 @@ const Staff = {
 
   makeMesh(st) {
     if (st.mesh) this.group.remove(st.mesh);
-    st.mesh = Models.person(st.pal);
+    st.mesh = Models.person({ ...st.pal, female: Models.isFemaleName(st.name) });
     this.group.add(st.mesh);
     if (!st.coverMesh) { st.coverMesh = Models.person({ hat: '#3A6AD2', hatStyle: 'cap', shirt: '#E8E2D0', vest: '#3A6AD2', pants: '#3A3A4A', skin: '#C8A07A', hair: '#3A2A1A' }); this.group.add(st.coverMesh); }
     if (!st.prop) { st.prop = new THREE.Group(); this.group.add(st.prop); }

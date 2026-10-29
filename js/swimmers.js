@@ -28,7 +28,7 @@ const Swimmers = {
         const nice0 = Swimmers.nice();
         const s = { state: nice0 ? 'swim' : 'gone', x, y, lake, look, face: 1, tx: x, ty: y, speed: 0.7 + rng() * 0.4, flee: 0, stroke: rng() * 6, talkT: 8 + rng() * 25, bubble: null, bubbleT: 0 };
         const skin = SKINS[i % SKINS.length];
-        s.mesh = Models.person({ hat: CAP_COLORS[look], hatStyle: 'swimcap', shirt: skin, pants: '#2A4A8A', skin, mitt: skin });
+        s.mesh = Models.person({ female: Math.random() < 0.5, bra: '#2A4A8A', hat: CAP_COLORS[look], hatStyle: 'swimcap', shirt: skin, pants: '#2A4A8A', skin, mitt: skin });
         s.heading = 0;
         this.group.add(s.mesh);
         this.list.push(s);

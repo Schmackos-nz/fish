@@ -424,6 +424,7 @@ const Npcs = {
 
   buildMeshes(n) {
     this.drawSprite(n.palette, 'down', 0, 'normal'); // fills in hat style etc. on the palette
+    n.palette.female = Models.isFemaleName(n.name);
     n.mesh = Models.person(n.palette);
     n.rig = n.mesh.userData.rig;
     n.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.3, 10), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.25, depthWrite: false }));

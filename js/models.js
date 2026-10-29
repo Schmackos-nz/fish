@@ -44,6 +44,7 @@ const Models = {
   },
 
   // ---------- people ----------
+  isFemaleName(n) { return /^(Mabel|Dolores|Pearl|Wanda|Ingrid|Tilly|Hettie|Ngaio|Bev|Marge|Aroha|Tania|Wendy|Sheila|Trish|Lois|Kiri|Ana|Josie|Glenda|Hine|Ruby|Shazza|Kayla|Tui|Dee|Raewyn|Mere|Leilani|Mabel)\b/.test(n || ''); },
   person(pal) {
     const G = this.geos(), P = (g, c, o) => this.part(g, c, o);
     const root = new THREE.Group();
@@ -62,6 +63,15 @@ const Models = {
     const body = P(G.body, pal.shirt, 0.05); body.position.y = 0.19; body.scale.set(1, 1.1, 1); upper.add(body);
     if (pal.vest && !pal.apron) { const v = P(G.vest, pal.vest, 0); v.position.copy(body.position); v.scale.copy(body.scale); upper.add(v); }
     if (pal.apron) { const v = P(G.apron, pal.vest, 0); v.position.copy(body.position); v.scale.copy(body.scale); upper.add(v); }
+    // Women: a modest bust, always covered — by their shirt, or a bikini top / bra if they're bare.
+    if (pal.female) {
+      const bare = pal.shirt === pal.skin, top = bare ? (pal.bra || '#E2584D') : pal.shirt;
+      // Everyone's a little different (seeded from their colours, so a person always looks the same).
+      let h = 0; for (const c of String(pal.skin) + pal.shirt + pal.hat + pal.hair) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+      const k = pal.bust || 0.8 + (h % 1000) / 1000 * 0.45; // 0.8–1.25
+      for (const z of [-0.075, 0.075]) { const b = P(G.mitt, top, 0.06); b.scale.set(0.62 * k, 0.6 * (0.9 + k * 0.1), 0.6); b.position.set(0.19 + 0.025 * k, 0.3, z * (0.95 + k * 0.05)); upper.add(b); }
+      if (bare) { const strap = P(G.band, top, 0); strap.scale.set(0.98, 0.35, 0.98); strap.position.y = 0.3; upper.add(strap); }
+    }
     if (pal.badge) { const b = P(G.badge, '#E8C04A', 0.3); b.rotation.z = Math.PI / 2; b.position.set(0.27, 0.27, -0.1); upper.add(b); }
     // Arms pivot at the shoulder; the right hand carries rods and rifles.
     const arm = (z, isRight) => {

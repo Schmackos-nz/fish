@@ -416,7 +416,7 @@ const Hunters = {
       for (let t = 0; t < 200; t++) { const a = Math.random() * 6.28, r = 30 + Math.random() * 90, px = World.town.x + Math.cos(a) * r, py = World.town.y + Math.sin(a) * r; if (World.inB(px, py) && World.tileAt(Math.floor(px), Math.floor(py)) === T.FOREST && !World.blocked(px, py)) { x = px; y = py; break; } }
       const pal = { ...HUNTER_PAL, skin: ['#E2B08A', '#C08A60', '#F0C8A0'][k], beard: k === 2 ? null : HUNTER_PAL.beard, hair: '#5A3A1A' };
       const h = { name, x, y, face: 0, state: 'roam', t: 0, goal: null, prey: null, aimT: 0, ko: false, koT: 0, walkT: 0, bubble: null, bubbleT: 0 };
-      h.mesh = Models.person(pal);
+      h.mesh = Models.person({ ...pal, female: Models.isFemaleName(name) });
       // Reflective stripes round the vest.
       for (const yy of [0.13, 0.27]) { const s = Models.part(new THREE.CylinderGeometry(0.3, 0.3, 0.035, 16, 1, true), '#EDEDED', 0); s.position.y = yy; h.mesh.userData.rig.upper.add(s); }
       h.rifle = Wanted.gunMesh(true);
