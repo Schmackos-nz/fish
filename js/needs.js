@@ -79,11 +79,13 @@ const Needs = {
   // ---------- doing your business ----------
   act(kind, label, secs, done) {
     this.busy = true; Menus.open = 'busy';
-    const was = Player.crouch; Player.crouch = true;
+    // Stand to wee, squat to poo (a loo is a seat either way).
+    const was = Player.crouch; Player.crouch = kind === 'bowels' && !Interior.active;
+    this.acting = { kind, t0: performance.now(), secs, loo: !!Interior.active };
     Hud.toast(label, UI.muted, secs);
     const snd = this.sounds(kind, secs);
     setTimeout(() => {
-      snd.forEach(clearTimeout); clearInterval(snd.loop); Player.crouch = was;
+      snd.forEach(clearTimeout); clearInterval(snd.loop); Player.crouch = was; this.acting = null;
       this.busy = false; if (Menus.open === 'busy') Menus.open = null;
       done();
       Game.save();
@@ -169,6 +171,36 @@ const Needs = {
     Sfx.fail();
     Hud.toast(k === 'bladder' ? 'Oh no. You couldn\'t hold it. Your trousers are… damp.' : 'Oh NO. That\'s… that\'s not good. You need a wash. Badly.', UI.bad, 3.2);
     for (const n of this.witnesses(8)) if (n.name && Npcs.list.includes(n)) { Npcs.say(n, 'Oh dear GOD.', 2.2); break; }
+  },
+
+  // A mosaic over the business end, with a yellow trickle (wee) or brown drops (poo) peeking out below.
+  drawCensor(hud) {
+    const A = this.acting; if (!A || A.loo) return;
+    const g = hud.g, t = (performance.now() - A.t0) / 1000, k = U.clamp(t / A.secs, 0, 1);
+    const wee = A.kind === 'bladder', h = Scene3D.standH(Player.x, Player.y) + (wee ? 0.42 : 0.2);
+    const fx = Math.cos(Player.face), fy = Math.sin(Player.face);
+    const [sx, sy, ok] = Scene3D.project(Player.x + fx * 0.15, Player.y + fy * 0.15, h); if (!ok) return;
+    const [gx, gy] = Scene3D.project(Player.x + fx * (wee ? 0.75 : 0) - (wee ? 0 : fx * 0.1), Player.y + fy * (wee ? 0.75 : 0) - (wee ? 0 : fy * 0.1), Scene3D.groundH(Player.x, Player.y));
+    const sc = U.clamp(16 / Scene3D.camDist, 0.6, 1.6);
+    // The stream / drops, drawn first so the mosaic sits over its source.
+    if (wee && k < 0.92) {
+      const flow = Math.min(1, t * 3) * (1 - Math.max(0, k - 0.8) * 5);
+      g.strokeStyle = 'rgba(240,215,60,' + (0.85 * flow).toFixed(2) + ')'; g.lineWidth = 3 * sc; g.lineCap = 'round';
+      g.beginPath(); g.moveTo(sx, sy); g.quadraticCurveTo((sx + gx) / 2, Math.min(sy, gy) - 18 * sc, gx, gy); g.stroke();
+      // A spreading yellow puddle.
+      g.fillStyle = 'rgba(232,212,74,0.55)'; g.beginPath(); g.ellipse(gx, gy, 14 * sc * k + 3, 6 * sc * k + 2, 0, 0, 7); g.fill();
+      for (let i = 0; i < 3; i++) { const a = t * 9 + i * 2.1; g.fillStyle = 'rgba(250,230,90,0.8)'; g.beginPath(); g.arc(gx + Math.cos(a) * 6 * sc, gy - Math.abs(Math.sin(a)) * 5 * sc, 1.6 * sc, 0, 7); g.fill(); }
+    } else if (!wee) {
+      const n = Math.floor(k * 3.2);
+      for (let i = 0; i < n; i++) { g.fillStyle = '#5A3A1A'; g.beginPath(); g.ellipse(gx + (i - 1) * 3 * sc, gy - i * 3 * sc, (7 - i * 1.5) * sc, (4 - i) * sc, 0, 0, 7); g.fill(); }
+      const drop = (t * 1.6) % 1;
+      if (k < 0.85) { g.fillStyle = '#6A4422'; g.beginPath(); g.ellipse(sx, U.lerp(sy, gy - 6 * sc, drop), 3 * sc, 4 * sc, 0, 0, 7); g.fill(); }
+    }
+    // The mosaic block itself, tinted to match.
+    const pal = wee ? ['#E8D44A', '#F2E27A', '#D9B830', '#E8C08A', '#F4E8B0', '#C9A830'] : ['#7A5230', '#5A3A1A', '#9A6A3A', '#E8C08A', '#6A4422', '#B08050'];
+    if (!this.mos || performance.now() - this.mosT > 120) { this.mosT = performance.now(); this.mos = Array.from({ length: 24 }, () => pal[(Math.random() * pal.length) | 0]); }
+    const cell = 6 * sc, cols = 6, rows = 4, x0 = sx - cols * cell / 2, y0 = sy - rows * cell / 2;
+    this.mos.forEach((c, i) => { g.fillStyle = c; g.fillRect(x0 + (i % cols) * cell, y0 + Math.floor(i / cols) * cell, cell + 0.5, cell + 0.5); });
   },
 
   // ---------- stepping in it ----------

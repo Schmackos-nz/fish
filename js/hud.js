@@ -143,6 +143,7 @@ const Hud = {
     Wanted.drawWorld(this);
     this.drawGunCursor();
     Waypoint.draw(this);
+    Needs.drawCensor(this);
     LineDrag.draw(this);
     // Panels are laid out on a virtual screen, scaled down to fit phones.
     const k = this.k = Mobile.hudScale(), ins = Mobile.insets();
