@@ -52,7 +52,7 @@ const Life = {
   // Rent is charged once per new day.
   processDays() {
     if (Game.lastDay === undefined) Game.lastDay = Game.env.day;
-    while (Game.lastDay < Game.env.day) { Game.lastDay++; this.payRent(); Decay.age(1, false); Staff.daily(); Thief.daily(); }
+    while (Game.lastDay < Game.env.day) { Game.lastDay++; this.payRent(); Decay.age(1, false); Staff.daily(); Thief.daily(); Rep.daily(); }
   },
 
   payRent() {

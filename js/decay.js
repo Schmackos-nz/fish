@@ -162,6 +162,7 @@ const Decay = {
       setTimeout(() => {
         clearInterval(tick); clearInterval(ff);
         this.state().b[i] = Math.min(this.dmg(i), target); this.dirty = true;
+        Rep.add(1.5 + d * 2.5);
         Sfx.tone(660, 0.08, 0.12, 'triangle', 990);
         k++; step();
       }, STAGE_S * 1000);
@@ -180,6 +181,7 @@ const Decay = {
     const st = this.state();
     st.rubbish.splice(st.rubbish.indexOf(r), 1);
     Game.money += 3; Sfx.tone(300, 0.06, 0.15, 'triangle', 200);
+    Rep.add(0.4);
     this.dirty = true; Game.save();
   },
 

@@ -21,6 +21,7 @@ const Thief = {
     const s = this.st();
     s.rep = Math.min(10, s.rep + (what === 'safe' ? 2 : 1));
     s.last = this.nowH(); s.what = what; s.victim = victim || null;
+    Rep.add(what === 'safe' ? -10 : -6);
   },
   daily() { const s = this.st(); s.rep = Math.max(0, s.rep * 0.8 - 0.1); },
   recent() { const s = this.st(); return s.rep > 0.3 && this.nowH() - s.last < 72; },
@@ -52,7 +53,7 @@ const Thief = {
     if (this.mob.length) return this.mobTick(dt);
     const night = Game.env.hour >= 20 || Game.env.hour < 5;
     if (s.rep >= 2 && this.recent() && this.nowH() - s.ambushH > 24 && !Interior.active && !Bikes.riding && Wanted.level === 0
-      && Math.random() < dt * 0.008 * (night ? 2 : 1) * Math.min(3, s.rep / 2)) this.startMob();
+      && Rep.val() < 20 && Math.random() < dt * 0.008 * (Rep.val() < -60 ? 2 : 1) * (night ? 2 : 1) * Math.min(3, s.rep / 2)) this.startMob();
   },
 
   startMob() {

@@ -43,7 +43,7 @@ const Contest = {
     const c = this.state(cur.week), C = CONTESTS[c.type];
     if (c.entered) return;
     if (Game.money < C.fee) { Hud.toast('Entry is ' + U.fmtMoney(C.fee) + ' — you\'re short.', UI.bad, 1.8); return; }
-    Game.money -= C.fee; c.entered = true; Sfx.coin();
+    Game.money -= C.fee; c.entered = true; Sfx.coin(); Rep.add(2);
     Hud.toast('Entered the ' + C.name + '! ' + (cur.live ? 'It\'s on — go get \'em.' : 'Starts Saturday at dawn.'), UI.good, 2.6);
     Game.save();
   },
@@ -99,7 +99,7 @@ const Contest = {
     c.done = true;
     const C = CONTESTS[c.type], table = this.standings(c), win = table[0];
     if (win && win.you) {
-      Game.money += C.prize; (Game.trophies = Game.trophies || []).push({ type: c.type, kg: win.kg, day: Game.env.day });
+      Game.money += C.prize; Rep.add(8); (Game.trophies = Game.trophies || []).push({ type: c.type, kg: win.kg, day: Game.env.day });
       Sfx.coin();
     }
     const rows = table.slice(0, 6).map((r, i) => `<div class="row"><div><b>${i + 1}. ${r.you ? '<span style="color:var(--accent)">You</span>' : r.name}</b> <span class="desc">${r.what || ''}</span></div><b>${r.kg.toFixed(2)} kg</b></div>`).join('');

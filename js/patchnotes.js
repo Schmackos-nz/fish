@@ -2,6 +2,13 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '1.7', name: 'Local Legend', date: '30 Oct 2026', notes: [
+    ['new', 'Reputation bar under the clock, from Hated to Friendly. You start Neutral'],
+    ['new', 'Liked gets you 10% off and Friendly 20% off at every till. Disliked and Hated pay a surcharge'],
+    ['new', 'Raise it by fixing up the town, binning rubbish, having a yarn with the locals, and entering (or winning) contests'],
+    ['new', 'Lower it by stealing, burgling, cracking safes and decking innocent people. Hated folk also get mobbed more often'],
+    ['new', 'Locals greet you warmly when you are well liked, and give you grief when you are not. Your standing drifts back toward Neutral over time'],
+  ] },
   { v: '1.6', name: 'Light Fingers', date: '30 Oct 2026', notes: [
     ['new', 'Steal a hunter\'s kill and they come after you with their rifle for about half a minute (fighting back counts as self-defence)'],
     ['fixed', 'Snakes keep to the deep forest, well away from town, and no longer turn up in meadows or the starting area'],

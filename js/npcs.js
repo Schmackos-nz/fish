@@ -286,6 +286,7 @@ const Npcs = {
 
   // ---------- talking to the player ----------
   talk(n) {
+    if (!Rep.talked[n.name]) { Rep.talked[n.name] = true; Rep.add(0.8); } // a friendly yarn, once a day each
     n.state = 'chat'; n.t = 4; n.face = Math.atan2(Player.y - n.y, Player.x - n.x);
     const r = Math.random();
     if (n.rec.best > 0 && r < 0.4) {

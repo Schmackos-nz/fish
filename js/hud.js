@@ -150,7 +150,8 @@ const Hud = {
     g.setTransform(d * k, 0, 0, d * k, d * ins.l, 0);
     const W = this.W = (innerWidth - ins.l - ins.r) / k, H = this.H = innerHeight / k;
     const sh = this.drawStatus(20, 20);
-    if (Mobile.active) this.drawVitals(20, 20 + sh + 12 + 100);
+    this.drawRep(20, 20 + sh + 8);
+    if (Mobile.active) this.drawVitals(20, 20 + sh + 12 + 100 + 42);
     this.drawMinimap(W - 20 - 82, 20 + 82);
     drawWindSock(this, W - 20 - 164 - 44, 52);
     Contest.drawHud(this, W - 20 - 82, 222);
@@ -185,6 +186,22 @@ const Hud = {
       g.fillStyle = '#B07A2A'; g.fillRect(bx, y + 14, bw, 3);
     }
     this.text(String(n), x + w - 8, y + 15, n ? UI.ink : UI.bad, 12, 'right', 700);
+  },
+
+  // Hated ◀──●──▶ Friendly
+  drawRep(x, y) {
+    const g = this.g, w = 248, h = 36, v = Rep.val(), t = Rep.tier();
+    this.card(x, y, w, h, { r: 12 });
+    const tx = x + 58, tw = w - 116, ty = y + 22;
+    this.text('Hated', x + 12, y + 26, '#E2584D', 10, 'left', 700);
+    this.text('Friendly', x + w - 12, y + 26, '#7FC483', 10, 'right', 700);
+    const gr = g.createLinearGradient(tx, 0, tx + tw, 0);
+    gr.addColorStop(0, '#E2584D'); gr.addColorStop(0.3, '#E3A945'); gr.addColorStop(0.5, '#8A867C'); gr.addColorStop(0.7, '#B8D86A'); gr.addColorStop(1, '#7FC483');
+    g.fillStyle = gr; g.beginPath(); g.roundRect(tx, ty - 3, tw, 6, 3); g.fill();
+    g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(tx + tw / 2 - 1, ty - 6, 2, 12);
+    const mx = tx + (v + 100) / 200 * tw;
+    g.fillStyle = '#F3EAD6'; g.strokeStyle = '#1a1410'; g.lineWidth = 2; g.beginPath(); g.arc(mx, ty, 6, 0, 7); g.fill(); g.stroke();
+    this.text(t.name, x + w / 2, y + 12, t.color, 10, 'center', 700);
   },
 
   drawStatus(x, y) {
