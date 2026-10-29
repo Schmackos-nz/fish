@@ -334,7 +334,7 @@ const Wanted = {
     // Wanted level: its own big star banner, top middle.
     if (this.level > 0) {
       const flash = this.seen && Math.sin(Game.time * 10) > 0, size = 46, gap = 50;
-      const cx = W / 2, y = (Mobile.active ? 64 / hud.k : 0) + 58;
+      const cx = W / 2, y = 58;
       g.save();
       g.font = '400 ' + size + 'px "Lilita One", sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
       g.lineJoin = 'round'; g.lineWidth = 7; g.strokeStyle = '#1a1410';

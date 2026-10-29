@@ -21,7 +21,7 @@ const Input = {
     this.mouse.sx = x; this.mouse.sy = y;
     // Dragging the grabbed handle round the reel's centre turns it, one-to-one.
     if (!this.reelGrab || !Hud.reel) return;
-    const k = Hud.k || 1, dx = x / k - Hud.reel.cx, dy = y / k - Hud.reel.cy;
+    const k = Hud.k || 1, dx = (x - (Hud.ox || 0)) / k - Hud.reel.cx, dy = y / k - Hud.reel.cy;
     if (Math.hypot(dx, dy) < 14) return; // too close to the axle to read an angle
     const a = Math.atan2(dy, dx), d = U.angDiff(this.reelAng, a);
     if (Math.abs(d) < 1.5) this.crankAcc += d;

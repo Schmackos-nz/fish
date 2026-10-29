@@ -144,9 +144,10 @@ const Hud = {
     Wanted.drawWorld(this);
     this.drawGunCursor();
     // Panels are laid out on a virtual screen, scaled down to fit phones.
-    const k = this.k = Mobile.hudScale();
-    g.setTransform(d * k, 0, 0, d * k, 0, 0);
-    const W = this.W = innerWidth / k, H = this.H = innerHeight / k;
+    const k = this.k = Mobile.hudScale(), ins = Mobile.insets();
+    this.ox = ins.l;
+    g.setTransform(d * k, 0, 0, d * k, d * ins.l, 0);
+    const W = this.W = (innerWidth - ins.l - ins.r) / k, H = this.H = innerHeight / k;
     const sh = this.drawStatus(20, 20);
     if (Mobile.active) this.drawVitals(20, 20 + sh + 12 + 100);
     this.drawMinimap(W - 20 - 82, 20 + 82);
@@ -160,7 +161,7 @@ const Hud = {
     // Lures can only change with the line in, so the picker steps aside while you fish.
     if (Tools.current === 'rod' && Fishing.state === 'idle') { this.drawLureBar(W / 2, top - 50); top -= 62; } else this.slots = [];
     this.drawStatePanel(W / 2, top);
-    if ((Tools.current === 'rod' && !Mobile.active) || Fishing.state !== 'idle') this.drawReel(W - 146, H - 176); else this.reel = null;
+    if ((Tools.current === 'rod' && !Mobile.active) || Fishing.state !== 'idle') this.drawReel(W - (Mobile.active ? 172 : 146), H - 176); else this.reel = null;
     Wanted.drawHud(this);
     if (this.bigMap) this.drawBigMap(W, H);
   },
@@ -341,12 +342,15 @@ const Hud = {
 
   click(x, y) {
     if (this.bigMap) {
-      x /= this.k || 1; y /= this.k || 1;
+      x = (x - (this.ox || 0)) / (this.k || 1); y /= this.k || 1;
       for (const t of this.travelRects || []) if (x >= t.x && x <= t.x + t.w && y >= t.y && y <= t.y + t.h) { Travel.go(t.d); return true; }
+      if (Mobile.active) this.bigMap = false; // tap anywhere else to close
       return true;
     }
     if (Bugs.swat(x, y)) return true;
-    const k = this.k || 1; x /= k; y /= k; // into the scaled HUD's coordinates
+    const k = this.k || 1; x = (x - (this.ox || 0)) / k; y /= k; // into the scaled HUD's coordinates
+    // On touch screens, tapping the minimap opens the big map.
+    if (Mobile.active && this.W && U.dist(x, y, this.W - 20 - 82, 20 + 82) < 82) { this.bigMap = true; return true; }
     const hit = (s) => x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h;
     if (this.reel) {
       if (this.bailBtn && hit(this.bailBtn)) { Fishing.toggleBail(); return true; }
@@ -402,8 +406,8 @@ const Hud = {
     // North marker
     g.fillStyle = UI.accent; g.beginPath(); g.arc(cx, cy - R - 1, 9, 0, 7); g.fill();
     this.text('N', cx, cy - R + 3, '#141a1c', 10, 'center', 700);
-    this.keycap(cx - 12 - 30, cy + R + 12, 'M');
-    this.text('Map', cx - 10, cy + R + 27, UI.muted, 11);
+    if (!Mobile.active) { this.keycap(cx - 12 - 30, cy + R + 12, 'M'); this.text('Map', cx - 10, cy + R + 27, UI.muted, 11); }
+    else this.text('Tap for map', cx, cy + R + 22, UI.muted, 11, 'center', 600);
   },
 
   drawBigMap(W, H) {
@@ -548,7 +552,7 @@ const Hud = {
     }
     if (Gun.out) {
       const W = Arsenal.weapon();
-      this.pill(W.name + ' · ' + Arsenal.ammo(W.ammo) + ' ' + AMMO[W.ammo].name.toLowerCase() + (W.scope && !Gun.scoped ? ' · right-click to scope' : '') + (Game.guns.length > 1 ? ' · 2 to switch' : ''), cx, bottom - 14, UI.bad, 13);
+      this.pill(W.name + ' · ' + Arsenal.ammo(W.ammo) + ' ' + AMMO[W.ammo].name.toLowerCase() + (Mobile.active ? '' : (W.scope && !Gun.scoped ? ' · right-click to scope' : '') + (Game.guns.length > 1 ? ' · 2 to switch' : '')), cx, bottom - 14, UI.bad, 13);
       return;
     }
     if (F.state === 'fight') return this.drawFight(cx, bottom);
@@ -612,7 +616,7 @@ const Hud = {
     this.act = act;
     if (act) {
       const [sx, sy, ok] = Scene3D.project(act.x, act.y, Scene3D.standH(act.x, act.y) + 1.9);
-      if (ok) this.pill('E  ·  ' + act.label, sx, sy, UI.accent, 12);
+      if (ok && !Mobile.active) this.pill('E  ·  ' + act.label, sx, sy, UI.accent, 12); // touch: the E button shows it
     }
     const f = Fight.fish;
     if (Fishing.state === 'fight' && f && f.airborne) {

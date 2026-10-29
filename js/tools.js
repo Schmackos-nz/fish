@@ -119,7 +119,7 @@ const Tools = {
       hud.toolSlots.push({ x: sx, y, w: sw, h: 64, id: t.id });
       hud.slot(sx, y, sw, 64, sel);
       this.icon(g, t.id, sx + sw / 2, y + 26, 1.05);
-      hud.text(t.key, sx + 9, y + 16, sel ? UI.accent : UI.dim, 11, 'left', 700);
+      if (!Mobile.active) hud.text(t.key, sx + 9, y + 16, sel ? UI.accent : UI.dim, 11, 'left', 700);
       const c = this.count(t.id);
       if (c !== null) hud.text(String(c), sx + sw - 9, y + 16, c ? UI.muted : UI.bad, 11, 'right', 600);
       hud.text(t.id === 'gun' ? Arsenal.weapon().short : t.name, sx + sw / 2, y + 56, sel ? UI.ink : UI.muted, 10, 'center', sel ? 600 : 400);

@@ -16,6 +16,17 @@ const Mobile = {
     return U.clamp(Math.min(innerHeight / 620, innerWidth / 1100), 0.5, 1);
   },
 
+  // Notch / rounded-corner insets (landscape phones), read once per resize.
+  insets() {
+    if (!this.active) return { l: 0, r: 0 };
+    if (!this._ins) {
+      if (!this._probe) { const d = document.createElement('div'); d.style.cssText = 'position:fixed;left:0;top:0;visibility:hidden;pointer-events:none;padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)'; document.body.appendChild(d); this._probe = d; }
+      const cs = getComputedStyle(this._probe);
+      this._ins = { l: parseFloat(cs.paddingLeft) || 0, r: parseFloat(cs.paddingRight) || 0 };
+    }
+    return this._ins;
+  },
+
   fsSupported() { return !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen); },
   isFull() { return !!(document.fullscreenElement || document.webkitFullscreenElement); },
   portrait() { return innerHeight > innerWidth; },
@@ -46,7 +57,7 @@ const Mobile = {
     const ui = document.createElement('div');
     ui.id = 'touchUI'; ui.className = 'hidden';
     ui.innerHTML = `
-      <div class="tbar"><button data-key="Escape">❚❚</button><button data-key="KeyI">Bag</button><button data-key="KeyM">Map</button><button data-key="KeyJ">Journal</button></div>
+      <div class="tside"><button data-key="Escape" aria-label="Pause">❚❚</button><button data-key="KeyI" aria-label="Bag">🎒</button><button data-key="KeyM" aria-label="Map">🗺️</button><button data-key="KeyJ" aria-label="Journal">📖</button></div>
       <div id="tJoy"><div class="knob"></div></div>
       <div class="tpad">
         <button id="tUse" data-key="KeyE" class="use"><b>E</b><span></span></button>
@@ -112,7 +123,7 @@ const Mobile = {
     // Keep the browser from scrolling, zooming or pulling-to-refresh mid-fight.
     document.addEventListener('touchmove', (e) => { if (!e.target.closest('.panel, .sheet, .modal')) e.preventDefault(); }, { passive: false });
     document.addEventListener('fullscreenchange', () => this.refreshGate());
-    addEventListener('resize', () => this.refreshGate());
+    addEventListener('resize', () => { this._ins = null; this.refreshGate(); });
   },
 
   showJoy() {
@@ -153,7 +164,7 @@ const Mobile = {
     this.labelT -= dt;
     if (this.labelT > 0) return;
     this.labelT = 0.2;
-    const play = Game.mode === 'play' && !Menus.open;
+    const play = Game.mode === 'play' && !Menus.open && !Hud.bigMap;
     this.ui.classList.toggle('hidden', !play);
     if (!play) return;
     const act = Fishing.state !== 'fight' ? Interact.best() : null;
@@ -164,7 +175,8 @@ const Mobile = {
     this.ui.querySelector('#tCrouch').classList.toggle('hidden', Fishing.state !== 'idle');
     this.ui.querySelector('#tScope').classList.toggle('hidden', !(Gun.out && Arsenal.weapon().scope));
     // Clear the reel: the button stack moves left of it while it's on screen.
-    const r = Hud.reel ? (146 + Hud.reel.r + 60) * Hud.k : 0;
-    this.ui.querySelector('.tpad').style.right = (r ? r : 16) + 'px';
+    const r = Hud.reel ? (172 + Hud.reel.r + 60) * Hud.k : 0;
+    this.ui.querySelector('.tpad').style.right = (r ? r : 16) + this.insets().r + 'px';
+    this.ui.querySelector('.tside').style.top = Math.round(250 * Hud.k + 10) + 'px';
   },
 };

@@ -95,16 +95,16 @@
   #touchUI button { pointer-events: auto; border: 3px solid #1a1410; border-radius: 999px; background: rgba(26,20,16,0.72);
     color: #F3EAD6; font: 600 13px var(--font); box-shadow: 0 3px 0 #1a1410; -webkit-tap-highlight-color: transparent; }
   #touchUI button.on { background: #E3A945; color: #1a1410; transform: translateY(2px); box-shadow: 0 1px 0 #1a1410; }
-  #touchUI .tbar { position: absolute; top: calc(10px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
-  #touchUI .tbar button { padding: 6px 12px; font-size: 12px; }
-  #touchUI .tpad { position: absolute; bottom: calc(14px + env(safe-area-inset-bottom)); right: 16px; display: grid; grid-template-columns: auto auto; gap: 10px; align-items: end; justify-items: end; }
+  #touchUI .tside { position: absolute; left: calc(12px + env(safe-area-inset-left)); top: 170px; display: grid; grid-template-columns: repeat(4, 38px); gap: 6px; }
+  #touchUI .tside button { width: 38px; height: 38px; padding: 0; font-size: 16px; line-height: 1; display: grid; place-items: center; box-shadow: 0 2px 0 #1a1410; }
+  #touchUI .tpad { position: absolute; bottom: calc(12px + env(safe-area-inset-bottom)); right: 16px; display: grid; grid-template-columns: auto auto; gap: 10px; align-items: end; justify-items: end; }
   #tJump, #tCrouch, #tScope { width: 66px; height: 66px; }
   #tJump { width: 78px; height: 78px; background: rgba(227,169,69,0.85) !important; color: #1a1410 !important; font-weight: 700 !important; }
   #tUse { grid-column: 1 / span 2; display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; max-width: 250px;
     background: rgba(26,20,16,0.85) !important; }
   #tUse b { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #E3A945; color: #1a1410; font-size: 16px; flex: none; }
   #tUse span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
-  #tJoy { position: absolute; left: calc(40px + env(safe-area-inset-left)); bottom: 40px; top: auto; width: 140px; height: 140px; border-radius: 50%;
+  #tJoy { position: absolute; left: calc(36px + env(safe-area-inset-left)); bottom: calc(22px + env(safe-area-inset-bottom)); top: auto; width: 140px; height: 140px; border-radius: 50%;
     border: 3px solid rgba(243,234,214,0.35); background: rgba(26,20,16,0.25); opacity: 0.55; transition: opacity .15s; }
   #tJoy.live { opacity: 1; bottom: auto; }
   #tJoy .knob { position: absolute; left: 40px; top: 40px; width: 60px; height: 60px; border-radius: 50%; background: rgba(243,234,214,0.85); border: 3px solid #1a1410; }
@@ -116,7 +116,9 @@
   @keyframes gateSpin { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
   body.touch #title footer span:last-child { display: none; }
   body.touch canvas#hud { cursor: default; }
-  body.touch #toast { top: 58px; }
+  body.touch #toast { top: 8px; font-size: 11px; padding: 6px 12px; border-radius: 12px; max-width: min(48vw, 400px); white-space: normal; text-align: center; line-height: 1.3; }
+  body.touch.wanted #toast { top: 76px; }
+  body.touch #startBtn small { display: none; }
   .lock-alert { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; font: 600 11px var(--font); letter-spacing: 1.4px; text-transform: uppercase; color: var(--muted); }
   .lock-bar { flex: 1; height: 12px; border-radius: 8px; background: rgba(255,255,255,0.08); overflow: hidden; }
   #lockFill { height: 100%; width: 0; background: var(--good); transition: background .3s; }
@@ -127,9 +129,11 @@
     display: grid; place-items: center; color: #F3EAD6; font: 400 34px "Lilita One", sans-serif; letter-spacing: 1px; }
   #sleepFade.on { opacity: 1; pointer-events: auto; }
   body.wanted #toast { top: 118px; }
-  body.touch.wanted #toast { top: 150px; }
+
   /* Short landscape screens: shrink the title and menus to fit. */
   @media (max-height: 520px) {
+    .lock-cv { max-height: 40vh; width: auto; max-width: 100%; }
+    .lock-alert { margin: 8px 0 6px; }
     #title .title-wrap { zoom: 0.6; }
     .panel, .modal .sheet { max-height: 92vh !important; overflow-y: auto; zoom: 0.78; }
     #shop, #journal { max-height: calc(92vh / 0.78) !important; }
@@ -377,49 +381,49 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=63"></script>
-<script src="js/data.js?v=63"></script>
-<script src="js/audio.js?v=63"></script>
-<script src="js/music.js?v=63"></script>
-<script src="js/voice.js?v=63"></script>
-<script src="js/world.js?v=63"></script>
-<script src="js/scene-sprites.js?v=63"></script>
-<script src="js/toon.js?v=63"></script>
-<script src="js/scene.js?v=63"></script>
-<script src="js/folk.js?v=63"></script>
-<script src="js/models.js?v=63"></script>
-<script src="js/actors.js?v=63"></script>
-<script src="js/fish.js?v=63"></script>
-<script src="js/legends.js?v=63"></script>
-<script src="js/fishing.js?v=63"></script>
-<script src="js/fight.js?v=63"></script>
-<script src="js/player.js?v=63"></script>
-<script src="js/npcs.js?v=63"></script>
-<script src="js/gun.js?v=63"></script>
-<script src="js/arsenal.js?v=63"></script>
-<script src="js/camp.js?v=63"></script>
-<script src="js/wild.js?v=63"></script>
-<script src="js/contest.js?v=63"></script>
-<script src="js/bugs.js?v=63"></script>
-<script src="js/floaters.js?v=63"></script>
-<script src="js/animals.js?v=63"></script>
-<script src="js/wardens.js?v=63"></script>
-<script src="js/interiors.js?v=63"></script>
-<script src="js/life.js?v=63"></script>
-<script src="js/weed.js?v=63"></script>
-<script src="js/markers.js?v=63"></script>
-<script src="js/swimmers.js?v=63"></script>
-<script src="js/couples.js?v=63"></script>
-<script src="js/tim.js?v=63"></script>
-<script src="js/bikes.js?v=63"></script>
-<script src="js/lockpick.js?v=63"></script>
-<script src="js/wanted.js?v=63"></script>
-<script src="js/tools.js?v=63"></script>
-<script src="js/hud.js?v=63"></script>
-<script src="js/share.js?v=63"></script>
-<script src="js/menus.js?v=63"></script>
-<script src="js/mobile.js?v=63"></script>
-<script src="js/patchnotes.js?v=63"></script>
-<script src="js/main.js?v=63"></script>
+<script src="js/util.js?v=64"></script>
+<script src="js/data.js?v=64"></script>
+<script src="js/audio.js?v=64"></script>
+<script src="js/music.js?v=64"></script>
+<script src="js/voice.js?v=64"></script>
+<script src="js/world.js?v=64"></script>
+<script src="js/scene-sprites.js?v=64"></script>
+<script src="js/toon.js?v=64"></script>
+<script src="js/scene.js?v=64"></script>
+<script src="js/folk.js?v=64"></script>
+<script src="js/models.js?v=64"></script>
+<script src="js/actors.js?v=64"></script>
+<script src="js/fish.js?v=64"></script>
+<script src="js/legends.js?v=64"></script>
+<script src="js/fishing.js?v=64"></script>
+<script src="js/fight.js?v=64"></script>
+<script src="js/player.js?v=64"></script>
+<script src="js/npcs.js?v=64"></script>
+<script src="js/gun.js?v=64"></script>
+<script src="js/arsenal.js?v=64"></script>
+<script src="js/camp.js?v=64"></script>
+<script src="js/wild.js?v=64"></script>
+<script src="js/contest.js?v=64"></script>
+<script src="js/bugs.js?v=64"></script>
+<script src="js/floaters.js?v=64"></script>
+<script src="js/animals.js?v=64"></script>
+<script src="js/wardens.js?v=64"></script>
+<script src="js/interiors.js?v=64"></script>
+<script src="js/life.js?v=64"></script>
+<script src="js/weed.js?v=64"></script>
+<script src="js/markers.js?v=64"></script>
+<script src="js/swimmers.js?v=64"></script>
+<script src="js/couples.js?v=64"></script>
+<script src="js/tim.js?v=64"></script>
+<script src="js/bikes.js?v=64"></script>
+<script src="js/lockpick.js?v=64"></script>
+<script src="js/wanted.js?v=64"></script>
+<script src="js/tools.js?v=64"></script>
+<script src="js/hud.js?v=64"></script>
+<script src="js/share.js?v=64"></script>
+<script src="js/menus.js?v=64"></script>
+<script src="js/mobile.js?v=64"></script>
+<script src="js/patchnotes.js?v=64"></script>
+<script src="js/main.js?v=64"></script>
 </body>
 </html>

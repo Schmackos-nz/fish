@@ -2,6 +2,13 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '1.4', name: 'Pocket Valley', date: '30 Oct 2026', notes: [
+    ['changed', 'Mobile overhaul: the menu buttons are a compact icon column under your vitals, so nothing covers the top of the screen'],
+    ['changed', 'Mobile: tap the minimap to open the big map, and tap outside it to close'],
+    ['changed', 'Mobile: smaller toasts, no keyboard hints, and the HUD respects phone notches'],
+    ['changed', 'Mobile: sharper performance on high-density screens'],
+    ['fixed', 'Mobile: the lockpick panel fits on screen, and the touch buttons hide while the big map is open'],
+  ] },
   { v: '1.3', name: 'Hot Wired', date: '29 Oct 2026', notes: [
     ['changed', 'Poison hits harder: damage over time, blurred and colour-shifting vision, a woozy camera, staggering, slower legs, waves of nausea, and hallucinations that whisper and vanish when you get close'],
     ['changed', 'Poisons ease in and each acts differently. Snake venom hits within seconds. Death caps creep up over a minute, then turn deadly. Fly agarics are mild but make you see things'],

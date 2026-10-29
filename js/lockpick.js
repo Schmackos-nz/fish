@@ -36,7 +36,7 @@ const LockPick = {
     }
     if (kind === 'dial') { this.dial = { a: 0, sp: this.hard ? 3.4 : 2.6, dir: 1, hits: 0, need: 3, target: Math.random() * Math.PI * 2 }; }
     const label = { pins: 'Set the pins: click each one as it rises into the green band', latches: 'Open every latch. Each click flips its neighbours too', dial: 'Click when the needle is inside the notch (3 times)' }[kind];
-    const st = document.getElementById('lockStage'); if (st) st.textContent = 'Lock ' + (this.stage + 1) + ' of 3 · ' + label;
+    const st = document.getElementById('lockStage'); if (st) st.textContent = 'Lock ' + (this.stage + 1) + ' of 3 · ' + (Mobile.active ? label.replace(/[Cc]lick/g, (m) => (m[0] === 'C' ? 'Tap' : 'tap')) : label);
   },
 
   flip(i) { for (const j of [i - 1, i, i + 1]) if (j >= 0 && j < this.latches.length) this.latches[j] = !this.latches[j]; },

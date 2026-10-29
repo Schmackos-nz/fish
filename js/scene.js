@@ -11,7 +11,7 @@ const Scene3D = {
 
   init(canvas) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, matchMedia('(pointer: coarse)').matches ? 1.5 : 2));
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(38, 1, 0.1, 400);
     this.hemi = new THREE.HemisphereLight(0xcfe8ff, 0x4a5a3a, 0.7);
