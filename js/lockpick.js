@@ -9,19 +9,20 @@ const LockPick = {
 
   open(r) {
     this.r = r; this.house = null;
-    this.start(BIKE_BY_ID[r.bikeId].price > 800, `${r.name}'s ${BIKE_BY_ID[r.bikeId].name} · plate ${r.plate}. Three locks between you and the ignition — every slip makes noise.`);
+    this.start(BIKE_BY_ID[r.bikeId].price > 800, 1, `${r.name}'s ${BIKE_BY_ID[r.bikeId].name} · plate ${r.plate}. One lock between you and the ignition — every slip makes noise.`);
   },
 
   openHouse(b) {
     this.r = null; this.house = b;
     const owner = Npcs.list.find((n) => n.home === b);
-    this.start(!!b.big, `${b.name}'s front door. Three locks between you and whatever's inside${owner && owner.state === 'home' ? ' — and someone\'s HOME' : ''}. Every slip makes noise.`);
+    const n = b.big ? 3 : U.hash2(b.x, b.y, 7) < 0.45 ? 2 : 1; // big houses: 3; some cottages have a deadbolt
+    this.start(!!b.big, n, `${b.name}'s front door. ${['One lock', 'Two locks', 'Three locks'][n - 1]} between you and whatever's inside${owner && owner.state === 'home' ? ' — and someone\'s HOME' : ''}. Every slip makes noise.`);
   },
 
-  start(hard, desc) {
+  start(hard, count, desc) {
     this.alert = 0; this.stage = 0; this.done = false;
     this.hard = hard;
-    this.stages = LOCK_STAGES.slice().sort(() => Math.random() - 0.5);
+    this.stages = LOCK_STAGES.slice().sort(() => Math.random() - 0.5).slice(0, count);
     Life.panel(`<h2>Pick the lock</h2>
       <div class="desc">${desc}</div>
       <div class="lock-alert"><span>Alert</span><div class="lock-bar"><div id="lockFill"></div></div><b id="lockPct">0%</b></div>
@@ -41,15 +42,25 @@ const LockPick = {
     const kind = this.stages[this.stage], n = this.hard ? 5 : 4;
     if (kind === 'pins') this.pins = Array.from({ length: n }, (_, i) => ({ set: false, ph: Math.random() * 6, sp: 2.2 + Math.random() * 1.6 + i * 0.25, lo: 0.55 + Math.random() * 0.15 }));
     if (kind === 'latches') {
-      this.latches = Array(n + 1).fill(false); // false = open
-      do { for (let k = 0; k < 3 + n; k++) this.flip((Math.random() * this.latches.length) | 0); } while (this.latches.every((v) => !v));
+      // 3×3 grid, centre empty; true = locked. Scrambled from solved, so it's always solvable.
+      this.latches = Array(9).fill(false);
+      do { for (let k = 0; k < 4 + (this.hard ? 2 : 0); k++) { let c; do c = (Math.random() * 9) | 0; while (c === 4); this.flip(c); } } while (this.latches.every((v) => !v));
     }
     if (kind === 'dial') { this.dial = { a: 0, sp: this.hard ? 3.4 : 2.6, dir: 1, hits: 0, need: 3, target: Math.random() * Math.PI * 2 }; }
     const label = { pins: 'Set the pins: click each one as it rises into the green band', latches: 'Open every latch. Each click flips its neighbours too', dial: 'Click when the needle is inside the notch (3 times)' }[kind];
-    const st = document.getElementById('lockStage'); if (st) st.textContent = 'Lock ' + (this.stage + 1) + ' of 3 · ' + (Mobile.active ? label.replace(/[Cc]lick/g, (m) => (m[0] === 'C' ? 'Tap' : 'tap')) : label);
+    const st = document.getElementById('lockStage'); if (st) st.textContent = (this.stages.length > 1 ? 'Lock ' + (this.stage + 1) + ' of ' + this.stages.length + ' · ' : '') + (Mobile.active ? label.replace(/[Cc]lick/g, (m) => (m[0] === 'C' ? 'Tap' : 'tap')) : label);
   },
 
-  flip(i) { for (const j of [i - 1, i, i + 1]) if (j >= 0 && j < this.latches.length) this.latches[j] = !this.latches[j]; },
+  // Flip a latch and the ones directly above/below/left/right of it (the empty centre is skipped).
+  flip(i) {
+    const r = (i / 3) | 0, c = i % 3;
+    for (const [dr, dc] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const rr = r + dr, cc = c + dc, j = rr * 3 + cc;
+      if (rr < 0 || rr > 2 || cc < 0 || cc > 2 || j === 4) continue;
+      this.latches[j] = !this.latches[j];
+    }
+  },
+  latchCell() { const W = this.cv.width, H = this.cv.height, sz = 74; return { sz, x0: W / 2 - sz * 1.5, y0: H / 2 - sz * 1.5 }; },
 
   noise(amount, text) {
     this.alert += amount; this.msg = text; this.msgT = 1.2;
@@ -95,8 +106,8 @@ const LockPick = {
       else { this.noise(9, 'Clunk! The pin slipped.'); for (const q of this.pins) if (Math.random() < 0.35) q.set = false; }
       if (this.pins.every((q) => q.set)) this.next();
     } else if (kind === 'latches') {
-      const n = this.latches.length, gap = W / (n + 1), i = Math.round(x / gap) - 1;
-      if (i < 0 || i >= n || Math.abs(x - gap * (i + 1)) > 32) return;
+      const L = this.latchCell(), c = Math.floor((x - L.x0) / L.sz), r = Math.floor((y - L.y0) / L.sz), i = r * 3 + c;
+      if (c < 0 || c > 2 || r < 0 || r > 2 || i === 4) return;
       this.flip(i); this.alert += 1.5; Sfx.tone(300, 0.04, 0.12, 'square', 260);
       if (this.latches.every((v) => !v)) this.next();
     } else if (kind === 'dial') {
@@ -134,16 +145,18 @@ const LockPick = {
         g.fillStyle = '#C8BFAE'; g.font = '600 12px Inter, sans-serif'; g.textAlign = 'center'; g.fillText(p.set ? 'SET' : 'PIN ' + (i + 1), x, H - 12);
       });
     } else if (kind === 'latches') {
-      const n = this.latches.length, gap = W / (n + 1), y = H / 2;
-      g.strokeStyle = '#3A3A40'; g.lineWidth = 6; g.beginPath(); g.moveTo(gap * 0.6, y); g.lineTo(W - gap * 0.6, y); g.stroke();
-      this.latches.forEach((closed, i) => {
-        const x = gap * (i + 1);
-        g.save(); g.translate(x, y); g.rotate(closed ? 0 : -Math.PI / 2.4);
-        g.fillStyle = closed ? '#E2584D' : '#7FC483'; g.beginPath(); g.roundRect(-10, -60, 20, 70, 8); g.fill();
+      const L = this.latchCell();
+      for (let i = 0; i < 9; i++) {
+        if (i === 4) continue;
+        const x = L.x0 + (i % 3) * L.sz + L.sz / 2, y = L.y0 + ((i / 3) | 0) * L.sz + L.sz / 2, closed = this.latches[i];
+        g.fillStyle = '#2A2A30'; g.beginPath(); g.roundRect(x - 31, y - 31, 62, 62, 10); g.fill();
+        g.save(); g.translate(x, y); g.rotate(closed ? 0 : -Math.PI / 2);
+        g.fillStyle = closed ? '#E2584D' : '#7FC483'; g.beginPath(); g.roundRect(-7, -24, 14, 34, 6); g.fill();
         g.restore();
-        g.fillStyle = '#2A2A30'; g.beginPath(); g.arc(x, y, 12, 0, 7); g.fill();
-        g.fillStyle = '#C8BFAE'; g.font = '600 12px Inter, sans-serif'; g.textAlign = 'center'; g.fillText(closed ? 'LOCKED' : 'OPEN', x, y + 50);
-      });
+        g.fillStyle = '#15151A'; g.beginPath(); g.arc(x, y, 8, 0, 7); g.fill();
+      }
+      g.fillStyle = '#C8BFAE'; g.font = '600 12px Inter, sans-serif'; g.textAlign = 'center';
+      g.fillText(this.latches.filter(Boolean).length + ' locked', W / 2, H / 2 + 5);
     } else if (kind === 'dial') {
       const d = this.dial, cx = W / 2, cy = H / 2 + 6, R = 110, notch = this.hard ? 0.2 : 0.26;
       g.fillStyle = '#2A2A30'; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill();

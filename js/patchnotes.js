@@ -3,6 +3,8 @@
 
 const PATCH_NOTES = [
   { v: '1.5', name: 'Hard Time', date: '30 Oct 2026', notes: [
+    ['changed', 'Rides now take a single lock to pick. Houses take 1 to 3 depending on size (big houses always 3, some cottages have a deadbolt)'],
+    ['changed', 'The latch puzzle is now a 3×3 grid with an empty centre: each latch flips its neighbours above, below, left and right'],
     ['new', 'Break into locked houses with the same lockpicking minigame. Easier at night, much harder with someone home, and a botched job makes you wanted'],
     ['changed', 'You get 50% more time to pick locks before the alert maxes out'],
     ['changed', 'Fixing up a building plays a little montage, one job at a time: the damage comes off before your eyes while the clock fast-forwards through the hours'],
