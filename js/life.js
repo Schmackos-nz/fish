@@ -52,7 +52,7 @@ const Life = {
   // Rent is charged once per new day.
   processDays() {
     if (Game.lastDay === undefined) Game.lastDay = Game.env.day;
-    while (Game.lastDay < Game.env.day) { Game.lastDay++; this.payRent(); Decay.age(1, false); }
+    while (Game.lastDay < Game.env.day) { Game.lastDay++; this.payRent(); Decay.age(1, false); Staff.daily(); }
   },
 
   payRent() {
@@ -342,18 +342,20 @@ const Interact = {
     }
     if (Interior.active) {
       const b = Interior.active.b;
-      if (b.type === 'shop') add(World.shopkeeper.x, World.shopkeeper.y, 2.8, 'Hettie\'s Tackle', () => Menus.openShop());
-      if (b.type === 'ranger') add(World.ranger.x, World.ranger.y, 2.8, 'Ranger Dale — permits', () => Menus.openPermits());
-      if (b.type === 'store') add(World.clerk.x, World.clerk.y, 2.8, 'General Store', () => Life.openStore());
-      if (b.type === 'bikes') add(World.revs.x, World.revs.y, 2.8, 'Revs — bikes & fuel', () => Bikes.openShop());
-      if (b.type === 'clinic') add(World.nurse.x, World.nurse.y, 2.8, 'Nurse Ngaio — treatment', () => Clinic.open());
+      // Only if someone's behind the counter.
+      const who = Staff.onShift(b.type), lbl = (t) => who + ' — ' + SHOP_HOURS[b.type].verb;
+      if (who && b.type === 'shop') add(World.shopkeeper.x, World.shopkeeper.y, 2.8, lbl(), () => Menus.openShop());
+      if (who && b.type === 'ranger') add(World.ranger.x, World.ranger.y, 2.8, lbl(), () => Menus.openPermits());
+      if (who && b.type === 'store') add(World.clerk.x, World.clerk.y, 2.8, lbl(), () => Life.openStore());
+      if (who && b.type === 'bikes') add(World.revs.x, World.revs.y, 2.8, lbl(), () => Bikes.openShop());
+      if (who && b.type === 'clinic') add(World.nurse.x, World.nurse.y, 2.8, lbl(), () => Clinic.open());
       const f = Interior.near();
       if (f) cands.push({ d: 0.5, x: f.x + f.w / 2, y: f.y + f.h / 2, label: Life.furnLabel(f), run: () => Life.useFurniture(f.kind) });
     } else {
       for (const b of World.buildings) {
         const dr = World.doorOf(b);
         if (b.type === 'gas') add(dr.x, dr.y, 1.6, 'Gas Station — pay at the pump', () => Hud.toast('Pay at the pump across the forecourt.', UI.muted, 1.6));
-        else if (b.type !== 'house') add(dr.x, dr.y, 1.6, 'Enter ' + b.name, () => Interior.enter(b));
+        else if (b.type !== 'house') { const shut = Staff.doorLabel(b); add(dr.x, dr.y, 1.6, shut || 'Enter ' + b.name + ' (' + Staff.hoursText(b.type) + ')', () => (shut ? Hud.toast(shut + '. The door\'s locked.', UI.muted, 1.8) : Interior.enter(b))); }
         else if (Game.home && Game.home.id === b.id) add(dr.x, dr.y, 1.6, 'Enter your cottage', () => Interior.enter(b));
         else if (b.unlocked) add(dr.x, dr.y, 1.6, 'Enter ' + b.name + ' (unlocked)', () => Life.enterHouse(b));
         else if (b.vacant) add(dr.x, dr.y, 1.6, 'Cottage for rent — ' + U.fmtMoney(b.rent) + '/day', () => Life.openRent(b));
@@ -372,6 +374,7 @@ const Interact = {
       add(World.tim.x, World.tim.y, 2.6, 'Talk to Tim — tips & goals', () => Tim.open());
       add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
       Weed.interactions(add);
+      Staff.interactions(add);
       Camp.interactions(cands);
       Decay.interactions(cands);
       const sh = Forage.nearest();

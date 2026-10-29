@@ -134,6 +134,7 @@ const Hud = {
     Tim.drawBubble(this);
     Bikes.drawBubbles(this);
     Hunters.drawBubbles(this);
+    if (typeof Staff !== 'undefined') Staff.drawLabels(this);
     Poison.draw(this);
     Animals.drawLabels(this);
     Wardens.drawLabels(this);

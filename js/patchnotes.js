@@ -3,6 +3,10 @@
 
 const PATCH_NOTES = [
   { v: '1.5', name: 'Hard Time', date: '30 Oct 2026', notes: [
+    ['new', 'Shops keep opening hours. Staff walk in from their own houses to unlock in the morning and lock up at night (and boot you out at closing)'],
+    ['new', 'Staff take days off: someone else minds the shop while they go fishing, hunting or sunbathing (say g\'day if you find them)'],
+    ['new', 'Let a building rot and its keeper quits town. Fix it up and someone new moves in to run it'],
+    ['new', 'Residents move out as the township decays and drift back as you fix it up'],
     ['new', 'Sentences fit the crime: days for a scuffle, weeks or months for a rampage, and years for knocking out cops and blowing things up at five stars'],
     ['new', 'The township decays over time: graffiti, boarded-up windows and doors, caved-in roofs, rubbish everywhere, and fewer bikers about. A long stretch inside makes it much worse'],
     ['new', 'Fix up run-down buildings for a council payout, and bin rubbish for spare change'],

@@ -98,7 +98,7 @@ const Npcs = {
 
   near(x, y, r) {
     let best = null, bd = r;
-    for (const n of this.list) { const d = U.dist(x, y, n.x, n.y); if (d < bd) { bd = d; best = n; } }
+    for (const n of this.list) { if (n.away || n.state === 'home') continue; const d = U.dist(x, y, n.x, n.y); if (d < bd) { bd = d; best = n; } }
     return best;
   },
 
@@ -124,6 +124,7 @@ const Npcs = {
         n.spot = { x: d.x, y: d.y, ang: Math.PI / 2 }; n.state = 'walk'; n.walkT = 0;
       }
       if (n.state === 'bush') continue; // Couples handles them
+      if (n.away) continue; // moved out of the valley
       if (n.state === 'home') { n.homeT = (n.homeT || 0) - dt; if (!night && n.homeT <= 0) this.leaveHome(n); continue; }
       switch (n.state) {
         case 'brawl': this.brawlTick(n, dt, close); break;
