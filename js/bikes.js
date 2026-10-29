@@ -267,10 +267,21 @@ const Bikes = {
       }
       // Steer toward the destination, swinging round anything in the way.
       const want = Math.atan2(r.target.y - r.y, r.target.x - r.x);
-      let head = null;
-      for (const off of [0, 0.35, -0.35, 0.7, -0.7, 1.1, -1.1, 1.6, -1.6, 2.3, -2.3]) {
-        const a = want + off;
-        if (!this.blocked(r.x + Math.cos(a) * 1.2, r.y + Math.sin(a) * 1.2, r.bikeId) && !this.blocked(r.x + Math.cos(a) * 2.6, r.y + Math.sin(a) * 2.6, r.bikeId)) { head = a; break; }
+      // Pick a heading: clear of anything solid, preferring tracks and open ground over trees.
+      let head = null, best = 1e9;
+      for (const off of [0, 0.3, -0.3, 0.6, -0.6, 0.9, -0.9, 1.25, -1.25, 1.7, -1.7, 2.3, -2.3]) {
+        const a = want + off, c = Math.cos(a), s = Math.sin(a);
+        if (this.blocked(r.x + c * 1.2, r.y + s * 1.2, r.bikeId) || this.blocked(r.x + c * 2.6, r.y + s * 2.6, r.bikeId)) continue;
+        let cost = Math.abs(off) * 1.2;
+        for (const d of [2, 4, 6, 8]) {
+          const x = r.x + c * d, y = r.y + s * d, t = World.tileAt(Math.floor(x), Math.floor(y));
+          if (this.blocked(x, y, r.bikeId)) cost += 3 / d * 2;
+          if (t === T.PATH || t === T.PLANK) cost -= 0.35;
+          else if (t === T.FOREST) cost += 0.7;
+          else if (t === T.WATER) cost += 0.5;
+          const o = World.objAt(x, y); if (o === O.PINE || o === O.OAK || o === O.BUSH || o === O.BOULDER) cost += 0.6;
+        }
+        if (cost < best) { best = cost; head = a; }
       }
       if (head === null) head = r.ang + Math.PI * 0.6;
       r.ang += U.clamp(U.angDiff(r.ang, head), -3 * dt, 3 * dt);
@@ -380,7 +391,7 @@ const Bikes = {
   },
 
   pickTarget(r) {
-    const ds = this.destinations().filter((t) => t !== r.dest && U.dist(t.x, t.y, r.x, r.y) > 20 && U.dist(t.x, t.y, r.x, r.y) < 150);
+    const ds = this.destinations().filter((t) => t !== r.dest && U.dist(t.x, t.y, r.x, r.y) > 20 && U.dist(t.x, t.y, r.x, r.y) < 150 && World.tileAt(Math.floor(t.x), Math.floor(t.y)) !== T.FOREST);
     const t = ds.length ? ds[(Math.random() * ds.length) | 0] : { x: World.town.x, y: World.town.y + 10, name: 'town', stop: true };
     r.dest = t; r.lastD = undefined; r.progT = 0;
     return t;

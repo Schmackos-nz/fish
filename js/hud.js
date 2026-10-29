@@ -164,7 +164,7 @@ const Hud = {
     // Lures can only change with the line in, so the picker steps aside while you fish.
     if (Tools.current === 'rod' && Fishing.state === 'idle') { this.drawLureBar(W / 2, top - 50); top -= 62; } else this.slots = [];
     this.drawStatePanel(W / 2, top);
-    if ((Tools.current === 'rod' && !Mobile.active) || Fishing.state !== 'idle') this.drawReel(W - (Mobile.active ? 172 : 146), H - 176); else this.reel = null;
+    this.reel = null; // the cursor is the reel now
     Wanted.drawHud(this);
     if (this.bigMap) this.drawBigMap(W, H);
   },

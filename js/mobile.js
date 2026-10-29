@@ -64,6 +64,9 @@ const Mobile = {
         <button id="tScope" data-hold="scope">Scope</button>
         <button id="tCrouch" data-key="KeyC">Crouch</button>
         <button id="tJump" data-key="Space">Jump</button>
+        <button id="tBail" data-key="KeyB">Bail</button>
+        <button id="tDragDn" data-key="KeyZ">Drag −</button>
+        <button id="tDragUp" data-key="KeyX">Drag +</button>
       </div>`;
     document.body.appendChild(ui);
     const gate = document.createElement('div');
@@ -174,6 +177,8 @@ const Mobile = {
     this.ui.querySelector('#tJump').textContent = Fishing.state !== 'idle' ? 'Reel in' : 'Jump';
     this.ui.querySelector('#tCrouch').classList.toggle('hidden', Fishing.state !== 'idle');
     this.ui.querySelector('#tScope').classList.toggle('hidden', !(Gun.out && Arsenal.weapon().scope));
+    const lineOut = CRANK_STATES.has(Fishing.state);
+    for (const id of ['#tBail', '#tDragDn', '#tDragUp']) this.ui.querySelector(id).classList.toggle('hidden', !lineOut);
     // Clear the reel: the button stack moves left of it while it's on screen.
     const r = Hud.reel ? (172 + Hud.reel.r + 60) * Hud.k : 0;
     this.ui.querySelector('.tpad').style.right = (r ? r : 16) + this.insets().r + 'px';

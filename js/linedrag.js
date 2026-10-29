@@ -30,7 +30,9 @@ const LineDrag = {
     this.hover = this.near(t);
     if (!this.told) { this.told = true; Hud.toast('Grab the lure and drag it toward you to reel · double-tap it to strike · wheel = drag · middle-click = bail', UI.accent, 4.5); }
     // Middle-click: bail. Wheel: drag/tension (the fight handles its own wheel).
-    if (Input.mPressed) Fishing.toggleBail();
+    if (Input.mPressed || Input.pressed('KeyB')) Fishing.toggleBail();
+    if (Input.pressed('KeyZ')) Fight.setDrag(Game.drag - 0.25);
+    if (Input.pressed('KeyX')) Fight.setDrag(Game.drag + 0.25);
     if (Input.wheel && Fishing.state !== 'fight') Fight.setDrag(Game.drag - Math.sign(Input.wheel) * 0.25);
     // Press on the lure: grab it (and two quick presses = strike).
     if (Input.mousePressed && this.hover) {
@@ -59,6 +61,20 @@ const LineDrag = {
     }
   },
 
+  tensionRatio() {
+    if (Fishing.state === 'fight') return Fight.tension / Game.gear.line.strength;
+    if (Fishing.state === 'snagged') return 0.95;
+    const l = Fishing.lure; if (!l || Fishing.bailOpen) return 0;
+    return U.dist(Fishing.tip.x, Fishing.tip.y, l.x, l.y) >= Fishing.lineOut - 0.05 ? (this.grabbing ? 0.45 : 0.3) : 0.1;
+  },
+  tensionColor() {
+    const t = this.tensionRatio();
+    if (t > 0.88) return Math.sin(Game.time * 18) > 0 ? '#FF3B2E' : '#FFFFFF'; // about to snap — it flashes
+    if (t > 0.7) return '#E3A945';
+    if (t > 0.22) return '#7FD16A';
+    return '#9A968C';
+  },
+
   // The cursor is a little reel while the line's out; the lure gets a ring when you can grab it.
   draw(hud) {
     const cv = hud.cv, on = this.active();
@@ -75,13 +91,13 @@ const LineDrag = {
     // Reel glyph: spool, handle spinning with your cranking, bail arm open or shut.
     this.spin = (this.spin || 0) + this.turns * 0.1;
     g.save(); g.translate(m.sx, m.sy);
-    g.fillStyle = '#2A2C30'; g.strokeStyle = '#F3EAD6'; g.lineWidth = 2;
+    // Outline = line tension: grey slack, green just right, amber getting tight, red about to snap.
+    const tc = this.tensionColor();
+    g.fillStyle = '#2A2C30'; g.strokeStyle = tc; g.lineWidth = 3.5;
     g.beginPath(); g.arc(0, 0, 12, 0, 7); g.fill(); g.stroke();
     g.fillStyle = '#C8BFAE'; g.beginPath(); g.arc(0, 0, 6, 0, 7); g.fill();
     g.save(); g.rotate(this.spin); g.strokeStyle = '#E3B04A'; g.lineWidth = 3; g.beginPath(); g.moveTo(0, 0); g.lineTo(15, 0); g.stroke();
     g.fillStyle = '#E3B04A'; g.beginPath(); g.arc(15, 0, 3.5, 0, 7); g.fill(); g.restore();
-    g.strokeStyle = Fishing.bailOpen ? '#E2584D' : '#8FD16A'; g.lineWidth = 2.5;
-    g.beginPath(); g.arc(0, 0, 16, Fishing.bailOpen ? -2.6 : -0.6, Fishing.bailOpen ? -1.6 : 0.6); g.stroke();
     g.restore();
     hud.text('drag ' + Game.drag.toFixed(2) + ' kg' + (Fishing.bailOpen ? ' · bail OPEN' : ''), m.sx + 20, m.sy + 26, Fishing.bailOpen ? UI.bad : UI.muted, 11, 'left', 600);
   },

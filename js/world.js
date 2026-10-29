@@ -121,6 +121,18 @@ const World = {
     this.buildHills();
     this.paintLand(rng, moist);
     this.buildTown(rng);
+    // Hills mustn't lift the banks above a bridge deck: level the ground around both ends.
+    for (const b of this.bridges) {
+      for (const [x, y] of [[b.x0, b.y0], [b.x1, b.y1], [(b.x0 + b.x1) / 2, (b.y0 + b.y1) / 2]]) {
+        this.flattenAround(x + 0.5, y + 0.5, 4, 11);
+        // …and the underlying lie of the land (high ground would still leave a step).
+        for (let yy = Math.floor(y - 11); yy <= y + 11; yy++) for (let xx = Math.floor(x - 11); xx <= x + 11; xx++) {
+          if (!this.inB(xx, yy)) continue;
+          const i = this.idx(xx, yy), k = U.smooth(U.clamp((U.dist(xx, yy, x, y) - 4) / 7, 0, 1));
+          this.height[i] = U.lerp(Math.min(this.height[i], 0.48), this.height[i], k);
+        }
+      }
+    }
     this.nameWaters(rng);
     const bad = this.audit();
     if (bad.length) console.warn('World gen: buildings touching water —', bad.join('; '));

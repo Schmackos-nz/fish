@@ -99,6 +99,7 @@
   #touchUI .tside button { width: 38px; height: 38px; padding: 0; font-size: 16px; line-height: 1; display: grid; place-items: center; box-shadow: 0 2px 0 #1a1410; }
   #touchUI .tpad { position: absolute; bottom: calc(12px + env(safe-area-inset-bottom)); right: 16px; display: grid; grid-template-columns: auto auto; gap: 10px; align-items: end; justify-items: end; }
   #tJump, #tCrouch, #tScope { width: 66px; height: 66px; }
+  #tBail, #tDragDn, #tDragUp { padding: 8px 12px; font-size: 12px; }
   #tJump { width: 78px; height: 78px; background: rgba(227,169,69,0.85) !important; color: #1a1410 !important; font-weight: 700 !important; }
   #tUse { grid-column: 1 / span 2; display: flex; align-items: center; gap: 8px; padding: 8px 14px 8px 8px; max-width: 250px;
     background: rgba(26,20,16,0.85) !important; }
@@ -329,14 +330,14 @@
       <div><span>Strike</span><span>Double-tap the lure / bobber</span></div>
       <div><span>Set the hook</span><span>Click on the strike</span></div>
       <div><span>Twitch the lure</span><span>Right-click</span></div>
-      <div><span>Bail</span><span>Middle-click</span></div>
+      <div><span>Bail</span><span>Middle-click or <kbd>B</kbd></span></div>
       <div><span>Next lure · Reel in</span><span><kbd>Tab</kbd> <kbd>Space</kbd></span></div>
     </section>
     <section><h4>The fight</h4>
       <div><span>Reel, rod up</span><span>Drag the fish toward you</span></div>
       <div><span>When it jumps</span><span>Let go</span></div>
       <div><span>Side strain</span><span><kbd>A</kbd> <kbd>D</kbd></span></div>
-      <div><span>Drag (tension)</span><span>Mouse wheel</span></div>
+      <div><span>Drag (tension)</span><span>Mouse wheel or <kbd>Z</kbd> / <kbd>X</kbd> · the reel cursor glows green when it's right, red when it's about to snap</span></div>
       <div><span>Watch</span><span>The tension bar</span></div>
     </section>
     <section><h4>Tools &amp; more</h4>
@@ -423,57 +424,57 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=89"></script>
-<script src="js/data.js?v=89"></script>
-<script src="js/audio.js?v=89"></script>
-<script src="js/music.js?v=89"></script>
-<script src="js/voice.js?v=89"></script>
-<script src="js/world.js?v=89"></script>
-<script src="js/scene-sprites.js?v=89"></script>
-<script src="js/toon.js?v=89"></script>
-<script src="js/scene.js?v=89"></script>
-<script src="js/folk.js?v=89"></script>
-<script src="js/models.js?v=89"></script>
-<script src="js/actors.js?v=89"></script>
-<script src="js/fish.js?v=89"></script>
-<script src="js/legends.js?v=89"></script>
-<script src="js/fishing.js?v=89"></script>
-<script src="js/fight.js?v=89"></script>
-<script src="js/linedrag.js?v=89"></script>
-<script src="js/player.js?v=89"></script>
-<script src="js/npcs.js?v=89"></script>
-<script src="js/path.js?v=89"></script>
-<script src="js/gun.js?v=89"></script>
-<script src="js/arsenal.js?v=89"></script>
-<script src="js/camp.js?v=89"></script>
-<script src="js/wild.js?v=89"></script>
-<script src="js/decay.js?v=89"></script>
-<script src="js/contest.js?v=89"></script>
-<script src="js/bugs.js?v=89"></script>
-<script src="js/floaters.js?v=89"></script>
-<script src="js/animals.js?v=89"></script>
-<script src="js/wardens.js?v=89"></script>
-<script src="js/interiors.js?v=89"></script>
-<script src="js/life.js?v=89"></script>
-<script src="js/weed.js?v=89"></script>
-<script src="js/markers.js?v=89"></script>
-<script src="js/swimmers.js?v=89"></script>
-<script src="js/couples.js?v=89"></script>
-<script src="js/tim.js?v=89"></script>
-<script src="js/bikes.js?v=89"></script>
-<script src="js/lockpick.js?v=89"></script>
-<script src="js/wanted.js?v=89"></script>
-<script src="js/tools.js?v=89"></script>
-<script src="js/hud.js?v=89"></script>
-<script src="js/share.js?v=89"></script>
-<script src="js/menus.js?v=89"></script>
-<script src="js/mobile.js?v=89"></script>
-<script src="js/patchnotes.js?v=89"></script>
-<script src="js/staff.js?v=89"></script>
-<script src="js/thief.js?v=89"></script>
-<script src="js/needs.js?v=89"></script>
-<script src="js/inventory.js?v=89"></script>
-<script src="js/main.js?v=89"></script>
-<script src="js/rep.js?v=89"></script>
+<script src="js/util.js?v=91"></script>
+<script src="js/data.js?v=91"></script>
+<script src="js/audio.js?v=91"></script>
+<script src="js/music.js?v=91"></script>
+<script src="js/voice.js?v=91"></script>
+<script src="js/world.js?v=91"></script>
+<script src="js/scene-sprites.js?v=91"></script>
+<script src="js/toon.js?v=91"></script>
+<script src="js/scene.js?v=91"></script>
+<script src="js/folk.js?v=91"></script>
+<script src="js/models.js?v=91"></script>
+<script src="js/actors.js?v=91"></script>
+<script src="js/fish.js?v=91"></script>
+<script src="js/legends.js?v=91"></script>
+<script src="js/fishing.js?v=91"></script>
+<script src="js/fight.js?v=91"></script>
+<script src="js/linedrag.js?v=91"></script>
+<script src="js/player.js?v=91"></script>
+<script src="js/npcs.js?v=91"></script>
+<script src="js/path.js?v=91"></script>
+<script src="js/gun.js?v=91"></script>
+<script src="js/arsenal.js?v=91"></script>
+<script src="js/camp.js?v=91"></script>
+<script src="js/wild.js?v=91"></script>
+<script src="js/decay.js?v=91"></script>
+<script src="js/contest.js?v=91"></script>
+<script src="js/bugs.js?v=91"></script>
+<script src="js/floaters.js?v=91"></script>
+<script src="js/animals.js?v=91"></script>
+<script src="js/wardens.js?v=91"></script>
+<script src="js/interiors.js?v=91"></script>
+<script src="js/life.js?v=91"></script>
+<script src="js/weed.js?v=91"></script>
+<script src="js/markers.js?v=91"></script>
+<script src="js/swimmers.js?v=91"></script>
+<script src="js/couples.js?v=91"></script>
+<script src="js/tim.js?v=91"></script>
+<script src="js/bikes.js?v=91"></script>
+<script src="js/lockpick.js?v=91"></script>
+<script src="js/wanted.js?v=91"></script>
+<script src="js/tools.js?v=91"></script>
+<script src="js/hud.js?v=91"></script>
+<script src="js/share.js?v=91"></script>
+<script src="js/menus.js?v=91"></script>
+<script src="js/mobile.js?v=91"></script>
+<script src="js/patchnotes.js?v=91"></script>
+<script src="js/staff.js?v=91"></script>
+<script src="js/thief.js?v=91"></script>
+<script src="js/needs.js?v=91"></script>
+<script src="js/inventory.js?v=91"></script>
+<script src="js/main.js?v=91"></script>
+<script src="js/rep.js?v=91"></script>
 </body>
 </html>

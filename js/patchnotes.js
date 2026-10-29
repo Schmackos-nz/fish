@@ -3,6 +3,9 @@
 
 const PATCH_NOTES = [
   { v: '2.0', name: 'Hands On', date: '30 Oct 2026', notes: [
+    ['changed', 'The reel gauge is gone. Your reel cursor\'s outline now shows line tension: grey when slack, green when just right, amber when tight, flashing red when about to snap. Bail on B or middle-click, drag on the wheel or Z/X (buttons on mobile)'],
+    ['changed', 'Bikers and kart drivers stick to tracks and open ground, steer clear of trees, and don\'t pick destinations deep in the forest'],
+    ['fixed', 'Bridges whose ends sat on a hillside now meet the bank properly'],
     ['changed', 'More detailed buildings: window frames and shutters, flower boxes, chimneys, front steps, door frames and knobs, and trim'],
     ['changed', 'Real furniture indoors: beds with pillows and blankets, ovens with doors and a pot, a table with chairs, sofas, toilets with cisterns, iron-banded chests, safes with dials, and shop counters with tills'],
     ['new', 'Slot inventory (I): everything you carry in a grid of stacks (tools, lures, ammo, food, fish, wood…). Click an item to use, eat or tie it on'],
