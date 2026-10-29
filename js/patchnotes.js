@@ -2,6 +2,13 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '1.5', name: 'Hard Time', date: '30 Oct 2026', notes: [
+    ['new', 'Sentences fit the crime: days for a scuffle, weeks or months for a rampage, and years for knocking out cops and blowing things up at five stars'],
+    ['new', 'The township decays over time: graffiti, boarded-up windows and doors, caved-in roofs, rubbish everywhere, and fewer bikers about. A long stretch inside makes it much worse'],
+    ['new', 'Fix up run-down buildings for a council payout, and bin rubbish for spare change'],
+    ['new', 'Long sentences end with a "While you were inside…" report on the state of the town'],
+    ['fixed', 'Your wanted level now always clears when you are busted (including by wardens) or black out'],
+  ] },
   { v: '1.4', name: 'Pocket Valley', date: '30 Oct 2026', notes: [
     ['changed', 'Mobile overhaul: the menu buttons are a compact icon column under your vitals, so nothing covers the top of the screen'],
     ['changed', 'Mobile: tap the minimap to open the big map, and tap outside it to close'],

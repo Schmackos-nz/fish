@@ -183,9 +183,18 @@ const Wardens = {
 };
 
 const Jail = {
-  sentence(reasons, w) {
-    const days = 1 + reasons.length + (reasons.some((r) => /firearm|Fleeing/.test(r)) ? 1 : 0) + (reasons.some((r) => /marijuana/.test(r)) ? 2 : 0) + Permits.undersized().length;
-    const fine = Math.min(Game.money, 30 * days);
+  // Days → "3 days", "2 weeks", "4 months", "2 years, 3 months".
+  term(days) {
+    if (days >= 365) { const y = Math.floor(days / 365), m = Math.floor((days % 365) / 30); return y + ' year' + (y > 1 ? 's' : '') + (m ? ', ' + m + ' month' + (m > 1 ? 's' : '') : ''); }
+    if (days >= 60) return Math.round(days / 30) + ' months';
+    if (days >= 14) return Math.round(days / 7) + ' weeks';
+    return days + ' day' + (days > 1 ? 's' : '');
+  },
+
+  sentence(reasons, w, forced) {
+    const days = forced || 1 + reasons.length + (reasons.some((r) => /firearm|Fleeing/.test(r)) ? 1 : 0) + (reasons.some((r) => /marijuana/.test(r)) ? 2 : 0) + Permits.undersized().length;
+    Wanted.clear(); // whatever got you here, you're not wanted any more once you're inside
+    const fine = Math.min(Game.money, 30 * Math.min(days, 90));
     const seized = Game.creel.length, bags = Game.weed || 0;
     Fishing.reelInFast(); Fight.end(); Sfx.setDrag(0);
     if (Bikes.riding) Bikes.dismount();
@@ -207,7 +216,7 @@ const Jail = {
     const el = document.getElementById('jail');
     el.querySelector('#jailWhy').textContent = reasons.join(' · ');
     el.querySelector('#jailTerms').innerHTML =
-      `<div><span>Sentence</span><b>${days} day${days > 1 ? 's' : ''}</b></div>` +
+      `<div><span>Sentence</span><b>${this.term(days)}</b></div>` +
       `<div><span>Fine</span><b>${U.fmtMoney(fine)}</b></div>` +
       `<div><span>Confiscated</span><b>${seized} fish${bags ? ' · ' + bags + ' bags of weed' : ''}${Game.seeds ? ' · ' + Game.seeds + ' seeds' : ''}</b></div>`;
     const btn = el.querySelector('#jailBtn'), bar = el.querySelector('#jailBar');
@@ -215,7 +224,7 @@ const Jail = {
     el.classList.remove('hidden');
     Sfx.fail(); setTimeout(() => Sfx.tone(90, 0.5, 0.4, 'square', 60), 150); // cell door
     btn.onclick = () => {
-      btn.disabled = true; btn.textContent = 'Doing time…';
+      btn.disabled = true; btn.textContent = days >= 365 ? 'The years crawl by…' : days >= 60 ? 'The months crawl by…' : 'Doing time…';
       let p = 0;
       const iv = setInterval(() => {
         p += 4; bar.style.width = p + '%';
@@ -229,6 +238,8 @@ const Jail = {
     Game.creel = []; Game.weed = 0; Game.seeds = 0;
     if (Interior.active) Interior.exit();
     Game.env.day += days; Game.env.hour = 8;
+    Wanted.clear();
+    Decay.age(days, true); // the town goes to seed while you're away
     Game.stats.jailed = (Game.stats.jailed || 0) + 1;
     // Out the front door of the Ranger Station (World.ranger is Dale's spot *inside* it).
     const st = World.buildings.find((b) => b.type === 'ranger'), d = st ? World.doorOf(st) : World.spawn;
@@ -240,6 +251,16 @@ const Jail = {
     Game.mode = 'play';
     Game.save();
     Hud.toast('Released. Ranger Dale sells permits — keep it legal.' + (this.impounded ? ' The stolen ' + this.impounded + ' went back to its owner.' : ''), UI.accent, 3.5);
+    if (days >= 30) {
+      const pct = Math.round(Decay.level() * 100), rub = Decay.state().rubbish.length;
+      Life.panel(`<h2>While you were inside…</h2>
+        <div class="desc">${this.term(days)} later, you walk out into Day ${Game.env.day}. The valley didn't wait for you.</div>
+        <h3>The township</h3>
+        <div class="row"><div><b>${Decay.describe().charAt(0).toUpperCase() + Decay.describe().slice(1)}</b><div class="desc">Graffiti, boarded-up windows, rubbish everywhere${Decay.riderCap() < 4 ? ', and hardly anyone rides through any more' : ''}.</div></div><b>${pct}% run down</b></div>
+        <div class="row"><div><b>Rubbish lying about</b><div class="desc">Bin it for a few bucks each.</div></div><b>${rub} pieces</b></div>
+        <div class="desc" style="margin-top:12px">The council will pay you to fix buildings up. Look for "Fix up" by any tagged or boarded-up building.</div>
+        ${Game.home ? '<div class="desc" style="margin-top:8px;color:var(--bad)">Nobody paid your rent while you were away…</div>' : ''}`);
+    }
     this.impounded = null;
   },
 };

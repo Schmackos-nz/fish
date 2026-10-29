@@ -158,7 +158,7 @@ const Bikes = {
     if (old) { r.bikeId = old.id; r.plate = old.plate; r.owner = old.owner; r.bike = this.modelFor(old.id); this.group.add(r.bike); r.x = old.x; r.y = old.y; r.ang = old.ang || 0; r.noBike = false; }
     else { r.noBike = true; }
     if (quiet) { r.bubble = 'Hang on… where\'s my bike?!'; r.bubbleT = 3; }
-    else { r.bubble = old ? 'OI! THAT\'S MY BIKE! …Fine, I\'ll take YOURS!' : 'OI! THAT\'S MY BIKE!'; r.bubbleT = 3; Wanted.crime(1); }
+    else { r.bubble = old ? 'OI! THAT\'S MY BIKE! …Fine, I\'ll take YOURS!' : 'OI! THAT\'S MY BIKE!'; r.bubbleT = 3; Wanted.crime(1); (Wanted.rap = Wanted.rap || { ko: 0, cops: 0, booms: 0, thefts: 0 }).thefts++; }
     Hud.toast((quiet ? 'Clean getaway! ' : 'They saw you! ') + 'You stole ' + r.name + '\'s ' + BIKE_BY_ID[Game.bike.id].name + ' (plate ' + r.plate + '). No permit for it — avoid the law, and don\'t fill it up!', quiet ? UI.accent : UI.bad, 3.2);
     this.mount();
     Game.save();
@@ -239,7 +239,11 @@ const Bikes = {
 
   // ---------- local riders ----------
   update(dt) {
+    const cap = Decay.riderCap();
     for (const r of this.riders) {
+      // In a run-down town some riders just stop coming round.
+      r.away = this.riders.indexOf(r) >= cap && !this.onFoot(r) && U.dist(r.x, r.y, Player.x, Player.y) > 30;
+      if (r.away) continue;
       if (r.ko > 0) { r.ko -= dt; continue; } // knocked off their bike
       r.bubbleT = Math.max(0, r.bubbleT - dt);
       if (this.parkedTick(r, dt)) continue;
@@ -384,7 +388,7 @@ const Bikes = {
   // ---------- shooting vehicles ----------
   vehicles() {
     const out = [];
-    for (const r of this.riders) if (!r.noBike) out.push({ x: r.x, y: r.y, o: r });
+    for (const r of this.riders) if (!r.noBike && !r.away) out.push({ x: r.x, y: r.y, o: r });
     if (Game.bike && !this.riding) out.push({ x: Game.bike.x, y: Game.bike.y, o: 'mine' });
     return out;
   },
@@ -486,7 +490,7 @@ const Bikes = {
     const base = (x, y) => Scene3D.standH(x, y);
     let loud = 0, rpm = 60;
     for (const r of this.riders) {
-      const d = U.dist(r.x, r.y, Player.x, Player.y), vis = d < 70 && !Interior.active;
+      const d = U.dist(r.x, r.y, Player.x, Player.y), vis = d < 70 && !Interior.active && !r.away;
       r.mesh.visible = vis; r.bike.visible = vis && !r.noBike;
       if (r.pistol) r.pistol.visible = vis && r.armed && r.state === 'stranded' && r.chaseT > 0 && !(r.ko > 0);
       if (vis) {

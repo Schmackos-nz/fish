@@ -49,7 +49,7 @@ const Wanted = {
     const out = [];
     for (const n of Npcs.list) if (!['home', 'bush', 'ko'].includes(n.state)) out.push({ x: n.x, y: n.y, kind: 'npc', o: n });
     for (const w of Wardens.list) if (w.state !== 'ko') out.push({ x: w.x, y: w.y, kind: 'warden', o: w });
-    for (const r of Bikes.riders) if (!(r.ko > 0)) { const p = Bikes.riderPos(r); out.push({ x: p.x, y: p.y, kind: 'biker', o: r }); }
+    for (const r of Bikes.riders) if (!(r.ko > 0) && !r.away) { const p = Bikes.riderPos(r); out.push({ x: p.x, y: p.y, kind: 'biker', o: r }); }
     for (const u of this.units) if (!u.ko) out.push({ x: u.x, y: u.y, kind: 'unit', o: u });
     for (const h of Hunters.list) if (!h.ko) out.push({ x: h.x, y: h.y, kind: 'hunter', o: h });
     return out;
@@ -65,6 +65,8 @@ const Wanted = {
 
   knockOut(t, crime = 1) {
     const o = t.o;
+    const rap = this.rap || (this.rap = { ko: 0, cops: 0, booms: 0, thefts: 0 });
+    if (t.kind === 'unit' || t.kind === 'warden') rap.cops++; else rap.ko++;
     Sfx.slap(1); Sfx.thunk();
     if (t.kind === 'npc') {
       // Their catch hits the dirt.
@@ -97,6 +99,7 @@ const Wanted = {
   crime(amount) {
     const before = this.level;
     this.heat = Math.min(5.99, Math.max(this.heat + amount, 1));
+    this.peak = Math.max(this.peak || 0, this.heat);
     this.level = Math.floor(this.heat);
     this.lastSeen = 0;
     if (this.level > before) { Sfx.tone(880, 0.12, 0.2, 'square'); setTimeout(() => Sfx.tone(660, 0.12, 0.2, 'square'), 140); }
@@ -158,6 +161,7 @@ const Wanted = {
       this.heat = Math.max(0, this.heat - dt / (this.hidden ? 5 : 9));
       const lv = Math.floor(this.heat);
       if (lv < this.level) { this.level = lv; Hud.toast(lv ? 'Wanted level dropping…' : 'You lost them. Wanted level cleared.', lv ? UI.accent : UI.good, 2); }
+      if (lv === 0) { this.rap = null; this.peak = 0; } // got away with it
     }
     if (this.level === 0 && Game.food > 0) this.health = Math.min(100, this.health + dt * 4);
     // Keep the right number of units on the hunt.
@@ -247,15 +251,27 @@ const Wanted = {
   },
 
   clear() {
-    this.heat = 0; this.level = 0;
+    this.heat = 0; this.level = 0; this.rap = null; this.peak = 0; this.seen = false; this.lastSeen = 999;
+    for (const r of Bikes.riders) r.chaseT = 0;
     for (const u of this.units.slice()) this.removeUnit(u);
     for (const n of Npcs.list) if (n.state === 'armed') { n.state = 'cast'; n.casts = 0; n.t = 1; }
   },
 
+  // The bigger the rampage, the longer the stretch: days, weeks, months — or years.
   arrest() {
-    const lv = this.level;
+    const R = this.rap || {}, peak = Math.max(this.level, Math.floor(this.peak || 0));
+    const ko = R.ko || 0, cops = R.cops || 0, booms = R.booms || 0, thefts = R.thefts || 0;
+    const reasons = [];
+    if (cops) reasons.push('Assaulting officers ×' + cops);
+    if (ko) reasons.push('Assault ×' + ko);
+    if (booms) reasons.push('Use of explosives ×' + booms);
+    if (thefts) reasons.push('Vehicle theft ×' + thefts);
+    reasons.push('Firearms offences (wanted level ' + peak + ')');
+    let days = [1, 2, 5, 14, 75, 300][peak] + ko * 4 + cops * 25 + booms * 45 + thefts * 10;
+    if (peak >= 5 && (cops >= 3 || booms >= 2)) days += 365 * (1 + Math.floor(cops / 3) + Math.floor(booms / 2));
+    days = Math.min(3650, Math.round(days));
     this.clear();
-    Jail.sentence(['Firearms offences (wanted level ' + lv + ')'], null);
+    Jail.sentence(reasons, null, days);
   },
 
   wasted() {
@@ -280,6 +296,7 @@ const Wanted = {
       else Player.place(World.tim.x + 1, World.tim.y + 1.5);
       fade.classList.remove('on');
       this.blackingOut = false;
+      this.clear(); // anything that went off while you were out doesn't count
       Clinic.wakeUp(log, last, bill);
       Game.save();
     }, 1800);

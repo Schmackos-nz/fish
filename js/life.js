@@ -52,7 +52,7 @@ const Life = {
   // Rent is charged once per new day.
   processDays() {
     if (Game.lastDay === undefined) Game.lastDay = Game.env.day;
-    while (Game.lastDay < Game.env.day) { Game.lastDay++; this.payRent(); }
+    while (Game.lastDay < Game.env.day) { Game.lastDay++; this.payRent(); Decay.age(1, false); }
   },
 
   payRent() {
@@ -360,7 +360,7 @@ const Interact = {
         else add(dr.x, dr.y, 1.6, b.name, () => Hud.toast(b.name + ' — the door\'s locked.', UI.muted, 1.6));
       }
       for (const r of Bikes.riders) {
-        if ((r.state === 'refuel' || r.state === 'break') && !(r.ko > 0)) add(r.x, r.y, 1.8, 'Attempt to steal ' + r.name + '\'s ' + BIKE_BY_ID[r.bikeId].name, () => LockPick.open(r));
+        if ((r.state === 'refuel' || r.state === 'break') && !(r.ko > 0) && !r.away) add(r.x, r.y, 1.8, 'Attempt to steal ' + r.name + '\'s ' + BIKE_BY_ID[r.bikeId].name, () => LockPick.open(r));
       }
       if (Bikes.near()) add(Game.bike.x, Game.bike.y, 2, (Bikes.ownsIt() ? 'Ride your ' : 'Ride the stolen ') + BIKE_BY_ID[Game.bike.id].name, () => Bikes.mount());
       add(World.bbq.x, World.bbq.y, 2, 'BBQ — cook your catch', () => Life.openCook('the BBQ'));
@@ -373,6 +373,7 @@ const Interact = {
       add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
       Weed.interactions(add);
       Camp.interactions(cands);
+      Decay.interactions(cands);
       const sh = Forage.nearest();
       if (sh) add(sh.x, sh.y, 1.4, 'Forage the ' + sh.s.look.toLowerCase(), () => Forage.pick(sh));
       const n = Npcs.near(P.x, P.y, 2.5);

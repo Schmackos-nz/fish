@@ -156,6 +156,7 @@ const LockPick = {
     Sfx.fail();
     Hud.toast('ALARM! ' + r.name + ' caught you trying to nick their ' + BIKE_BY_ID[r.bikeId].name + '!', UI.bad, 3);
     Wanted.crime(1.5);
+    (Wanted.rap = Wanted.rap || { ko: 0, cops: 0, booms: 0, thefts: 0 }).thefts++;
     // The owner comes after you; their bike stays put.
     if (Bikes.onFoot(r)) { r.state = 'stranded'; r.noBike = false; r.stateT = 30; r.chaseT = 20; r.armed = Math.random() < 0.55; r.hitCD = 1; r.bubble = 'OI! GET AWAY FROM MY BIKE!'; r.bubbleT = 2.5; }
   },

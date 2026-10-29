@@ -74,6 +74,7 @@ const Arsenal = {
     // Knock out everyone in the blast; game and fish too.
     for (const t of Wanted.targets()) if (U.dist(t.x, t.y, x, y) < r) Wanted.knockOut(t, 1.3);
     Bikes.blast(x, y, r * 0.9);
+    (Wanted.rap = Wanted.rap || { ko: 0, cops: 0, booms: 0, thefts: 0 }).booms++;
     for (const an of Animals.list.slice()) if (an.state !== 'dead' && U.dist(an.x, an.y, x, y) < r) Animals.shotAt(an.x, an.y, true);
     for (const f of Fish.list.slice()) if (f.state !== 'hooked' && !f.sp.myth && U.dist(f.x, f.y, x, y) < r && f.z < 2.5) Gun.kill(f);
     if (U.dist(x, y, Player.x, Player.y) < r * 0.8) Wanted.hurt(35, 'an explosion');
