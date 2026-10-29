@@ -342,3 +342,56 @@ const Needs = {
     }
   },
 };
+
+// ---------- farts ----------
+// Locals let one go now and then; you only do when you're busting to go.
+const Farts = {
+  puffs: [], group: null, t: 6,
+  init() {
+    if (this.group) Scene3D.scene.remove(this.group);
+    this.group = new THREE.Group(); Scene3D.scene.add(this.group);
+    this.geo = this.geo || new THREE.IcosahedronGeometry(0.14, 1);
+    this.puffs = [];
+  },
+  rip(x, y, face, who) {
+    const h = Scene3D.standH(x, y) + 0.32, bx = x - Math.cos(face) * 0.3, by = y - Math.sin(face) * 0.3;
+    for (let i = 0; i < 4; i++) {
+      const m = new THREE.Mesh(this.geo, new THREE.MeshBasicMaterial({ color: [0xB8C870, 0xA8B860, 0xC8D088][i % 3], transparent: true, depthWrite: false }));
+      m.position.set(bx, h, by); this.group.add(m);
+      this.puffs.push({ m, t: -i * 0.08, vx: -Math.cos(face) * 0.4 + (Math.random() - 0.5) * 0.4, vy: -Math.sin(face) * 0.4 + (Math.random() - 0.5) * 0.4 });
+    }
+    const d = U.dist(x, y, Player.x, Player.y);
+    if (d < 20) {
+      const v = U.clamp(1 - d / 20, 0.1, 1), f = 70 + Math.random() * 60;
+      Sfx.tone(f, 0.35 + Math.random() * 0.35, 0.22 * v, 'sawtooth', f * 0.6);
+      Sfx.burst(0.3, 300, 0.12 * v, 'lowpass', 2, 120);
+    }
+    if (who && d < 12 && Math.random() < 0.5) Npcs.say(who, U.pick(Math.random, ['…Pardon me.', 'Wasn\'t me.', 'Better out than in!', 'Whoops.', 'Must\'ve been the beans.']), 2);
+    else if (!who) {
+      Hud.toast(U.pick(Math.random, ['*parp* You really need to find a bush.', 'That one escaped. Hurry up and dig a hole.', '*thhbbpt* …Nobody heard that.']), UI.muted, 1.8);
+      const n = Npcs.list.find((o) => !o.away && ['cast', 'wait', 'walk'].includes(o.state) && U.dist(o.x, o.y, x, y) < 5);
+      if (n) Npcs.say(n, U.pick(Math.random, ['PHWOAR!', 'Was that YOU?!', 'Good grief!']), 2);
+    }
+  },
+  update(dt) {
+    this.t -= dt;
+    if (this.t <= 0) {
+      this.t = 4 + Math.random() * 6;
+      if (!Interior.active) {
+        // A random local nearby…
+        const ns = Npcs.list.filter((n) => !n.away && !['home', 'bush', 'ko', 'dead'].includes(n.state) && U.dist(n.x, n.y, Player.x, Player.y) < 25);
+        if (ns.length && Math.random() < 0.35) { const n = ns[(Math.random() * ns.length) | 0]; this.rip(n.x, n.y, n.face || 0, n); }
+        // …and you, only when you're desperate for a poo.
+        if ((Game.bowels || 0) > 80 && !Needs.busy && Math.random() < 0.5 + ((Game.bowels || 0) - 80) / 40) this.rip(Player.x, Player.y, Player.face, null);
+      }
+    }
+    for (let i = this.puffs.length - 1; i >= 0; i--) {
+      const p = this.puffs[i]; p.t += dt;
+      if (p.t < 0) { p.m.visible = false; continue; }
+      p.m.visible = !Interior.active;
+      p.m.position.x += p.vx * dt; p.m.position.z += p.vy * dt; p.m.position.y += dt * 0.35;
+      p.m.scale.setScalar(0.6 + p.t * 2.2); p.m.material.opacity = Math.max(0, 0.75 - p.t * 0.5);
+      if (p.t > 1.5) { this.group.remove(p.m); p.m.material.dispose(); this.puffs.splice(i, 1); }
+    }
+  },
+};
