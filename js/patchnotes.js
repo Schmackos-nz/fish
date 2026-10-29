@@ -3,6 +3,7 @@
 
 const PATCH_NOTES = [
   { v: '1.5', name: 'Hard Time', date: '30 Oct 2026', notes: [
+    ['fixed', 'Mosquitoes and sandflies now fly in the world instead of being stuck to the screen: they no longer chase your fishing line or snap back when you reel in, and you can walk or run away from them'],
     ['new', 'Shops keep opening hours. Staff walk in from their own houses to unlock in the morning and lock up at night (and boot you out at closing)'],
     ['new', 'Staff take days off: someone else minds the shop while they go fishing, hunting or sunbathing (say g\'day if you find them)'],
     ['new', 'Let a building rot and its keeper quits town. Fix it up and someone new moves in to run it'],

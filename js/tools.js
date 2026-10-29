@@ -71,7 +71,7 @@ const Tools = {
     Game.spray--;
     this.repelT = 90; this.mistT = 1.2;
     Sfx.burst(0.8, 4000, 0.35, 'highpass', 0.7);
-    for (const b of Bugs.list) Bugs.splats.push({ x: b.x, y: b.y, t: 0.4, size: b.k.size });
+    for (const b of Bugs.list) Bugs.splats.push({ wx: b.wx, wy: b.wy, wz: b.wz, t: 0.4, size: b.k.size });
     const n = Bugs.list.length;
     Bugs.list = [];
     Hud.toast(n ? 'Psssht! ' + n + ' bug' + (n > 1 ? 's' : '') + ' dropped. Bug-free for 90 s.' : 'Psssht! Bug-free for 90 s.', '#8fd16a', 1.8);
