@@ -1,6 +1,13 @@
 // The little angler: walking, running, crouching, sliding, jumping, wading.
 'use strict';
 
+// On the move, you can only point a gun or rod roughly where you're heading (no aiming backwards over
+// your shoulder mid-stride). Standing still, aim anywhere.
+function aimAng(raw) {
+  if (!Player.moving || Bikes.riding) return raw;
+  return Player.face + U.clamp(U.angDiff(Player.face, raw), -0.9, 0.9);
+}
+
 const JUMP_TIME = 0.55;
 const ROLL_TIME = 0.6; // slide duration (kept as rollT internally)
 

@@ -99,7 +99,7 @@ const Gun = {
       return { x, y, ang: Math.atan2(y - p.y, x - p.x), scoped: true };
     }
     const m = Input.mouse;
-    const ang = Math.atan2(m.wy - p.y, m.wx - p.x);
+    const ang = aimAng(Math.atan2(m.wy - p.y, m.wx - p.x));
     const d = Math.min(HIP_RANGE, U.dist(p.x, p.y, m.wx, m.wy));
     return { x: p.x + Math.cos(ang) * d, y: p.y + Math.sin(ang) * d, ang, scoped: false };
   },

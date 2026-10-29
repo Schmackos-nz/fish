@@ -2,6 +2,14 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '2.0', name: 'Hands On', date: '30 Oct 2026', notes: [
+    ['changed', 'While you are moving, guns and rods only aim within the arc in front of you, so no more firing or casting backwards mid-stride'],
+    ['changed', 'New fishing controls: once your line is out, your cursor becomes a reel. Grab the lure (or the fish) and drag it toward you to reel in. The faster you drag, the faster you reel, up to what your reel can do'],
+    ['new', 'Drag the lure away from you to let a little line off'],
+    ['new', 'Double-tap the lure or bobber to strike'],
+    ['new', 'Mouse wheel sets the drag (tension) any time the line is out. Middle-click flips the bail'],
+    ['changed', 'The reel in the corner is now a gauge (tension, drag, bail). You no longer crank it by hand'],
+  ] },
   { v: '1.9', name: 'Life Sentence', date: '30 Oct 2026', notes: [
     ['new', 'Locals chat about all sorts: the weather, the time of day, the state of the town, who has the day off, the weekend contest, the Bunyip, the thief, and that bloke who did his business in the open'],
     ['new', 'Get caught weeing or pooing in public and the witnesses point and laugh, then keep ridiculing you for a while afterwards'],

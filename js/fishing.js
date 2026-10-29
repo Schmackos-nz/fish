@@ -20,7 +20,7 @@ const Fishing = {
   updateTip() {
     const p = Player;
     let ang;
-    if (this.state === 'idle' || this.state === 'charging') ang = Math.atan2(Input.mouse.wy - p.y, Input.mouse.wx - p.x);
+    if (this.state === 'idle' || this.state === 'charging') ang = aimAng(Math.atan2(Input.mouse.wy - p.y, Input.mouse.wx - p.x));
     else if (this.lure) ang = Math.atan2(this.lure.y - p.y, this.lure.x - p.x);
     else ang = this.aim;
     if (this.state === 'fight') ang += Fight.rodSide * 0.9;
@@ -39,7 +39,7 @@ const Fishing = {
     if (this.state !== 'line' && this.state !== 'fight') { Hud.toast('The bail flips by itself when you cast.', UI.muted, 1.4); return; }
     this.bailOpen = !this.bailOpen;
     Sfx.bail();
-    Hud.toast(this.bailOpen ? 'Bail open — line runs free. Crank to close it.' : 'Bail closed.', UI.muted, 1.6);
+    Hud.toast(this.bailOpen ? 'Bail open — line runs free. Drag the lure in to close it.' : 'Bail closed.', UI.muted, 1.6);
   },
 
   canCastWith(id) { return (Game.lures[id] || 0) > 0; },
@@ -98,7 +98,7 @@ const Fishing = {
     const dist = this.castDistance(pw);
     // Itchy bites spoil your aim.
     const err = (perfect ? 0 : (Math.random() - 0.5) * (1 - pw) * 0.5) + (Math.random() - 0.5) * Bugs.itch * 0.6;
-    const ang = Math.atan2(Input.mouse.wy - p.y, Input.mouse.wx - p.x) + err;
+    const ang = aimAng(Math.atan2(Input.mouse.wy - p.y, Input.mouse.wx - p.x)) + err;
     const ft = 0.45 + dist * 0.055;
     let tx = this.tip.x + Math.cos(ang) * dist + Game.env.wind.x * ft * 1.2;
     let ty = this.tip.y + Math.sin(ang) * dist + Game.env.wind.y * ft * 1.2;
@@ -140,8 +140,7 @@ const Fishing = {
       const heavy = l.id === 'spoon' ? 1 : l.id === 'worm' ? 0.4 : 0.7;
       Sfx.splash(heavy); Hud.ripple(l.x, l.y, heavy);
       Fish.spookNear(l.x, l.y, 0.6 + heavy * 0.9);
-      if (L.id === 'worm') this.say('Now wait… click when the bobber goes UNDER.', '#f3ead6', 2);
-      else if (!Hud.reelTold) { Hud.reelTold = true; this.say('Grab the reel handle (bottom right) and drag it round clockwise to reel in', UI.accent, 4); }
+      if (L.id === 'worm') this.say('Now wait… double-tap the bobber when it goes UNDER.', '#f3ead6', 2.4);
     } else {
       l.onLand = true;
       const o = World.objAt(l.x, l.y);
@@ -181,9 +180,9 @@ const Fishing = {
 
     // Click when it strikes. Reeling straight through the strike sets the hook too.
     const striking = this.engaged && this.engaged.state === 'strike';
-    if (striking && (Input.mousePressed || Input.pressed('Space'))) { this.hookset(1); if (this.state !== 'line') return; }
+    if (striking && (LineDrag.doubleTap || Input.pressed('Space'))) { this.hookset(1); if (this.state !== 'line') return; }
     else if (striking && Input.reelGrab && this.omega > 0.4 && Game.time - this.strikeAt > 0.3) { this.hookset(0.85); if (this.state !== 'line') return; }
-    else if (Input.mousePressed && Game.time - this.nibbleAt < 0.6) this.strikeEarly();
+    else if (LineDrag.doubleTap && Game.time - this.nibbleAt < 0.6) this.strikeEarly();
     else if (Input.pressed('Space')) { this.reelInFast(); return; }
 
     if (!this.bailOpen) {

@@ -293,7 +293,7 @@
 <div id="help" class="modal hidden"><div class="sheet">
   <button class="close" data-close="help">✕</button>
   <h2>How to play</h2>
-  <p class="sub">Cast with the mouse, then work the reel in the corner by hand. The controls panel in-game always shows what you can do right now.</p>
+  <p class="sub">Cast with the mouse, then grab the lure and drag it back to you — your cursor becomes the reel. The controls panel in-game always shows what you can do right now.</p>
   <div class="help-grid">
     <section><h4>Moving</h4>
       <div><span>Walk</span><span><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd></span></div>
@@ -307,17 +307,19 @@
     </section>
     <section><h4>Fishing</h4>
       <div><span>Cast</span><span>Hold, release at peak</span></div>
-      <div><span>Reel</span><span>Grab the handle, drag it round ↻</span></div>
+      <div><span>Reel in</span><span>Drag the lure toward you (faster drag = faster reel)</span></div>
+      <div><span>Let line off</span><span>Drag the lure away</span></div>
+      <div><span>Strike</span><span>Double-tap the lure / bobber</span></div>
       <div><span>Set the hook</span><span>Click on the strike</span></div>
       <div><span>Twitch the lure</span><span>Right-click</span></div>
-      <div><span>Bail lever</span><span>Click it under the reel</span></div>
+      <div><span>Bail</span><span>Middle-click</span></div>
       <div><span>Next lure · Reel in</span><span><kbd>Tab</kbd> <kbd>Space</kbd></span></div>
     </section>
     <section><h4>The fight</h4>
-      <div><span>Reel, rod up</span><span>Crank the handle</span></div>
-      <div><span>When it jumps</span><span>Let go of the reel</span></div>
+      <div><span>Reel, rod up</span><span>Drag the fish toward you</span></div>
+      <div><span>When it jumps</span><span>Let go</span></div>
       <div><span>Side strain</span><span><kbd>A</kbd> <kbd>D</kbd></span></div>
-      <div><span>Drag</span><span>Wheel or − / + by the reel</span></div>
+      <div><span>Drag (tension)</span><span>Mouse wheel</span></div>
       <div><span>Watch</span><span>The tension bar</span></div>
     </section>
     <section><h4>Tools &amp; more</h4>
@@ -404,55 +406,56 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=83"></script>
-<script src="js/data.js?v=83"></script>
-<script src="js/audio.js?v=83"></script>
-<script src="js/music.js?v=83"></script>
-<script src="js/voice.js?v=83"></script>
-<script src="js/world.js?v=83"></script>
-<script src="js/scene-sprites.js?v=83"></script>
-<script src="js/toon.js?v=83"></script>
-<script src="js/scene.js?v=83"></script>
-<script src="js/folk.js?v=83"></script>
-<script src="js/models.js?v=83"></script>
-<script src="js/actors.js?v=83"></script>
-<script src="js/fish.js?v=83"></script>
-<script src="js/legends.js?v=83"></script>
-<script src="js/fishing.js?v=83"></script>
-<script src="js/fight.js?v=83"></script>
-<script src="js/player.js?v=83"></script>
-<script src="js/npcs.js?v=83"></script>
-<script src="js/path.js?v=83"></script>
-<script src="js/gun.js?v=83"></script>
-<script src="js/arsenal.js?v=83"></script>
-<script src="js/camp.js?v=83"></script>
-<script src="js/wild.js?v=83"></script>
-<script src="js/decay.js?v=83"></script>
-<script src="js/contest.js?v=83"></script>
-<script src="js/bugs.js?v=83"></script>
-<script src="js/floaters.js?v=83"></script>
-<script src="js/animals.js?v=83"></script>
-<script src="js/wardens.js?v=83"></script>
-<script src="js/interiors.js?v=83"></script>
-<script src="js/life.js?v=83"></script>
-<script src="js/weed.js?v=83"></script>
-<script src="js/markers.js?v=83"></script>
-<script src="js/swimmers.js?v=83"></script>
-<script src="js/couples.js?v=83"></script>
-<script src="js/tim.js?v=83"></script>
-<script src="js/bikes.js?v=83"></script>
-<script src="js/lockpick.js?v=83"></script>
-<script src="js/wanted.js?v=83"></script>
-<script src="js/tools.js?v=83"></script>
-<script src="js/hud.js?v=83"></script>
-<script src="js/share.js?v=83"></script>
-<script src="js/menus.js?v=83"></script>
-<script src="js/mobile.js?v=83"></script>
-<script src="js/patchnotes.js?v=83"></script>
-<script src="js/staff.js?v=83"></script>
-<script src="js/thief.js?v=83"></script>
-<script src="js/needs.js?v=83"></script>
-<script src="js/main.js?v=83"></script>
-<script src="js/rep.js?v=83"></script>
+<script src="js/util.js?v=85"></script>
+<script src="js/data.js?v=85"></script>
+<script src="js/audio.js?v=85"></script>
+<script src="js/music.js?v=85"></script>
+<script src="js/voice.js?v=85"></script>
+<script src="js/world.js?v=85"></script>
+<script src="js/scene-sprites.js?v=85"></script>
+<script src="js/toon.js?v=85"></script>
+<script src="js/scene.js?v=85"></script>
+<script src="js/folk.js?v=85"></script>
+<script src="js/models.js?v=85"></script>
+<script src="js/actors.js?v=85"></script>
+<script src="js/fish.js?v=85"></script>
+<script src="js/legends.js?v=85"></script>
+<script src="js/fishing.js?v=85"></script>
+<script src="js/fight.js?v=85"></script>
+<script src="js/linedrag.js?v=85"></script>
+<script src="js/player.js?v=85"></script>
+<script src="js/npcs.js?v=85"></script>
+<script src="js/path.js?v=85"></script>
+<script src="js/gun.js?v=85"></script>
+<script src="js/arsenal.js?v=85"></script>
+<script src="js/camp.js?v=85"></script>
+<script src="js/wild.js?v=85"></script>
+<script src="js/decay.js?v=85"></script>
+<script src="js/contest.js?v=85"></script>
+<script src="js/bugs.js?v=85"></script>
+<script src="js/floaters.js?v=85"></script>
+<script src="js/animals.js?v=85"></script>
+<script src="js/wardens.js?v=85"></script>
+<script src="js/interiors.js?v=85"></script>
+<script src="js/life.js?v=85"></script>
+<script src="js/weed.js?v=85"></script>
+<script src="js/markers.js?v=85"></script>
+<script src="js/swimmers.js?v=85"></script>
+<script src="js/couples.js?v=85"></script>
+<script src="js/tim.js?v=85"></script>
+<script src="js/bikes.js?v=85"></script>
+<script src="js/lockpick.js?v=85"></script>
+<script src="js/wanted.js?v=85"></script>
+<script src="js/tools.js?v=85"></script>
+<script src="js/hud.js?v=85"></script>
+<script src="js/share.js?v=85"></script>
+<script src="js/menus.js?v=85"></script>
+<script src="js/mobile.js?v=85"></script>
+<script src="js/patchnotes.js?v=85"></script>
+<script src="js/staff.js?v=85"></script>
+<script src="js/thief.js?v=85"></script>
+<script src="js/needs.js?v=85"></script>
+<script src="js/main.js?v=85"></script>
+<script src="js/rep.js?v=85"></script>
 </body>
 </html>

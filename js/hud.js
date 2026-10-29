@@ -144,6 +144,7 @@ const Hud = {
     Gun.drawScope(this);
     Wanted.drawWorld(this);
     this.drawGunCursor();
+    LineDrag.draw(this);
     // Panels are laid out on a virtual screen, scaled down to fit phones.
     const k = this.k = Mobile.hudScale(), ins = Mobile.insets();
     this.ox = ins.l;
@@ -294,7 +295,7 @@ const Hud = {
       case 'flying': r(['…'], 'Line out'); break;
       case 'line':
         if (F.engaged && F.engaged.state === 'strike') r(['Click'], 'Set the hook!', { hot: true, flash });
-        r(['Reel'], 'Grab the handle, drag it round ↻', { held: Input.reelGrab, hot: !Input.reelGrab });
+        r(['Drag'], 'Pull the lure toward you to reel · double-tap to strike', { held: Input.reelGrab, hot: !Input.reelGrab });
         r(['Right'], 'Twitch the lure', { held: Input.mouse.rdown });
         r(['Bail'], 'Click the lever to let line run free');
         r(['Space'], 'Reel all the way in');
@@ -308,7 +309,7 @@ const Hud = {
       case 'fight': {
         const jump = Fight.mode === 'jump' || (Fight.fish && Fight.fish.airborne);
         if (jump) r(['Let go'], 'Release the reel — it\'s jumping!', { hot: true, flash });
-        else r(['Reel'], 'Crank the handle — rod comes up', { held: Input.reelGrab });
+        else r(['Drag'], 'Pull the fish toward you — rod comes up', { held: Input.reelGrab });
         r(['A / D'], 'Lean the rod against its run', { held: Input.keys.has('KeyA') || Input.keys.has('KeyD') });
         r(['Wheel'], 'Drag − / + (or the reel buttons)', { hot: Fight.tension > Game.gear.line.strength * 0.8, flash: Fight.tension > Game.gear.line.strength * 0.9 && flash });
         break;
@@ -375,11 +376,7 @@ const Hud = {
     if (this.reel) {
       if (this.bailBtn && hit(this.bailBtn)) { Fishing.toggleBail(); return true; }
       for (const b of this.dragBtns || []) if (hit(b)) { Fight.setDrag(Game.drag + b.d); return true; }
-      if (U.dist(x, y, this.reel.cx, this.reel.cy) < this.reel.r) {
-        // Grab the reel: any point on its face starts the turn from where you clicked.
-        if (CRANK_STATES.has(Fishing.state)) { Input.reelGrab = true; Input.reelAng = Math.atan2(y - this.reel.cy, x - this.reel.cx); Input.mouse.down = true; }
-        return true;
-      }
+      if (U.dist(x, y, this.reel.cx, this.reel.cy) < this.reel.r) return true; // display only now
     }
     for (const s of this.toolSlots) if (hit(s)) { Tools.select(s.id); return true; }
     for (const s of this.slots) if (hit(s)) { Fishing.selectLure(s.id); return true; }
@@ -489,7 +486,7 @@ const Hud = {
     g.strokeStyle = F.bailOpen ? UI.bad : 'rgba(255,255,255,0.6)'; g.lineWidth = 4; g.lineCap = 'round';
     g.beginPath(); g.arc(cx, cy, 58, F.bailOpen ? -2.7 : -0.5, F.bailOpen ? -1.8 : 2.6); g.stroke();
     // Handle: arm + big knob you grab
-    const ha = Input.reelGrab ? Input.reelAng : F.handle;
+    const ha = F.handle;
     const hx = cx + Math.cos(ha) * 66, hy = cy + Math.sin(ha) * 66;
     g.strokeStyle = '#C9A86A'; g.lineWidth = 7;
     g.beginPath(); g.moveTo(cx, cy); g.lineTo(hx, hy); g.stroke(); g.lineCap = 'butt';
@@ -500,7 +497,7 @@ const Hud = {
     g.restore();
     g.strokeStyle = 'rgba(0,0,0,0.35)'; g.lineWidth = 1.5; g.beginPath(); g.arc(hx, hy, 14, 0, 7); g.stroke();
     // Prompt: a circling arrow until you grab it
-    if (active && !Input.reelGrab) {
+    if (false) { // the reel is a gauge now — you drag the lure instead
       const t = Game.time * 2;
       g.strokeStyle = 'rgba(227,169,69,0.55)'; g.lineWidth = 2; g.setLineDash([6, 6]); g.lineDashOffset = -t * 8;
       g.beginPath(); g.arc(cx, cy, 66, 0, 7); g.stroke(); g.setLineDash([]);

@@ -6,9 +6,9 @@ const CRANK_STATES = new Set(['line', 'fight', 'snagged']);
 
 const Input = {
   keys: new Set(), down: new Set(), mouse: { sx: 0, sy: 0, wx: 0, wy: 0, down: false, rdown: false },
-  mousePressed: false, rPressed: false, wheel: 0, crank: 0, crankAcc: 0, reelGrab: false, reelAng: 0,
+  mousePressed: false, rPressed: false, mPressed: false, wheel: 0, crank: 0, crankAcc: 0, reelGrab: false, reelAng: 0,
   pressed(code) { return this.down.has(code); },
-  endFrame() { this.down.clear(); this.mousePressed = false; this.rPressed = false; this.wheel = 0; },
+  endFrame() { this.down.clear(); this.mousePressed = false; this.rPressed = false; this.mPressed = false; this.wheel = 0; },
 
   // The primary pointer (mouse button 0, or a finger on the world).
   ptrDown(x, y, touch) {
@@ -17,16 +17,8 @@ const Input = {
     this.mouse.down = true; this.mousePressed = true;
   },
   ptrUp() { this.mouse.down = false; this.reelGrab = false; },
-  ptrMove(x, y) {
-    this.mouse.sx = x; this.mouse.sy = y;
-    // Dragging the grabbed handle round the reel's centre turns it, one-to-one.
-    if (!this.reelGrab || !Hud.reel) return;
-    const k = Hud.k || 1, dx = (x - (Hud.ox || 0)) / k - Hud.reel.cx, dy = y / k - Hud.reel.cy;
-    if (Math.hypot(dx, dy) < 14) return; // too close to the axle to read an angle
-    const a = Math.atan2(dy, dx), d = U.angDiff(this.reelAng, a);
-    if (Math.abs(d) < 1.5) this.crankAcc += d;
-    this.reelAng = a;
-  },
+  ptrMove(x, y) { this.mouse.sx = x; this.mouse.sy = y; },
+
 
   init(target) {
     addEventListener('keydown', (e) => {
@@ -40,6 +32,7 @@ const Input = {
     target.addEventListener('mousedown', (e) => {
       if (e.button === 0) this.ptrDown(e.clientX, e.clientY);
       if (e.button === 2) { this.mouse.rdown = true; this.rPressed = true; }
+      if (e.button === 1) { this.mPressed = true; e.preventDefault(); } // middle-click: bail
     });
     addEventListener('mouseup', (e) => {
       if (e.button === 0) this.ptrUp();
@@ -333,7 +326,7 @@ function handleGlobalKeys() {
   if (Menus.open) return;
   const k = World.shopkeeper;
   if (Input.pressed('KeyE') && Fishing.state !== 'fight') { const act = Interact.best(); if (act) act.run(); }
-  if (Fishing.state !== 'fight' && Input.wheel) {
+  if (Fishing.state === 'idle' && Input.wheel) { // with a line out, the wheel is your drag
     Scene3D.camDist = U.clamp(Scene3D.camDist + Input.wheel * 1.5, 8, 34);
     Settings.zoom = Scene3D.camDist; Settings.save();
   }
@@ -370,6 +363,7 @@ function frame(now) {
     const w = Scene3D.screenToWorld(Input.mouse.sx, Input.mouse.sy);
     Input.mouse.wx = w.x; Input.mouse.wy = w.y;
     // Only the handle turns the reel; the anti-reverse ignores counter-clockwise turns.
+    LineDrag.update(dt);
     const crank = Input.reelGrab ? Math.max(0, Input.crankAcc) : 0;
     Input.crank = CRANK_STATES.has(Fishing.state) && !Menus.open ? crank : 0;
     Input.crankAcc = 0;
