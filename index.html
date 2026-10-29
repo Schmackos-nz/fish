@@ -128,6 +128,22 @@
   #sleepFade { position: fixed; inset: 0; z-index: 40; background: #000; opacity: 0; pointer-events: none; transition: opacity .8s;
     display: grid; place-items: center; color: #F3EAD6; font: 400 34px "Lilita One", sans-serif; letter-spacing: 1px; }
   #sleepFade.on { opacity: 1; pointer-events: auto; }
+  /* Repair montage: letterbox bars and a job card. */
+  body.montage::before, body.montage::after { content: ''; position: fixed; left: 0; right: 0; height: 11vh; background: #000; z-index: 30; animation: mtBars .5s ease-out; }
+  body.montage::before { top: 0; } body.montage::after { bottom: 0; }
+  @keyframes mtBars { from { height: 0; } }
+  #montage { position: fixed; left: 50%; bottom: calc(11vh + 18px); transform: translateX(-50%); z-index: 31; }
+  #montage.hidden { display: none; }
+  #montage .mt-card { display: flex; gap: 14px; align-items: center; padding: 14px 20px; min-width: min(420px, 88vw); border-radius: 18px; background: rgba(11,16,19,0.88); border: 1px solid var(--line); box-shadow: var(--shadow); animation: mtIn .35s ease-out; }
+  @keyframes mtIn { from { opacity: 0; transform: translateY(12px); } }
+  #montage .mt-icon { font-size: 34px; animation: mtBob .5s ease-in-out infinite alternate; }
+  @keyframes mtBob { to { transform: translateY(-4px) rotate(-8deg); } }
+  #montage .mt-text { flex: 1; position: relative; }
+  #montage .mt-clock { float: right; margin-top: 1px; font: 700 12px var(--font); color: #7FC4D4; letter-spacing: .5px; }
+  #montage .mt-title { display: block; font: 400 20px "Lilita One", sans-serif; color: #FFD447; letter-spacing: .3px; }
+  #montage .mt-sub { color: var(--muted); font-size: 12px; margin: 2px 0 8px; }
+  #montage .mt-bar { height: 8px; border-radius: 6px; background: rgba(255,255,255,0.1); overflow: hidden; }
+  #montage .mt-bar div { height: 100%; width: 0; background: var(--accent); border-radius: 6px; }
   body.wanted #toast { top: 118px; }
 
   /* Short landscape screens: shrink the title and menus to fit. */
@@ -251,6 +267,7 @@
 <canvas id="hud"></canvas>
 <div id="toast"></div>
 <div id="sleepFade"></div>
+<div id="montage" class="hidden"><div class="mt-card"><div class="mt-icon"></div><div class="mt-text"><b class="mt-title"></b><div class="mt-sub"><span class="mt-clock"></span></div><div class="mt-bar"><div></div></div></div></div></div>
 
 <div id="title">
   <div class="title-wrap">
@@ -381,51 +398,51 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=69"></script>
-<script src="js/data.js?v=69"></script>
-<script src="js/audio.js?v=69"></script>
-<script src="js/music.js?v=69"></script>
-<script src="js/voice.js?v=69"></script>
-<script src="js/world.js?v=69"></script>
-<script src="js/scene-sprites.js?v=69"></script>
-<script src="js/toon.js?v=69"></script>
-<script src="js/scene.js?v=69"></script>
-<script src="js/folk.js?v=69"></script>
-<script src="js/models.js?v=69"></script>
-<script src="js/actors.js?v=69"></script>
-<script src="js/fish.js?v=69"></script>
-<script src="js/legends.js?v=69"></script>
-<script src="js/fishing.js?v=69"></script>
-<script src="js/fight.js?v=69"></script>
-<script src="js/player.js?v=69"></script>
-<script src="js/npcs.js?v=69"></script>
-<script src="js/gun.js?v=69"></script>
-<script src="js/arsenal.js?v=69"></script>
-<script src="js/camp.js?v=69"></script>
-<script src="js/wild.js?v=69"></script>
-<script src="js/decay.js?v=69"></script>
-<script src="js/contest.js?v=69"></script>
-<script src="js/bugs.js?v=69"></script>
-<script src="js/floaters.js?v=69"></script>
-<script src="js/animals.js?v=69"></script>
-<script src="js/wardens.js?v=69"></script>
-<script src="js/interiors.js?v=69"></script>
-<script src="js/life.js?v=69"></script>
-<script src="js/weed.js?v=69"></script>
-<script src="js/markers.js?v=69"></script>
-<script src="js/swimmers.js?v=69"></script>
-<script src="js/couples.js?v=69"></script>
-<script src="js/tim.js?v=69"></script>
-<script src="js/bikes.js?v=69"></script>
-<script src="js/lockpick.js?v=69"></script>
-<script src="js/wanted.js?v=69"></script>
-<script src="js/tools.js?v=69"></script>
-<script src="js/hud.js?v=69"></script>
-<script src="js/share.js?v=69"></script>
-<script src="js/menus.js?v=69"></script>
-<script src="js/mobile.js?v=69"></script>
-<script src="js/patchnotes.js?v=69"></script>
-<script src="js/staff.js?v=69"></script>
-<script src="js/main.js?v=69"></script>
+<script src="js/util.js?v=71"></script>
+<script src="js/data.js?v=71"></script>
+<script src="js/audio.js?v=71"></script>
+<script src="js/music.js?v=71"></script>
+<script src="js/voice.js?v=71"></script>
+<script src="js/world.js?v=71"></script>
+<script src="js/scene-sprites.js?v=71"></script>
+<script src="js/toon.js?v=71"></script>
+<script src="js/scene.js?v=71"></script>
+<script src="js/folk.js?v=71"></script>
+<script src="js/models.js?v=71"></script>
+<script src="js/actors.js?v=71"></script>
+<script src="js/fish.js?v=71"></script>
+<script src="js/legends.js?v=71"></script>
+<script src="js/fishing.js?v=71"></script>
+<script src="js/fight.js?v=71"></script>
+<script src="js/player.js?v=71"></script>
+<script src="js/npcs.js?v=71"></script>
+<script src="js/gun.js?v=71"></script>
+<script src="js/arsenal.js?v=71"></script>
+<script src="js/camp.js?v=71"></script>
+<script src="js/wild.js?v=71"></script>
+<script src="js/decay.js?v=71"></script>
+<script src="js/contest.js?v=71"></script>
+<script src="js/bugs.js?v=71"></script>
+<script src="js/floaters.js?v=71"></script>
+<script src="js/animals.js?v=71"></script>
+<script src="js/wardens.js?v=71"></script>
+<script src="js/interiors.js?v=71"></script>
+<script src="js/life.js?v=71"></script>
+<script src="js/weed.js?v=71"></script>
+<script src="js/markers.js?v=71"></script>
+<script src="js/swimmers.js?v=71"></script>
+<script src="js/couples.js?v=71"></script>
+<script src="js/tim.js?v=71"></script>
+<script src="js/bikes.js?v=71"></script>
+<script src="js/lockpick.js?v=71"></script>
+<script src="js/wanted.js?v=71"></script>
+<script src="js/tools.js?v=71"></script>
+<script src="js/hud.js?v=71"></script>
+<script src="js/share.js?v=71"></script>
+<script src="js/menus.js?v=71"></script>
+<script src="js/mobile.js?v=71"></script>
+<script src="js/patchnotes.js?v=71"></script>
+<script src="js/staff.js?v=71"></script>
+<script src="js/main.js?v=71"></script>
 </body>
 </html>

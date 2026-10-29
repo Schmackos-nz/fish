@@ -128,14 +128,52 @@ const Decay = {
     if (best) cands.push({ d: bd, x: best.x, y: best.y, label: 'Bin the rubbish (+$3)', run: () => this.binIt(best) });
   },
 
+  // A little montage: one job at a time, the damage coming off as you go, the clock ticking on.
   repair(i) {
+    if (this.busy) return;
     const d = this.dmg(i), pay = this.reward(d), b = World.buildings[i];
-    const hours = 1 + d * 3;
-    Life.passHours(hours, 2);
-    this.state().b[i] = 0; this.dirty = true;
-    Game.money += pay; Sfx.coin(); Sfx.thunk();
-    Hud.toast('You spent ' + hours.toFixed(1) + 'h scrubbing tags, boarding up and patching ' + (b.name || 'the place') + '. The council pays ' + U.fmtMoney(pay) + '.', UI.good, 3.2);
-    Game.save();
+    const stages = [];
+    if (d > 0.78) stages.push(['🏚️', 'Patching the caved-in roof', 'hammer', 0.7]);
+    if (d > 0.62) stages.push(['🚪', 'Prying the boards off the door', 'pry', 0.55]);
+    if (d > 0.45) stages.push(['🪟', 'Fitting a new window pane', 'glass', 0.4]);
+    if (d > 0.15) stages.push(['🧽', 'Scrubbing off the graffiti', 'scrub', 0.1]);
+    stages.push(['🧹', 'Sweeping up and a fresh lick of paint', 'sweep', 0]);
+    const hours = 1 + d * 3, per = hours / stages.length, STAGE_S = 2.2;
+    this.busy = true; Menus.open = 'montage'; if (Bikes.riding) Bikes.dismount();
+    const el = document.getElementById('montage');
+    document.body.classList.add('montage'); el.classList.remove('hidden');
+    let k = 0;
+    const sounds = { hammer: () => { Sfx.thunk(); Sfx.tone(320, 0.05, 0.12, 'square', 200); }, pry: () => Sfx.tone(180 + Math.random() * 80, 0.18, 0.15, 'sawtooth', 120),
+      glass: () => Sfx.tone(1800 + Math.random() * 400, 0.06, 0.06, 'triangle', 2400), scrub: () => Sfx.burst(0.18, 2200, 0.12, 'bandpass', 2, 1400), sweep: () => Sfx.burst(0.25, 900, 0.1, 'bandpass', 1.5, 1600) };
+    const step = () => {
+      if (k >= stages.length) return finish();
+      const [icon, title, snd, target] = stages[k];
+      el.querySelector('.mt-icon').textContent = icon;
+      el.querySelector('.mt-title').textContent = title + '…';
+      el.querySelector('.mt-sub').innerHTML = '<span class="mt-clock"></span>' + (b.name || 'The building') + ' · job ' + (k + 1) + ' of ' + stages.length;
+      const bar = el.querySelector('.mt-bar div');
+      bar.style.transition = 'none'; bar.style.width = '0%'; void bar.offsetWidth;
+      bar.style.transition = 'width ' + STAGE_S + 's linear'; bar.style.width = '100%';
+      const tick = setInterval(sounds[snd], 320);
+      // The clock fast-forwards through the job.
+      const clock = el.querySelector('.mt-clock'), fmt = () => { const h = Game.env.hour; return '⏩ ' + WEEKDAYS[(Game.env.day - 1) % 7] + ' ' + String(Math.floor(h)).padStart(2, '0') + ':' + String(Math.floor((h % 1) * 60)).padStart(2, '0'); };
+      clock.textContent = fmt();
+      const ff = setInterval(() => { Life.passHours(per / (STAGE_S * 10), 2); clock.textContent = fmt(); }, 100);
+      setTimeout(() => {
+        clearInterval(tick); clearInterval(ff);
+        this.state().b[i] = Math.min(this.dmg(i), target); this.dirty = true;
+        Sfx.tone(660, 0.08, 0.12, 'triangle', 990);
+        k++; step();
+      }, STAGE_S * 1000);
+    };
+    const finish = () => {
+      el.classList.add('hidden'); document.body.classList.remove('montage');
+      this.busy = false; if (Menus.open === 'montage') Menus.open = null;
+      Game.money += pay; Sfx.coin();
+      Hud.toast((b.name || 'The place') + ' is good as new after ' + hours.toFixed(1) + ' hours of graft. The council pays ' + U.fmtMoney(pay) + '.', UI.good, 3.4);
+      Game.save();
+    };
+    step();
   },
 
   binIt(r) {

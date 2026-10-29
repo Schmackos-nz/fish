@@ -3,6 +3,7 @@
 
 const PATCH_NOTES = [
   { v: '1.5', name: 'Hard Time', date: '30 Oct 2026', notes: [
+    ['changed', 'Fixing up a building plays a little montage, one job at a time: the damage comes off before your eyes while the clock fast-forwards through the hours'],
     ['changed', 'Black out while wanted and the police are waiting at your clinic bed: once you are patched up, they arrest you on your full rap sheet'],
     ['changed', 'Guns work indoors now (anyone in the shop will call the cops). Shopkeepers can be knocked out, which shuts the shop till they come round'],
     ['changed', 'Dusty can be knocked out too, and he drops whatever weed he was carrying'],

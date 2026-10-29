@@ -315,6 +315,7 @@ function wireScreens() {
 }
 
 function handleGlobalKeys() {
+  if (Menus.open === 'montage') return;
   if (Input.pressed('Escape')) {
     if (closeModals()) return;
     if (Menus.open || Hud.bigMap) { Menus.close(); Hud.bigMap = false; } else { pause(); return; }
