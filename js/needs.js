@@ -19,14 +19,16 @@ const Needs = {
     Scene3D.scene.add(this.spade);
     Game.holes = (Game.holes || []).filter((h) => Game.env.day - h.day < 2);
     Game.poos = (Game.poos || []).filter((h) => Game.env.day - h.day < 2);
+    Game.smears = (Game.smears || []).filter((h) => Game.env.day - h.day < 2);
     this.dirty = true;
   },
 
   // ---------- filling up ----------
   update(dt) {
     if (this.busy) return;
-    Game.bladder = Math.min(100, (Game.bladder || 0) + dt * 0.2);
-    Game.bowels = Math.min(100, (Game.bowels || 0) + dt * 0.09);
+    const full = 0.45 + (Game.food || 0) / 100; // the more you've got in you, the more wants out
+    Game.bladder = Math.min(100, (Game.bladder || 0) + dt * 0.2 * full);
+    Game.bowels = Math.min(100, (Game.bowels || 0) + dt * 0.09 * full);
     for (const [k, name] of [['bladder', 'wee'], ['bowels', 'poo']]) {
       const v = Game[k], warn = 'warn_' + k;
       if (v > 80 && !this[warn]) { this[warn] = true; Hud.toast(k === 'bladder' ? 'You really need a wee. Find a bush (E).' : 'You REALLY need to go. Dig a hole with the spade (6), or find a loo.', '#F2C14E', 2.6); }
@@ -40,6 +42,7 @@ const Needs = {
       const n = Npcs.list.find((x) => x.mocked > Game.time && !x.away && ['cast', 'wait', 'walk'].includes(x.state) && U.dist(x.x, x.y, Player.x, Player.y) < 12);
       if (n) Npcs.say(n, U.pick(Math.random, MOCKS), 2.6);
     }
+    this.squelch(dt);
     // Stinky: locals notice, a wade in the water fixes it.
     if (this.smellT > 0) {
       this.smellT -= dt;
@@ -78,13 +81,36 @@ const Needs = {
     this.busy = true; Menus.open = 'busy';
     const was = Player.crouch; Player.crouch = true;
     Hud.toast(label, UI.muted, secs);
-    const snd = setInterval(() => (kind === 'bladder' ? Sfx.burst(0.25, 1800 + Math.random() * 600, 0.07, 'bandpass', 3, 1200) : Sfx.tone(90 + Math.random() * 30, 0.15, 0.12, 'sine', 50)), kind === 'bladder' ? 220 : 650);
+    const snd = this.sounds(kind, secs);
     setTimeout(() => {
-      clearInterval(snd); Player.crouch = was;
+      snd.forEach(clearTimeout); clearInterval(snd.loop); Player.crouch = was;
       this.busy = false; if (Menus.open === 'busy') Menus.open = null;
       done();
       Game.save();
     }, secs * 1000);
+  },
+
+  // Proper bathroom foley. Returns the timers so the action can stop them.
+  sounds(kind, secs) {
+    const T = [], at = (ms, fn) => T.push(setTimeout(fn, ms));
+    const grunt = (f, d) => { if (!Sfx.ctx) return; const c = Sfx.ctx, t = c.currentTime, o = c.createOscillator(), bp = c.createBiquadFilter(), g = c.createGain();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(f, t); o.frequency.linearRampToValueAtTime(f * 0.85, t + d);
+      bp.type = 'bandpass'; bp.frequency.value = 600; bp.Q.value = 3; g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.05); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(bp).connect(g).connect(Sfx.master); o.start(t); o.stop(t + d + 0.05); };
+    if (kind === 'bladder') {
+      at(0, () => Sfx.burst(0.18, 3000, 0.12, 'bandpass', 2, 6000)); // zip
+      // A steady trickle: a stream of tiny filtered splashes, tapering off at the end.
+      let n = 0; T.loop = setInterval(() => { n++; const k = Math.max(0.15, 1 - n * 0.07 / secs * 1.4); Sfx.burst(0.09, 2200 + Math.sin(n * 0.7) * 500 + Math.random() * 300, 0.07 * k, 'bandpass', 5); if (n % 3 === 0) Sfx.burst(0.05, 900, 0.03 * k, 'lowpass'); }, 60);
+      at(secs * 1000 - 300, () => { clearInterval(T.loop); Sfx.burst(0.05, 2000, 0.04, 'bandpass', 4); });
+      at(secs * 1000 - 120, () => Voice.babble('Ahhh', Player.x, Player.y, 'You'));
+    } else {
+      at(0, () => grunt(120, 0.45)); at(700, () => grunt(105, 0.6));
+      at(1450, () => { Sfx.tone(140, 0.12, 0.25, 'sine', 60); Sfx.burst(0.12, 700, 0.18, 'lowpass', 0.8, 200); }); // plop
+      at(1950, () => { Sfx.tone(120, 0.14, 0.22, 'sine', 50); Sfx.burst(0.14, 600, 0.16, 'lowpass', 0.8, 160); });
+      at(2350, () => Sfx.burst(0.35, 400, 0.08, 'lowpass', 1, 120)); // …and a parp
+      at(secs * 1000 - 300, () => Voice.babble('Phew!', Player.x, Player.y, 'You'));
+    }
+    return T;
   },
 
   wee() {
@@ -143,6 +169,61 @@ const Needs = {
     Sfx.fail();
     Hud.toast(k === 'bladder' ? 'Oh no. You couldn\'t hold it. Your trousers are… damp.' : 'Oh NO. That\'s… that\'s not good. You need a wash. Badly.', UI.bad, 3.2);
     for (const n of this.witnesses(8)) if (n.name && Npcs.list.includes(n)) { Npcs.say(n, 'Oh dear GOD.', 2.2); break; }
+  },
+
+  // ---------- stepping in it ----------
+  walkers() {
+    const out = [{ e: Player, who: 'you' }];
+    for (const n of Npcs.list) if (!n.away && (n.state === 'walk' || n.state === 'mob')) out.push({ e: n, who: 'npc' });
+    for (const st of Staff.list) if (st.state === 'toWork' || st.state === 'toHome') out.push({ e: st, who: 'staff' });
+    return out;
+  },
+
+  squelch(dt) {
+    const poos = Game.poos || [];
+    for (const { e, who } of this.walkers()) {
+      // Freshly stepped in: leave brown footprints for the next few metres.
+      if (e._smear > 0) {
+        const d = e._sx === undefined ? 1 : U.dist(e.x, e.y, e._sx, e._sy);
+        if (d > 0.55) {
+          e._sx = e.x; e._sy = e.y; e._smear--; e._foot = !e._foot;
+          const a = (e === Player ? Player.face : e.face || e.heading || 0) + Math.PI / 2, off = e._foot ? 0.1 : -0.1;
+          this.addSmear(e.x + Math.cos(a) * off, e.y + Math.sin(a) * off, e === Player ? Player.face : e.face || 0, 0.07);
+        }
+      }
+      if (Interior.active && e === Player) continue;
+      for (const p of poos) {
+        if (U.dist(e.x, e.y, p.x, p.y) > 0.38 || p.hitBy === e) continue;
+        p.hitBy = e; p.smeared = (p.smeared || 0) + 1; e._smear = 10; e._sx = e.x; e._sy = e.y;
+        this.addSmear(p.x, p.y, Math.random() * 6, 0.26); // a big skid
+        this.dirty = true;
+        Sfx.burst(0.25, 500, 0.2, 'lowpass', 1.2, 150);
+        if (who === 'you') {
+          this.smellT = Math.max(this.smellT, 150);
+          Hud.toast(U.pick(Math.random, ['SQUELCH. You stepped right in it.', 'Oh no. Oh no no no. It\'s on your boot.', 'You are now tracking it everywhere.']), UI.bad, 2.2);
+        } else {
+          // Whoever left it there is in for it — and everyone knows who that was.
+          const near = U.dist(e.x, e.y, Player.x, Player.y) < 18;
+          if (e.name && Npcs.list.includes(e)) { Npcs.say(e, U.pick(Math.random, ['WHO LEFT THIS HERE?!', 'ARGH! My good boots!', 'Some ANIMAL has been at it again!', 'I KNOW it was you!']), 3); e.mocked = Game.time + 600; }
+          if (near) { Rep.add(-2); Hud.toast((e.name || 'Someone') + ' stepped in your mess and is FURIOUS.', UI.bad, 2.4); }
+          Game.shame = (Game.shame || 0) + 1;
+        }
+      }
+    }
+  },
+
+  addSmear(x, y, ang, r) {
+    const s = { x, y, ang, r, day: Game.env.day };
+    (Game.smears = Game.smears || []).push(s);
+    if (Game.smears.length > 160) { const old = Game.smears.shift(); if (old.mesh) this.group.remove(old.mesh); }
+    this.smearMesh(s);
+  },
+
+  smearMesh(s) {
+    const m = new THREE.Mesh(new THREE.CircleGeometry(s.r, 10).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0x4A2E14, transparent: true, opacity: 0.75, depthWrite: false }));
+    m.scale.set(1, 1, s.r < 0.1 ? 1.6 : 0.7); m.rotation.y = -s.ang;
+    m.position.set(s.x, Scene3D.groundH(s.x, s.y) + 0.025, s.y);
+    s.mesh = m; this.group.add(m);
   },
 
   // ---------- the spade ----------
@@ -209,9 +290,11 @@ const Needs = {
       const mound = P(new THREE.SphereGeometry(0.22, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2), '#7A5A34'); mound.scale.set(1.2, 0.5, 0.9); mound.position.set(0.42, 0, 0.1); g.add(mound);
       g.position.set(h.x, y0, h.y); this.group.add(g);
     }
+    for (const s of Game.smears || []) this.smearMesh(s);
     for (const p of Game.poos || []) {
       const g = new THREE.Group();
       [[0.12, 0.05], [0.09, 0.11], [0.06, 0.16]].forEach(([r, y]) => { const s = P(new THREE.SphereGeometry(r, 8, 6), '#5A3A1A'); s.scale.y = 0.7; s.position.y = y; g.add(s); });
+      if (p.smeared) g.scale.set(1.5, 0.35, 1.3); // squashed flat
       g.position.set(p.x, Scene3D.groundH(p.x, p.y), p.y); this.group.add(g);
     }
   },

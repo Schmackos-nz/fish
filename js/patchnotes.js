@@ -3,6 +3,12 @@
 
 const PATCH_NOTES = [
   { v: '2.0', name: 'Hands On', date: '30 Oct 2026', notes: [
+    ['new', 'Step in a poo and you track brown footprints everywhere. Locals who tread in yours are FURIOUS (and they know it was you)'],
+    ['changed', 'With your line out you can shuffle along the bank again: slowly, and only a few metres from where you cast'],
+    ['changed', 'Healing and catching your breath now burn food, and the fuller you are, the sooner nature calls'],
+    ['changed', 'Sleeping fully restores health and energy (and clears any poison), but you wake up hungry'],
+    ['new', 'Proper bathroom sound effects. You are welcome'],
+    ['changed', 'Rougher, more textured ground: grass tufts, pebbles on paths and sand, cracked mud and streaky rock'],
     ['changed', 'While you are moving, guns and rods only aim within the arc in front of you, so no more firing or casting backwards mid-stride'],
     ['changed', 'New fishing controls: once your line is out, your cursor becomes a reel. Grab the lure (or the fish) and drag it toward you to reel in. The faster you drag, the faster you reel, up to what your reel can do'],
     ['new', 'Drag the lure away from you to let a little line off'],

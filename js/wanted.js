@@ -220,7 +220,7 @@ const Wanted = {
       if (lv < this.level) { this.level = lv; Hud.toast(lv ? 'Wanted level dropping…' : 'You lost them. Wanted level cleared.', lv ? UI.accent : UI.good, 2); }
       if (lv === 0) { this.rap = null; this.peak = 0; } // got away with it
     }
-    if (this.level === 0 && Game.food > 0) this.health = Math.min(100, this.health + dt * 4);
+    if (this.level === 0 && Game.food > 0 && this.health < 100) { const h = Math.min(100 - this.health, dt * 4); this.health += h; Game.food = Math.max(0, Game.food - h * 0.12); } // healing burns food
     // Keep the right number of units on the hunt.
     this.spawnT -= dt;
     const want = UNITS_FOR[this.level], awake = this.units.filter((u) => !u.ko).length;

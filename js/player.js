@@ -30,13 +30,10 @@ const Player = {
     if (k.has('KeyD') || k.has('ArrowRight')) ix++;
     if (k.has('KeyW') || k.has('ArrowUp')) iy--;
     if (k.has('KeyS') || k.has('ArrowDown')) iy++;
-    // You only walk with the rod in hand; once the line is out you're planted.
-    if ((ix || iy) && F !== 'idle' && !Menus.open) {
-      this.nagT = (this.nagT || 0) - dt;
-      if (this.nagT <= 0) { this.nagT = 3; Hud.toast('Reel in first to walk — press Space', '#f2c14e', 1.6); }
-    }
+    // With a line out you can shuffle along the bank — slowly, and not far from where you cast.
+    const lineOut = F === 'line' || F === 'snagged' || F === 'fight';
+    if ((F === 'charging' || F === 'flying') || Menus.open) ix = iy = 0;
     const free = F === 'idle' && !Menus.open;
-    if (!free) ix = iy = 0;
     if (Bikes.riding) { Bikes.ride(dt, ix, iy); return; }
 
     // Moves: Space jump; C crouches — or, while running, drops you into a slide.
@@ -76,7 +73,17 @@ const Player = {
       let sp = (this.running ? 6.5 : this.crouch ? 1.8 : 3.6) * Life.speedMul();
       // Wading: the deeper it gets, the harder the going.
       if (this.wading) sp *= U.clamp(0.85 - World.depthAt(this.x, this.y) * 0.5, 0.3, 0.8);
+      if (lineOut) sp = Math.min(sp, 3.6) * (F === 'fight' ? 0.3 : 0.4);
       dx = ix / len * sp * dt; dy = iy / len * sp * dt;
+      // Tethered: you can't wander off more than a few metres from where you stood to cast.
+      if (lineOut && Fishing.castFrom) {
+        const cf = Fishing.castFrom, nd = U.dist(this.x + dx, this.y + dy, cf.x, cf.y);
+        if (nd > 5 && nd > U.dist(this.x, this.y, cf.x, cf.y)) {
+          dx = dy = 0;
+          this.nagT = (this.nagT || 0) - dt;
+          if (this.nagT <= 0) { this.nagT = 3; Hud.toast('That\'s as far as your line lets you go. Reel in (Space) to walk off.', '#f2c14e', 1.8); }
+        }
+      }
       this.face = Math.atan2(iy, ix);
     }
     if (dx || dy) {

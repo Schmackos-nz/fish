@@ -60,6 +60,27 @@ const Art = {
         g.fill();
       }
     }
+    // Texture: grass tufts, pebbles on paths and sand, cracks in mud, strata on rock, and a fine speckle.
+    const r2 = U.mulberry32(World.seed + 77);
+    for (let i = 0; i < W * H; i++) {
+      const t = World.tile[i]; if (isWet(i) || t === T.FLOOR || t === T.PLANK) continue;
+      const tx = (i % W) * P, ty = ((i / W) | 0) * P;
+      for (let k = 0; k < 5; k++) { g.fillStyle = r2() < 0.5 ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,230,0.07)'; g.fillRect(tx + r2() * P, ty + r2() * P, 1.5, 1.5); }
+      if (t === T.GRASS || t === T.MEADOW || t === T.FOREST) {
+        if (r2() < 0.55) {
+          g.strokeStyle = t === T.FOREST ? 'rgba(20,50,18,0.55)' : 'rgba(40,90,30,0.5)'; g.lineWidth = 1;
+          const x = tx + 2 + r2() * (P - 4), y = ty + 4 + r2() * (P - 5);
+          g.beginPath(); g.moveTo(x - 2, y); g.lineTo(x - 3, y - 4); g.moveTo(x, y); g.lineTo(x, y - 5); g.moveTo(x + 2, y); g.lineTo(x + 3, y - 4); g.stroke();
+        }
+      } else if (t === T.PATH || t === T.SAND) {
+        for (let k = 0; k < 2; k++) if (r2() < 0.5) { g.fillStyle = t === T.PATH ? 'rgba(110,78,40,0.5)' : 'rgba(150,120,60,0.45)'; g.beginPath(); g.ellipse(tx + r2() * P, ty + r2() * P, 1.4 + r2() * 1.2, 1 + r2(), r2() * 3, 0, 7); g.fill(); }
+      } else if (t === T.MUD) {
+        if (r2() < 0.4) { g.strokeStyle = 'rgba(60,40,20,0.5)'; g.lineWidth = 1; const x = tx + r2() * P, y = ty + r2() * P; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 3 - r2() * 6, y + 3); g.lineTo(x + 5 - r2() * 6, y + 6); g.stroke(); }
+      } else if (t === T.ROCK) {
+        g.strokeStyle = 'rgba(60,60,56,0.35)'; g.lineWidth = 1; const y = ty + 3 + r2() * (P - 6);
+        g.beginPath(); g.moveTo(tx, y); g.lineTo(tx + P * 0.5, y + 1.5 - r2() * 3); g.lineTo(tx + P, y); g.stroke();
+      }
+    }
     // Flowers and stumps: little outlined dots.
     for (let i = 0; i < W * H; i++) {
       const o = World.obj[i];

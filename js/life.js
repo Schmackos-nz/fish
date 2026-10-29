@@ -29,7 +29,9 @@ const Life = {
     if (Game.food > 30) this.warnedLow = false;
     // Energy: stamina. Running burns it, resting gets it back (but not on an empty stomach).
     const resting = !Player.moving || Bikes.riding;
-    Game.energy = U.clamp(Game.energy + dt * (Player.running ? -9 : resting ? (Game.food > 0 ? 6 : 0) : Game.food > 0 ? 1.5 : -0.5), 0, 100);
+    const de = dt * (Player.running ? -9 : resting ? (Game.food > 0 ? 6 : 0) : Game.food > 0 ? 1.5 : -0.5);
+    if (de > 0 && Game.energy < 100) Game.food = Math.max(0, Game.food - Math.min(de, 100 - Game.energy) * 0.08); // getting your breath back costs food
+    Game.energy = U.clamp(Game.energy + de, 0, 100);
     if (Game.energy < 8 && !this.warnedTired) { this.warnedTired = true; Hud.toast('Exhausted — stop and catch your breath.', UI.accent, 2.4); }
     if (Game.energy > 30) this.warnedTired = false;
     // Starving slowly hurts.
@@ -112,7 +114,7 @@ const Life = {
       const h = Game.env.hour;
       const hours = h < 6 ? 6 - h : 30 - h;
       this.passHours(hours, 0);
-      Game.energy = 100; Wanted.health = 100; Game.food = Math.max(0, Game.food - 10); Wanted.dmgLog = {};
+      Game.energy = 100; Wanted.health = 100; Game.food = Math.max(0, Game.food - 15); Wanted.dmgLog = {}; Game.poison = null;
       Game.save();
       fade.textContent = WEEKDAYS[(Game.env.day - 1) % 7] + ' · Day ' + Game.env.day + ' · 6:00';
       setTimeout(() => {

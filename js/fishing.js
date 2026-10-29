@@ -106,6 +106,7 @@ const Fishing = {
     this.lure = { id: L.id, x: this.tip.x, y: this.tip.y, z: 0, h: 1.5, vx: 0, vy: 0, speed: 0, action: 0,
       inWater: false, baited: true, lastFast: -9, pops: [], bottom: false, onLand: false };
     this.lineOut = 0;
+    this.castFrom = { x: p.x, y: p.y };
     this.state = 'flying';
     this.bend = 0.6;
     Sfx.whoosh(pw);
