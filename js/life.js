@@ -359,7 +359,8 @@ const Interact = {
         else if (Game.home && Game.home.id === b.id) add(dr.x, dr.y, 1.6, 'Enter your cottage', () => Interior.enter(b));
         else if (b.unlocked) add(dr.x, dr.y, 1.6, 'Enter ' + b.name + ' (unlocked)', () => Life.enterHouse(b));
         else if (b.vacant) add(dr.x, dr.y, 1.6, 'Cottage for rent — ' + U.fmtMoney(b.rent) + '/day', () => Life.openRent(b));
-        else add(dr.x, dr.y, 1.6, b.name, () => Hud.toast(b.name + ' — the door\'s locked.', UI.muted, 1.6));
+        else if (b.forcedDay === Game.env.day) add(dr.x, dr.y, 1.6, 'Enter ' + b.name + ' (lock busted)', () => Life.enterHouse(b));
+        else add(dr.x, dr.y, 1.6, 'Break into ' + b.name + ' (pick the lock)', () => LockPick.openHouse(b));
       }
       for (const r of Bikes.riders) {
         if ((r.state === 'refuel' || r.state === 'break') && !(r.ko > 0) && !r.away) add(r.x, r.y, 1.8, 'Attempt to steal ' + r.name + '\'s ' + BIKE_BY_ID[r.bikeId].name, () => LockPick.open(r));

@@ -8,12 +8,22 @@ const LockPick = {
   r: null, alert: 0, stage: 0, stages: [], raf: 0, last: 0, msg: '', msgT: 0,
 
   open(r) {
-    this.r = r; this.alert = 0; this.stage = 0; this.done = false;
-    const hard = BIKE_BY_ID[r.bikeId].price > 800;
+    this.r = r; this.house = null;
+    this.start(BIKE_BY_ID[r.bikeId].price > 800, `${r.name}'s ${BIKE_BY_ID[r.bikeId].name} · plate ${r.plate}. Three locks between you and the ignition — every slip makes noise.`);
+  },
+
+  openHouse(b) {
+    this.r = null; this.house = b;
+    const owner = Npcs.list.find((n) => n.home === b);
+    this.start(!!b.big, `${b.name}'s front door. Three locks between you and whatever's inside${owner && owner.state === 'home' ? ' — and someone\'s HOME' : ''}. Every slip makes noise.`);
+  },
+
+  start(hard, desc) {
+    this.alert = 0; this.stage = 0; this.done = false;
     this.hard = hard;
     this.stages = LOCK_STAGES.slice().sort(() => Math.random() - 0.5);
     Life.panel(`<h2>Pick the lock</h2>
-      <div class="desc">${r.name}'s ${BIKE_BY_ID[r.bikeId].name} · plate ${r.plate}. Three locks between you and the ignition — every slip makes noise.</div>
+      <div class="desc">${desc}</div>
       <div class="lock-alert"><span>Alert</span><div class="lock-bar"><div id="lockFill"></div></div><b id="lockPct">0%</b></div>
       <canvas id="lockCv" width="560" height="300" class="lock-cv"></canvas>
       <div class="lock-foot"><span id="lockStage"></span><button id="lockQuit">Walk away</button></div>`, (el) => {
@@ -48,9 +58,12 @@ const LockPick = {
 
   // Alert creeps up on its own — faster with the owner or the law close by.
   rate() {
-    const r = this.r, p = Bikes.riderPos(r), owner = U.dist(p.x, p.y, Player.x, Player.y);
+    let owner = 99;
+    if (this.r) { const p = Bikes.riderPos(this.r); owner = U.dist(p.x, p.y, Player.x, Player.y); }
+    else { const o = Npcs.list.find((n) => n.home === this.house); if (o) owner = o.state === 'home' ? 6 : U.dist(o.x, o.y, Player.x, Player.y); }
     const law = [...Wardens.list, ...Wanted.units].some((w) => U.dist(w.x, w.y, Player.x, Player.y) < 15);
-    return (this.hard ? 4.5 : 3.5) * (owner < 8 ? 2 : owner < 16 ? 1.4 : 1) * (law ? 1.8 : 1) * (Player.crouch ? 0.8 : 1);
+    const night = Game.env.hour < 5 || Game.env.hour >= 22;
+    return (this.hard ? 3.0 : 2.35) * (owner < 8 ? 2 : owner < 16 ? 1.4 : 1) * (law ? 1.8 : 1) * (Player.crouch ? 0.8 : 1) * (this.house && night ? 0.8 : 1);
   },
 
   tick(t) {
@@ -147,6 +160,14 @@ const LockPick = {
   success() {
     const loud = this.alert > 70;
     this.close();
+    if (this.house) {
+      const b = this.house;
+      b.forcedDay = Game.env.day; // the lock's busted for the rest of the day
+      if (loud) { Wanted.crime(1); Hud.toast('The lock gives — but the neighbours heard you. Breaking and entering!', UI.bad, 2.6); }
+      else Hud.toast('Click. You\'re in.', UI.accent, 1.6);
+      Life.enterHouse(b);
+      return;
+    }
     Bikes.steal(this.r, !loud);
   },
 
@@ -154,6 +175,13 @@ const LockPick = {
     const r = this.r;
     this.close();
     Sfx.fail();
+    if (this.house) {
+      const b = this.house, o = Npcs.list.find((n) => n.home === b);
+      Hud.toast('A neighbour spots you jimmying ' + b.name + '\'s door. Breaking and entering!', UI.bad, 3);
+      Wanted.crime(1.5);
+      if (o && o.state !== 'home') Npcs.say(o, 'OI! THAT\'S MY HOUSE!', 3);
+      return;
+    }
     Hud.toast('ALARM! ' + r.name + ' caught you trying to nick their ' + BIKE_BY_ID[r.bikeId].name + '!', UI.bad, 3);
     Wanted.crime(1.5);
     (Wanted.rap = Wanted.rap || { ko: 0, cops: 0, booms: 0, thefts: 0 }).thefts++;
@@ -165,6 +193,6 @@ const LockPick = {
     if (this.done) return;
     const a = this.alert;
     this.close();
-    if (!silent) Hud.toast(a > 50 ? 'You back off — ' + this.r.name + ' is eyeing you suspiciously.' : 'You leave the bike alone.', UI.muted, 2);
+    if (!silent) Hud.toast(this.house ? (a > 50 ? 'You back off from the door. Curtains are twitching next door.' : 'You leave the door alone.') : a > 50 ? 'You back off — ' + this.r.name + ' is eyeing you suspiciously.' : 'You leave the bike alone.', UI.muted, 2);
   },
 };

@@ -3,6 +3,8 @@
 
 const PATCH_NOTES = [
   { v: '1.5', name: 'Hard Time', date: '30 Oct 2026', notes: [
+    ['new', 'Break into locked houses with the same lockpicking minigame. Easier at night, much harder with someone home, and a botched job makes you wanted'],
+    ['changed', 'You get 50% more time to pick locks before the alert maxes out'],
     ['changed', 'Fixing up a building plays a little montage, one job at a time: the damage comes off before your eyes while the clock fast-forwards through the hours'],
     ['changed', 'Black out while wanted and the police are waiting at your clinic bed: once you are patched up, they arrest you on your full rap sheet'],
     ['changed', 'Guns work indoors now (anyone in the shop will call the cops). Shopkeepers can be knocked out, which shuts the shop till they come round'],
