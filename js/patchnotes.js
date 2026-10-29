@@ -3,6 +3,7 @@
 
 const PATCH_NOTES = [
   { v: '1.6', name: 'Light Fingers', date: '30 Oct 2026', notes: [
+    ['fixed', 'Snakes keep to the deep forest, well away from town, and no longer turn up in meadows or the starting area'],
     ['new', 'Safes in some houses (most big ones). Crack them with your trusty stethoscope: turn the dial slowly and listen for the clunk'],
     ['changed', 'Big houses are worth burgling now: three or four finds per chest, with much more cash'],
     ['new', 'Word gets around. After you steal something, locals gossip about the thief in town and sometimes name the victim'],

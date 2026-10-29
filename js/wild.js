@@ -275,7 +275,10 @@ const Snakes = {
       if (this.list.length < 4 && !Interior.active) for (let t = 0; t < 8; t++) {
         const a = Math.random() * 6.28, r = 10 + Math.random() * 22, x = Player.x + Math.cos(a) * r, y = Player.y + Math.sin(a) * r;
         const tl = World.tileAt(Math.floor(x), Math.floor(y));
-        if ((tl === T.FOREST || (tl === T.MEADOW && Math.random() < 0.3)) && !World.blocked(x, y)) {
+        // Deep forest only: well away from town, and with forest all around.
+        let woods = 0;
+        for (let oy = -2; oy <= 2; oy++) for (let ox = -2; ox <= 2; ox++) if (World.tileAt(Math.floor(x) + ox, Math.floor(y) + oy) === T.FOREST) woods++;
+        if (tl === T.FOREST && woods >= 18 && U.dist(x, y, World.town.x, World.town.y + 6) > 45 && !World.blocked(x, y)) {
           const s = { x, y, ang: Math.random() * 6.28, t: 0, cool: 0, dead: false };
           s.mesh = this.mesh(); this.group.add(s.mesh); this.list.push(s); break;
         }
@@ -290,7 +293,7 @@ const Snakes = {
       if (pd < 4 && !Bikes.riding) want = Math.atan2(Player.y - s.y, Player.x - s.x);
       s.ang += U.clamp(U.angDiff(s.ang, want), -2 * dt, 2 * dt);
       const sp = (pd < 4 ? 1.3 : 0.5) * dt, nx = s.x + Math.cos(s.ang) * sp, ny = s.y + Math.sin(s.ang) * sp;
-      if (!World.blocked(nx, ny) && !World.isWater(nx, ny)) { s.x = nx; s.y = ny; } else s.ang += 1.5;
+      if (!World.blocked(nx, ny) && !World.isWater(nx, ny) && World.tileAt(Math.floor(nx), Math.floor(ny)) === T.FOREST) { s.x = nx; s.y = ny; } else s.ang += 1.5; // they stay in the woods
       if (pd < 1.1 && s.cool <= 0 && !Bikes.riding && !Interior.active && !Player.airborne) {
         s.cool = 4;
         if (Math.random() < (Player.crouch ? 0.35 : 0.65)) {
