@@ -399,6 +399,7 @@ function frame(now) {
       Needs.update(dt);
       Crabs.update(dt);
       Waypoint.update(dt);
+      Bodies.update();
       Thief.update(dt);
       Forage.update(); Poison.update(dt); Snakes.update(dt); Ducks.update(dt); Hunters.update(dt);
       Swimmers.update(dt);

@@ -3,6 +3,7 @@
 
 const PATCH_NOTES = [
   { v: '2.1', name: 'Take a Seat', date: '30 Oct 2026', notes: [
+    ['new', 'People have bodies now: you, the locals, staff, hunters, cops, beachgoers and bikers on foot bump into each other instead of walking through'],
     ['new', 'Every two years the valley gets a new fishing guide (alternating women and men, each with their own look), set up in a slightly different spot by the dock. Tim was just the first'],
     ['new', 'Shoot or knock a rider off their bike or kart and its engine is still running: hop straight on, no lockpicking'],
     ['fixed', 'Phones: the title fits the screen, the highlighted menu item is readable, inventory and storage slots fit, fishing shows a tension ring round the lure (with touch-friendly tips), the big-map header no longer overlaps, and the safe\'s Walk away button is reachable'],
