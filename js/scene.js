@@ -89,29 +89,38 @@ const Scene3D = {
     return Math.max(this.groundH(x, y), -0.42);
   },
 
+  // Ground in chunks: each has its own sharp texture and a mesh at 2 vertices per tile, with heights
+  // smoothed between the tile corners so slopes curve instead of facet.
   buildTerrain() {
-    const W = World.W, H = World.H;
-    const geo = new THREE.PlaneGeometry(W, H, W, H);
-    geo.rotateX(-Math.PI / 2);
-    geo.translate(W / 2, 0, H / 2);
-    const pos = geo.attributes.position;
-    for (let i = 0; i < pos.count; i++) {
-      const x = Math.round(pos.getX(i)), z = Math.round(pos.getZ(i));
-      pos.setY(i, this.heights[z * (W + 1) + x]);
+    const W = World.W, H = World.H, touch = matchMedia('(pointer: coarse)').matches;
+    const CH = touch ? 100 : 50, P = touch ? 13 : 24, SUB = touch ? 1 : 2;
+    const sun = new THREE.Vector3(-0.55, 0.7, -0.45).normalize(), aniso = this.renderer.capabilities.getMaxAnisotropy();
+    const hAt = (x, z) => { let s = 0; for (const [dx, dz, w] of [[0, 0, 4], [0.5, 0, 1], [-0.5, 0, 1], [0, 0.5, 1], [0, -0.5, 1]]) s += this.groundH(x + dx, z + dz) * w; return s / 8; };
+    for (let cy = 0; cy < H; cy += CH) for (let cx = 0; cx < W; cx += CH) {
+      const cw = Math.min(CH, W - cx), chh = Math.min(CH, H - cy);
+      const geo = new THREE.PlaneGeometry(cw, chh, cw * SUB, chh * SUB);
+      geo.rotateX(-Math.PI / 2);
+      geo.translate(cx + cw / 2, 0, cy + chh / 2);
+      const pos = geo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), z = pos.getZ(i);
+        // Exact heights on tile corners (keeps water edges and chunk seams exact), smoothed in between.
+        const onCorner = Math.abs(x - Math.round(x)) < 1e-4 && Math.abs(z - Math.round(z)) < 1e-4;
+        pos.setY(i, onCorner ? this.heights[Math.round(z) * (W + 1) + Math.round(x)] : hAt(x, z));
+      }
+      geo.computeVertexNormals();
+      // Hillshade: sunlit slopes brighten, slopes facing away darken, so the hills read from above.
+      const nrm = geo.attributes.normal, cols = new Float32Array(pos.count * 3);
+      for (let i = 0; i < pos.count; i++) {
+        const lit = nrm.getX(i) * sun.x + nrm.getY(i) * sun.y + nrm.getZ(i) * sun.z, flat = sun.y;
+        const kk = U.clamp(1 + (lit - flat) * 3.6 + Math.max(0, pos.getY(i) - 1) * 0.015, 0.5, 1.3);
+        cols[i * 3] = cols[i * 3 + 1] = cols[i * 3 + 2] = kk;
+      }
+      geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
+      const tex = new THREE.CanvasTexture(Art.buildGroundTexture(cx, cy, cw, chh, P));
+      tex.anisotropy = aniso;
+      this.world.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, vertexColors: true })));
     }
-    geo.computeVertexNormals();
-    // Hillshade: sunlit slopes brighten, slopes facing away darken, so the hills read from above.
-    const nrm = geo.attributes.normal, cols = new Float32Array(pos.count * 3), sun = new THREE.Vector3(-0.55, 0.7, -0.45).normalize();
-    for (let i = 0; i < pos.count; i++) {
-      const lit = nrm.getX(i) * sun.x + nrm.getY(i) * sun.y + nrm.getZ(i) * sun.z, flat = sun.y;
-      const k = U.clamp(1 + (lit - flat) * 3.6 + Math.max(0, pos.getY(i) - 1) * 0.015, 0.5, 1.3);
-      cols[i * 3] = cols[i * 3 + 1] = cols[i * 3 + 2] = k;
-    }
-    geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
-    const tex = new THREE.CanvasTexture(Art.buildGroundTexture());
-    tex.anisotropy = this.renderer.capabilities.getMaxAnisotropy();
-    const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, vertexColors: true }));
-    this.world.add(mesh);
   },
 
   buildWater() {

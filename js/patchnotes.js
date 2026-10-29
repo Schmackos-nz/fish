@@ -3,6 +3,8 @@
 
 const PATCH_NOTES = [
   { v: '2.1', name: 'Take a Seat', date: '30 Oct 2026', notes: [
+    ['changed', 'Sharper ground: the terrain is drawn in high-resolution chunks with twice the mesh detail, so slopes curve smoothly'],
+    ['changed', 'No more censor bars on the sunbathers or the busy bushes'],
     ['new', 'Benches on the banks, facing the water. Sit and rest (and fish from them). Armchairs and sofas indoors too'],
     ['new', 'Crabs scuttle up onto the beaches. Sneak up and pick them up (mind the pinch), then cook them'],
     ['changed', 'The storage chest uses slots: your bag on top, the chest below, and a click moves a stack across'],

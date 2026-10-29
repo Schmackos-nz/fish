@@ -24,17 +24,22 @@ const Art = {
 
   // Cut-paper ground: flat colour regions with rounded edges and a dark outline where they meet.
   // Each terrain type is painted as a union of fat circles (outline pass, then fill pass).
-  buildGroundTexture() {
-    const P = GROUND_PX, W = World.W, H = World.H;
+  // Paints one rectangle of the map (tiles rx..rx+rw, ry..ry+rh) at P texture pixels per tile.
+  // The terrain is split into chunks so it can be drawn sharp without one enormous texture.
+  buildGroundTexture(rx = 0, ry = 0, rw = World.W, rh = World.H, P = GROUND_PX) {
+    const W = World.W, H = World.H;
     const c = document.createElement('canvas');
-    c.width = W * P; c.height = H * P;
+    c.width = rw * P; c.height = rh * P;
     const g = c.getContext('2d');
-    g.fillStyle = '#6DBB4A'; g.fillRect(0, 0, c.width, c.height);
+    g.translate(-rx * P, -ry * P);
+    g.fillStyle = '#6DBB4A'; g.fillRect(rx * P, ry * P, c.width, c.height);
+    const inR = (x, y, m) => x >= rx - m && x < rx + rw + m && y >= ry - m && y < ry + rh + m;
     // A few big soft blotches so the grass isn't one flat sheet.
     const rng = U.mulberry32(World.seed + 41);
     for (let i = 0; i < 260; i++) {
-      g.fillStyle = rng() < 0.5 ? 'rgba(255,255,200,0.05)' : 'rgba(0,40,0,0.05)';
-      g.beginPath(); g.arc(rng() * c.width, rng() * c.height, 20 + rng() * 70, 0, Math.PI * 2); g.fill();
+      const fs = rng() < 0.5 ? 'rgba(255,255,200,0.05)' : 'rgba(0,40,0,0.05)', bx = rng() * W, by = rng() * H, br = (20 + rng() * 70) / 13;
+      if (!inR(bx, by, br + 1)) continue;
+      g.fillStyle = fs; g.beginPath(); g.arc(bx * P, by * P, br * P, 0, Math.PI * 2); g.fill();
     }
     const isWet = (i) => World.tile[i] === T.WATER || (World.tile[i] === T.PLANK && World.depth[i] > 0);
     const layers = [
@@ -47,9 +52,10 @@ const Art = {
       { test: (t) => t === T.PATH, fill: '#D8B477', line: '#6E4E28' },
       { test: (t) => t === T.FLOOR, fill: '#9C7A4F', line: '#3E2A18' },
     ];
+    const region = [];
+    for (let y = Math.max(0, ry - 1); y < Math.min(H, ry + rh + 1); y++) for (let x = Math.max(0, rx - 1); x < Math.min(W, rx + rw + 1); x++) region.push(y * W + x);
     for (const L of layers) {
-      const pts = [];
-      for (let i = 0; i < W * H; i++) if (L.test(World.tile[i], i)) pts.push(i);
+      const pts = region.filter((i) => L.test(World.tile[i], i));
       if (!pts.length) continue;
       for (const [col, r] of [[L.line, P * 0.86], [L.fill, P * 0.66]]) {
         g.fillStyle = col; g.beginPath();
@@ -61,36 +67,38 @@ const Art = {
       }
     }
     // Texture: grass tufts, pebbles on paths and sand, cracks in mud, strata on rock, and a fine speckle.
-    const r2 = U.mulberry32(World.seed + 77);
-    for (let i = 0; i < W * H; i++) {
+    // Seeded per tile, so neighbouring chunks agree exactly.
+    const k = P / 13;
+    for (const i of region) {
       const t = World.tile[i]; if (isWet(i) || t === T.FLOOR || t === T.PLANK) continue;
+      const r2 = U.mulberry32(World.seed * 7 + i);
       const tx = (i % W) * P, ty = ((i / W) | 0) * P;
-      for (let k = 0; k < 5; k++) { g.fillStyle = r2() < 0.5 ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,230,0.07)'; g.fillRect(tx + r2() * P, ty + r2() * P, 1.5, 1.5); }
+      for (let q = 0; q < 6; q++) { g.fillStyle = r2() < 0.5 ? 'rgba(0,0,0,0.07)' : 'rgba(255,255,230,0.07)'; g.fillRect(tx + r2() * P, ty + r2() * P, 1.5 * k, 1.5 * k); }
       if (t === T.GRASS || t === T.MEADOW || t === T.FOREST) {
-        if (r2() < 0.55) {
-          g.strokeStyle = t === T.FOREST ? 'rgba(20,50,18,0.55)' : 'rgba(40,90,30,0.5)'; g.lineWidth = 1;
-          const x = tx + 2 + r2() * (P - 4), y = ty + 4 + r2() * (P - 5);
-          g.beginPath(); g.moveTo(x - 2, y); g.lineTo(x - 3, y - 4); g.moveTo(x, y); g.lineTo(x, y - 5); g.moveTo(x + 2, y); g.lineTo(x + 3, y - 4); g.stroke();
+        for (let q = 0; q < (P > 16 ? 2 : 1); q++) if (r2() < 0.55) {
+          g.strokeStyle = t === T.FOREST ? 'rgba(20,50,18,0.55)' : 'rgba(40,90,30,0.5)'; g.lineWidth = k;
+          const x = tx + 2 * k + r2() * (P - 4 * k), y = ty + 4 * k + r2() * (P - 5 * k);
+          g.beginPath(); g.moveTo(x - 2 * k, y); g.lineTo(x - 3 * k, y - 4 * k); g.moveTo(x, y); g.lineTo(x, y - 5 * k); g.moveTo(x + 2 * k, y); g.lineTo(x + 3 * k, y - 4 * k); g.stroke();
         }
       } else if (t === T.PATH || t === T.SAND) {
-        for (let k = 0; k < 2; k++) if (r2() < 0.5) { g.fillStyle = t === T.PATH ? 'rgba(110,78,40,0.5)' : 'rgba(150,120,60,0.45)'; g.beginPath(); g.ellipse(tx + r2() * P, ty + r2() * P, 1.4 + r2() * 1.2, 1 + r2(), r2() * 3, 0, 7); g.fill(); }
+        for (let q = 0; q < 3; q++) if (r2() < 0.5) { g.fillStyle = t === T.PATH ? 'rgba(110,78,40,0.5)' : 'rgba(150,120,60,0.45)'; g.beginPath(); g.ellipse(tx + r2() * P, ty + r2() * P, (1.4 + r2() * 1.2) * k, (1 + r2()) * k, r2() * 3, 0, 7); g.fill(); }
       } else if (t === T.MUD) {
-        if (r2() < 0.4) { g.strokeStyle = 'rgba(60,40,20,0.5)'; g.lineWidth = 1; const x = tx + r2() * P, y = ty + r2() * P; g.beginPath(); g.moveTo(x, y); g.lineTo(x + 3 - r2() * 6, y + 3); g.lineTo(x + 5 - r2() * 6, y + 6); g.stroke(); }
+        if (r2() < 0.4) { g.strokeStyle = 'rgba(60,40,20,0.5)'; g.lineWidth = k; const x = tx + r2() * P, y = ty + r2() * P; g.beginPath(); g.moveTo(x, y); g.lineTo(x + (3 - r2() * 6) * k, y + 3 * k); g.lineTo(x + (5 - r2() * 6) * k, y + 6 * k); g.stroke(); }
       } else if (t === T.ROCK) {
-        g.strokeStyle = 'rgba(60,60,56,0.35)'; g.lineWidth = 1; const y = ty + 3 + r2() * (P - 6);
-        g.beginPath(); g.moveTo(tx, y); g.lineTo(tx + P * 0.5, y + 1.5 - r2() * 3); g.lineTo(tx + P, y); g.stroke();
+        g.strokeStyle = 'rgba(60,60,56,0.35)'; g.lineWidth = k; const y = ty + 3 * k + r2() * (P - 6 * k);
+        g.beginPath(); g.moveTo(tx, y); g.lineTo(tx + P * 0.5, y + (1.5 - r2() * 3) * k); g.lineTo(tx + P, y); g.stroke();
       }
     }
     // Flowers and stumps: little outlined dots.
-    for (let i = 0; i < W * H; i++) {
+    for (const i of region) {
       const o = World.obj[i];
       if (o !== O.FLOWERS && o !== O.STUMP) continue;
       const tx = i % W, ty = (i / W) | 0;
-      g.lineWidth = 1; g.strokeStyle = '#1E2A14';
+      g.lineWidth = k; g.strokeStyle = '#1E2A14';
       if (o === O.STUMP) { g.fillStyle = '#C9A46A'; g.beginPath(); g.arc((tx + 0.5) * P, (ty + 0.5) * P, P * 0.3, 0, 7); g.fill(); g.stroke(); continue; }
-      for (let k = 0; k < 3; k++) {
-        g.fillStyle = ['#F2E15A', '#E86A8A', '#FFFFFF', '#9A7AE8'][(k + tx) % 4];
-        g.beginPath(); g.arc(tx * P + 2 + k * 2, ty * P + 2 + (k % 2) * 3, 1.3, 0, 7); g.fill(); g.stroke();
+      for (let q = 0; q < 3; q++) {
+        g.fillStyle = ['#F2E15A', '#E86A8A', '#FFFFFF', '#9A7AE8'][(q + tx) % 4];
+        g.beginPath(); g.arc(tx * P + (2 + q * 2) * k, ty * P + (2 + (q % 2) * 3) * k, 1.3 * k, 0, 7); g.fill(); g.stroke();
       }
     }
     return c;

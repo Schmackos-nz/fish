@@ -127,10 +127,8 @@ const Hud = {
     g.setTransform(d, 0, 0, d, 0, 0);
     this.drawWorldLabels();
     Npcs.drawBubbles(this);
-    Floaters.drawCensors(this);
     Floaters.drawBubbles(this);
     Swimmers.drawBubbles(this);
-    Couples.drawCensor(this);
     Tim.drawBubble(this);
     Bikes.drawBubbles(this);
     Hunters.drawBubbles(this);
