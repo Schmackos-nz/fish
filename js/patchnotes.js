@@ -3,6 +3,9 @@
 
 const PATCH_NOTES = [
   { v: '1.9', name: 'Life Sentence', date: '30 Oct 2026', notes: [
+    ['new', 'Locals chat about all sorts: the weather, the time of day, the state of the town, who has the day off, the weekend contest, the Bunyip, the thief, and that bloke who did his business in the open'],
+    ['new', 'Get caught weeing or pooing in public and the witnesses point and laugh, then keep ridiculing you for a while afterwards'],
+    ['changed', 'Smarter walking: locals, staff, hunters and beachgoers plan a route round trees, rocks and water instead of walking into them'],
     ['changed', 'Guns and explosions kill now. The dead drop what they carried, the town mourns, and the gossip turns dark'],
     ['new', 'Murder sentences: 8 years each, 15 for a police officer, 2 for manslaughter (killing someone who was attacking you). Up to 60 years'],
     ['new', 'The judge weighs your reputation: Friendly −40%, Liked −20%, Disliked +30%, Hated +60% on every sentence'],

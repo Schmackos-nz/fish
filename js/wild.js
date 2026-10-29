@@ -481,6 +481,8 @@ const Hunters = {
     }
   },
   step(h, goal, sp, dt) {
+    // Long trips get a planned route; short stalking hops steer directly.
+    if (U.dist(h.x, h.y, goal.x, goal.y) > 6) { const g = h.routeTo && U.dist(h.routeTo.x, h.routeTo.y, goal.x, goal.y) < 4 ? h.routeTo : (h.routeTo = { x: goal.x, y: goal.y }); Path.follow(h, g, sp, dt); h.walkT += dt; h.moving = true; return; }
     unstick(h, dt);
     const want = Math.atan2(goal.y - h.y, goal.x - h.x);
     for (const off of [0, 0.5, -0.5, 1, -1, 1.6, -1.6]) {

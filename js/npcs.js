@@ -11,6 +11,7 @@ const NPC_PALETTES = [
   { hat: '#5aa0a0', shirt: '#e88a8a', vest: '#7a8a9a', pants: '#3a4a5a', skin: '#a8724a' },
 ];
 
+const MOCKS = ['HAHA, it\'s the public pooper!', 'Oi, need a bush, mate? HAHA!', 'Don\'t stand downwind of this one!', 'Toilet\'s indoors, genius!', '*points and laughs*', 'Everyone saw that, y\'know.', 'Did you even wash your hands?'];
 const SAY = {
   land: ['Fish on… and it\'s MINE!', 'Get the camera!', 'Look at the shoulders on this {sp}!', 'That\'s a keeper!', 'Wooo! {kg} of {sp}!', 'Still got it!'],
   prized: ['IS THAT GOLD?! Somebody pinch me!', 'Forty years I\'ve waited for a golden one!'],
@@ -135,6 +136,31 @@ const Npcs = {
     if (pose) { n.pose = pose; n.poseT = Math.min(time, 2.5); }
   },
 
+  // Chit-chat about whatever's going on, not just fish.
+  smallTalk(n) {
+    const e = Game.env, h = e.hour, lines = [];
+    if (e.weather.id === 'rain') lines.push('Bucketing down, eh? Fish love it though.', 'Should\'ve brought a better coat.', 'Rain\'s good for the garden, at least.');
+    else if (e.weather.id === 'cloudy') lines.push('Bit grey today.', 'Reckon it\'ll rain later.', 'Overcast\'s good for trout, mate.');
+    else lines.push('Lovely day for it!', 'Not a cloud in the sky.', 'Sun\'s out — the lilo crowd\'ll be out in force.');
+    if (Math.hypot(e.wind.x, e.wind.y) > 1.8) lines.push('Wind\'s really picking up.', 'Hard to cast in this wind.');
+    if (h < 8) lines.push('Early bird gets the trout.', 'Too early for this. Where\'s my coffee?');
+    else if (h >= 18) lines.push('Getting late. Mozzies\'ll be out soon.', 'Nearly tea time.');
+    const lvl = Decay.level();
+    if (lvl > 0.5) lines.push('Town\'s gone to the dogs lately.', 'Did you see the graffiti on the store? Disgraceful.', 'Half the shops are boarded up. Sad.');
+    else if (lvl < 0.15) lines.push('Town\'s looking tidy these days.', 'Someone\'s been fixing the place up. Good on \'em.');
+    const shut = Staff.list.filter((s) => s.quit).map((s) => s.b.name);
+    if (shut.length) lines.push(shut[0] + '\'s been shut for ages. Miss the place.');
+    const off = Staff.list.find((s) => s.state === 'cover');
+    if (off) lines.push(off.name + '\'s got the day off, lucky thing.');
+    const c = Contest.current && Contest.current();
+    if (c) lines.push(c.type === 'fishing' ? 'You entered the fishing classic? I\'m going for the big one.' : 'Hunting derby this weekend. Big Trev always wins.');
+    if (Legends.current || Math.random() < 0.2) lines.push('My cousin swears he saw the Bunyip once.', 'They say there\'s something HUGE in the deep water.');
+    if (Game.thief && Thief.recent()) lines.push('Lock your doors. Thief about.');
+    if ((Game.shame || 0) > 0) lines.push('Heard someone did their business right out in the open. Animals.');
+    lines.push('Tim reckons the dawn bite\'s the best.', 'Dusty\'s up to no good out in those woods, mark my words.', 'Those bikers nearly ran me over again.', 'Rent\'s gone up again, I hear.', 'You see the ducks on the pond? Cheeky buggers.');
+    return U.pick(Math.random, lines);
+  },
+
   // ---------- simulation ----------
   update(dt) {
     for (const n of this.list) {
@@ -183,16 +209,10 @@ const Npcs = {
       if (rival) this.brawl(n, rival);
       return;
     }
-    const ang = Math.atan2(s.y - n.y, s.x - n.x);
-    const sp = 2.2 * dt;
-    const nx = n.x + Math.cos(ang) * sp, ny = n.y + Math.sin(ang) * sp;
-    let moved = false;
-    if (footOK(nx, n.y)) { n.x = nx; moved = true; }
-    if (footOK(n.x, ny)) { n.y = ny; moved = true; }
-    n.face = ang; n.walkT += dt;
-    if (unstick(n, dt)) n.stuck = 0;
-    n.stuck = moved ? 0 : (n.stuck || 0) + dt;
-    // Wandering anglers don't pathfind; if they wedge against trees, they pick somewhere else.
+    // Walk the route round trees and water (planned once per destination).
+    Path.follow(n, s, 2.2, dt);
+    n.walkT += dt; n.stuck = 0;
+    // Still not there after a long while? Give up on that spot.
     if ((n.stuck > 1.5 || n.walkT > 40) && n.goingBush) { n.x = s.x; n.y = s.y; n.state = 'bush'; return; }
     if ((n.stuck > 1.5 || n.walkT > 40) && n.goingHome) { n.x = s.x; n.y = s.y; n.state = 'home'; n.homeT = n.dayVisit ? 40 + Math.random() * 80 : 0; return; }
     if (n.stuck > 1.5 || n.walkT > 40) { n.spot = this.nearestSpot(n.x, n.y, n.spot); n.walkT = 0; n.stuck = 0; if (U.dist(n.x, n.y, n.spot.x, n.spot.y) > 30) { n.x = n.spot.x; n.y = n.spot.y; } }
@@ -254,7 +274,7 @@ const Npcs = {
       if (n.crowdT >= 10) { n.crowdT = 0; this.shove(n); }
     } else n.crowdT = 0;
     n.idleT -= dt;
-    if (n.idleT <= 0) { n.idleT = 25 + Math.random() * 40; if (close) this.say(n, U.pick(Math.random, SAY.idle)); }
+    if (n.idleT <= 0) { n.idleT = 25 + Math.random() * 40; if (close) this.say(n, Math.random() < 0.65 ? this.smallTalk(n) : U.pick(Math.random, SAY.idle)); }
     const e = Game.env;
     if (Math.random() > dt * 0.045 * e.weather.bite * (0.6 + e.daylight * 0.2 + (e.phase === 0 || e.phase === 2 ? 0.5 : 0))) return;
     // Bite! Prefer a real fish swimming nearby, so they genuinely compete with you.
@@ -315,6 +335,8 @@ const Npcs = {
   // ---------- talking to the player ----------
   talk(n) {
     if (!Rep.talked[n.name]) { Rep.talked[n.name] = true; Rep.add(0.8); } // a friendly yarn, once a day each
+    if (n.mocked > Game.time) { n.state = 'chat'; n.t = 3; this.say(n, U.pick(Math.random, MOCKS), 3.5); return; }
+    if (Math.random() < 0.45) { n.state = 'chat'; n.t = 4; n.face = Math.atan2(Player.y - n.y, Player.x - n.x); this.say(n, this.smallTalk(n), 4); return; }
     n.state = 'chat'; n.t = 4; n.face = Math.atan2(Player.y - n.y, Player.x - n.x);
     const r = Math.random();
     if (n.rec.best > 0 && r < 0.4) {

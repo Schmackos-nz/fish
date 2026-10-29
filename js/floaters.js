@@ -11,14 +11,10 @@ function walkHome(e, dt) {
     e.homeT = 0; e.walkPhase = 0;
   }
   e.homeT += dt;
-  const want = Math.atan2(e.home.y - e.y, e.home.x - e.x), sp = 1.35 * dt;
-  for (const off of [0, 0.5, -0.5, 1, -1, 1.6, -1.6, 2.4, -2.4]) {
-    const a = want + off, nx = e.x + Math.cos(a) * sp, ny = e.y + Math.sin(a) * sp;
-    if (World.blocked(nx, ny) || World.depthAt(nx, ny) > 0.3) continue;
-    e.x = nx; e.y = ny; e.heading = a; break;
-  }
+  // Swimmers/sunbathers start in the water: wade ashore first, then follow a planned route.
+  if (!footOK(e.x, e.y)) unstick(e, dt);
+  else Path.follow(e, e.home, 1.35, dt);
   e.walkPhase += dt * 1.35;
-  unstick(e, dt);
   return U.dist(e.x, e.y, e.home.x, e.home.y) < 1 || e.homeT > 150 || (e.homeT > 6 && U.dist(e.x, e.y, Player.x, Player.y) > 65);
 }
 

@@ -33,6 +33,13 @@ const Needs = {
       if (v < 70) this[warn] = false;
       if (v >= 100) this.accident(k);
     }
+    // People who saw you don't let it go.
+    this.mockT = (this.mockT || 6) - dt;
+    if (this.mockT <= 0) {
+      this.mockT = 10 + Math.random() * 12;
+      const n = Npcs.list.find((x) => x.mocked > Game.time && !x.away && ['cast', 'wait', 'walk'].includes(x.state) && U.dist(x.x, x.y, Player.x, Player.y) < 12);
+      if (n) Npcs.say(n, U.pick(Math.random, MOCKS), 2.6);
+    }
     // Stinky: locals notice, a wade in the water fixes it.
     if (this.smellT > 0) {
       this.smellT -= dt;
@@ -89,6 +96,7 @@ const Needs = {
         const n = seen[0];
         if (n.name && Npcs.list.includes(n)) Npcs.say(n, U.pick(Math.random, ['OI! Put that away!', 'There are CHILDREN about!', 'Disgusting!']), 2.4);
         Rep.add(-3); Hud.toast((n.name || 'Someone') + ' saw that. Not a great look.', UI.bad, 2.2);
+        this.shamed(seen, 'wee');
       }
     });
   },
@@ -104,6 +112,7 @@ const Needs = {
         const n = seen[0];
         if (n.name && Npcs.list.includes(n)) Npcs.say(n, U.pick(Math.random, ['ARE YOU SERIOUS?!', 'Not on the GRASS!', 'I\'m calling the council!']), 2.6);
         Rep.add(-6); Hud.toast('In full view of ' + (n.name || 'the public') + '. The town will be talking about this.', UI.bad, 2.6);
+        this.shamed(seen, 'poo');
       } else { Rep.add(-1); Hud.toast('You leave it there for someone to step in. (Dig a hole next time.)', UI.muted, 2.2); }
     });
   },
@@ -116,6 +125,16 @@ const Needs = {
       Sfx.burst(1.2, 700, 0.25, 'lowpass', 0.8, 200); // flush
       Hud.toast(foreign ? 'Flushed. You even put the seat down.' : 'Much better.', UI.good, 1.8);
     });
+  },
+
+  // Everyone who saw remembers, and won't let you forget it for a while.
+  shamed(seen, what) {
+    Game.shame = (Game.shame || 0) + (what === 'poo' ? 2 : 1);
+    seen.filter((n) => Npcs.list.includes(n)).forEach((n, i) => {
+      n.mocked = Game.time + 600;
+      if (i > 0) setTimeout(() => { if (!n.away) Npcs.say(n, U.pick(Math.random, MOCKS), 2.4); }, 900 * i);
+    });
+    setTimeout(() => Sfx.burst(0.5, 1400, 0.08, 'bandpass', 3, 900), 400); // a ripple of laughter
   },
 
   accident(k) {
