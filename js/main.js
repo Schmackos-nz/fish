@@ -325,6 +325,9 @@ function wireScreens() {
   $('rogueBtn').onclick = () => Rogue.start();
   $('fishBtn').onclick = () => FishMode.start();
   $('zombieBtn').onclick = () => Zombie.start();
+  $('chessBtn').onclick = () => Chess.start();
+  Chess.hook();
+  $('chessResign').onclick = () => Chess.resign();
   // Special Modes: a sub-menu that swaps in for the main one.
   const modes = (on) => {
     $('mainMenu').classList.toggle('hidden', on); $('modeMenu').classList.toggle('hidden', !on); $('title').classList.toggle('modes', on);
@@ -415,7 +418,7 @@ function frame(now) {
   last = now;
   try {
   if (Game.mode === 'title') titleFrame(dt);
-  else if (Game.mode === 'jail' || Game.mode === 'rogue') {
+  else if (Game.mode === 'jail' || Game.mode === 'rogue' || Game.mode === 'chess') {
     Scene3D.render(Game.time);
   } else if (Game.mode === 'pause') {
     if (Input.pressed('Escape') && !closeModals()) resume();

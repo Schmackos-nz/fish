@@ -5,6 +5,7 @@ const PATCH_NOTES = [
   { v: '2.3', name: 'Fresh Coat', date: '31 Oct 2026', notes: [
     ['new', 'The Coast Guard: an orange patrol boat with lights and siren chases you down for reported boat theft, being wanted on the water, or fishing without a permit from a boat. A jetski can outrun them; if you reach the shore they radio the wardens'],
     ['fixed', 'Wardens no longer get stranded in the water after a chase: they wade straight back out, and their patrols now path round lakes and rivers'],
+    ['new', 'Chess Mode: every fish you hook challenges you to chess. Checkmate it to land it; lose, stalemate or resign and it swims off. Big fish think several moves ahead; tiddlers play without a queen'],
     ['new', 'Zombie Mode: the locals are gone and the dead come in waves. Chop wood, press B at any door to board it up (hide inside while they batter the boards), and keep fed by fishing and hunting. Guns, axe and fists all work on them'],
     ['new', 'Fish Mode: you ARE the fish. Start as a tiddler: WASD swim, CLICK to bite, SPACE to leap, hold CTRL to dive, SHIFT to dart. Snap up bugs and smaller fish, nibble bait off the anglers lines and spit it before they strike, bite ankles on the bank (they stamp back), and thrash and leap to snap lines. Every bait you steal makes you bigger. Health and food are Diablo-style orbs'],
     ['changed', 'All the special modes now live in their own Special Modes menu under New Game'],
