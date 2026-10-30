@@ -5,15 +5,16 @@
 
 const FishMode = {
   on: false, x: 0, y: 0, ang: 0, vel: 0, sp: null, kg: 0.4, food: 80, hp: 100, t: 0, dashT: 0, dashCool: 0,
-  bugs: [], bugT: 0, nibble: null, hooked: null, mesh: null, score: null, feed: [], tipT: 0,
+  bugs: [], bugT: 0, nibble: null, hooked: null, mesh: null, score: null, feed: [], tipT: 0, jumpT: 0, z: 0, depth: 0, biteCool: 0, stompCool: 0,
 
   start() {
     this.on = true;
     const pool = SPECIES.filter((s) => !s.legendary && !s.rare && (s.habitats.lake || 0) > 0);
     this.sp = U.pick(Math.random, pool);
-    this.kg = Math.max(this.sp.kg[0] * 1.6, this.sp.kg[1] * 0.5);
+    this.kg = U.clamp(this.sp.kg[0] * 0.25, 0.02, 0.07); // a tiddler: work your way up
     this.food = 80; this.hp = 100; this.t = 0; this.bugs = []; this.nibble = null; this.hooked = null; this.feed = [];
-    this.score = { baits: 0, snapped: 0, released: 0, bugs: 0, fish: 0 };
+    this.score = { baits: 0, snapped: 0, released: 0, bugs: 0, fish: 0, bites: 0 };
+    this.jumpT = 0; this.z = 0; this.depth = 0;
     Game.env.hour = 7.5; // the anglers are out
     Tools.current = 'hands'; Gun.out = false; Fishing.reset();
     Bugs.rate = () => 0;
@@ -32,7 +33,7 @@ const FishMode = {
     this.hookSay();
     enterPlay();
     Scene3D.camDist = 13;
-    this.log('You are a ' + this.sp.name + '. WASD to swim, Shift to dart, SPACE to bite. Eat, grow, and steal some bait.', 'good');
+    this.log('You are a tiny ' + this.sp.name + '. WASD swim · CLICK bite · SPACE jump · hold CTRL dive · SHIFT dart. Eat bugs, grow, steal bait, bite ankles.', 'good');
   },
 
   // Overheard on the bank: the locals' chatter goes in your feed.
@@ -91,15 +92,33 @@ const FishMode = {
     this.t += dt;
     this.dashCool -= dt; this.dashT -= dt;
     if ((Input.pressed('ShiftLeft') || Input.pressed('ShiftRight')) && this.dashCool <= 0 && !this.nibble) { this.dashT = 0.45; this.dashCool = 1.6; Sfx.splash && Sfx.splash(0.15); }
+    this.biteCool -= dt; this.stompCool -= dt;
+    // Dive: hold Ctrl (or C) to drop deep, out of sight and out of reach of the bank.
+    const diving = (k.has('ControlLeft') || k.has('ControlRight') || k.has('KeyC')) && !this.hooked && !this.nibble && this.jumpT <= 0 && World.depthAt(this.x, this.y) > 0.7;
+    this.depth = U.lerp(this.depth, diving ? 1 : 0, Math.min(1, dt * 4));
+    // Jump: Space leaps clear of the water (and lets you bite further, at anything on the bank).
+    if (Input.pressed('Space') && this.jumpT <= 0 && !this.nibble && this.depth < 0.5) {
+      this.jumpT = 0.75; this.vel = Math.max(this.vel, 3.4); Sfx.splash && Sfx.splash(0.3); Hud.ripple(this.x, this.y, 0.7);
+      if (this.hooked) this.hooked.tension += 0.14 + this.kg * 0.03; // a leap on the line is the best way to throw a hook
+    }
+    if (this.jumpT > 0) {
+      this.jumpT -= dt;
+      this.z = Math.sin(Math.max(0, this.jumpT) / 0.75 * Math.PI) * (0.9 + Math.cbrt(this.kg) * 0.5);
+      if (this.jumpT <= 0) { this.z = 0; Sfx.splash && Sfx.splash(0.4); Hud.ripple(this.x, this.y, 1); this.eatBugsAt(this.x, this.y, 1.4); }
+    }
+    const click = Input.mousePressed && !Menus.open;
     const size = Math.cbrt(this.kg / 0.4);
-    if (this.nibble) return this.updateNibble(dt);
+    if (this.nibble) return this.updateNibble(dt, click);
     const len = Math.hypot(ix, iy);
     const top = (this.dashT > 0 ? 6.5 : 2.8) * (this.hooked ? 0.65 : 1) * (0.8 + 0.2 * size);
     if (len > 0.1) {
       const want = Math.atan2(iy, ix);
       this.ang += U.clamp(U.angDiff(this.ang, want), -dt * 7, dt * 7);
       this.vel = U.lerp(this.vel, top, Math.min(1, dt * 4));
-    } else this.vel = U.lerp(this.vel, 0, Math.min(1, dt * 2.5));
+    } else {
+      this.vel = U.lerp(this.vel, 0, Math.min(1, dt * 2.5));
+      if (!this.hooked) { const want = Math.atan2(Input.mouse.wy - this.y, Input.mouse.wx - this.x); this.ang += U.clamp(U.angDiff(this.ang, want), -dt * 5, dt * 5); }
+    }
     let dx = Math.cos(this.ang) * this.vel * dt, dy = Math.sin(this.ang) * this.vel * dt;
     if (this.hooked) {
       const H = this.hooked, n = H.n, tx = n.x - this.x, ty = n.y - this.y, d = Math.hypot(tx, ty) || 1;
@@ -108,7 +127,7 @@ const FishMode = {
       dx += tx / d * reel * dt; dy += ty / d * reel * dt;
       const away = -(Math.cos(this.ang) * tx + Math.sin(this.ang) * ty) / d * this.vel / 2.8;
       H.tension += Math.max(0, away) * dt * (0.22 + this.kg * 0.06) - dt * 0.12;
-      if (Input.pressed('Space')) { H.tension += 0.06 + this.kg * 0.025 + Math.random() * 0.04; this.ang += (Math.random() - 0.5) * 1.6; Hud.ripple(this.x, this.y, 0.8); Sfx.splash && Sfx.splash(0.25); }
+      if (click) { H.tension += 0.06 + this.kg * 0.025 + Math.random() * 0.04; this.ang += (Math.random() - 0.5) * 1.6; Hud.ripple(this.x, this.y, 0.8); Sfx.splash && Sfx.splash(0.25); }
       H.give -= dt;
       if (H.tension > 0.78 && H.give <= 0 && Math.random() < dt * 2) H.give = 0.6; // they ease off the drag
       H.tension = U.clamp(H.tension, 0, 2);
@@ -125,7 +144,8 @@ const FishMode = {
     else this.vel *= 0.3;
     if (this.hooked) { this.hooked.f.x = this.x; this.hooked.f.y = this.y; this.hooked.f.ang = this.ang; }
     Player.x = this.x; Player.y = this.y; Player.face = this.ang; Player.moving = false;
-    if (Input.pressed('Space') && !this.hooked) this.bite();
+    if (click && !this.hooked && this.biteCool <= 0) this.bite();
+    this.angry(dt);
     this.vitals(dt);
     this.spawnBugs(dt);
   },
@@ -149,12 +169,18 @@ const FishMode = {
   mouth() { const s = 0.45 * Math.cbrt(this.kg / 0.4); return { x: this.x + Math.cos(this.ang) * s, y: this.y + Math.sin(this.ang) * s }; },
 
   bite() {
-    const m = this.mouth(), reach = 1.1 + Math.cbrt(this.kg) * 0.3;
+    this.biteCool = 0.35;
+    const m = this.mouth(), reach = 1.1 + Math.cbrt(this.kg) * 0.3 + (this.jumpT > 0 ? 1.2 : 0);
+    Sfx.whoosh && Sfx.whoosh(0.1);
+    if (this.depth > 0.5) return this.log('Too deep to reach anything — let go of CTRL to surface.', 'dim');
+    // Someone on the bank or wading in? Go for the ankles.
+    const vic = Wanted.targets().filter((t) => U.dist(t.x, t.y, m.x, m.y) < reach + 0.5).sort((a, b) => U.dist(a.x, a.y, m.x, m.y) - U.dist(b.x, b.y, m.x, m.y))[0];
+    if (vic) return this.bitePerson(vic);
     // A local's bait?
     const n = Npcs.list.find((q) => q.state === 'wait' && q.lure && U.dist(q.lure.x, q.lure.y, m.x, m.y) < reach);
     if (n) {
       this.nibble = { n, t: 0, strikeAt: 0.45 + Math.random() * 1.1 * (n.casts > 2 ? 1.3 : 1) };
-      this.log('You mouth ' + n.name + '\'s bait… tasty. SPACE to spit it before they strike!', 'warn');
+      this.log('You mouth ' + n.name + '\'s bait… tasty. CLICK to spit it before they strike!', 'warn');
       n.lure.dip = 1;
       return;
     }
@@ -168,7 +194,42 @@ const FishMode = {
     this.log(big ? 'That ' + big.sp.name + ' is too big to eat.' : 'You snap at nothing.', 'dim');
   },
 
-  updateNibble(dt) {
+  bitePerson(t) {
+    const o = t.o;
+    o.fishBites = (o.fishBites || 0) + 1; o.fishMad = 30;
+    this.score.bites++;
+    Sfx.slap && Sfx.slap(0.7); Hud.ripple(t.x, t.y, 0.8);
+    const name = o.name || (t.kind === 'warden' ? 'The warden' : 'Someone');
+    const lines = ['ARGH! A FISH BIT ME!', 'MY ANKLE!', 'Get it OFF me!', 'It\'s got TEETH!', 'Something in the water bit me!'];
+    if (t.kind === 'npc') Npcs.say(o, U.pick(Math.random, lines), 2.5); else if (t.kind === 'warden') Wardens.say(o, lines, 2.5);
+    this.eat(10 + this.kg * 4, null);
+    // Big fish (or enough nips) put them on the ground.
+    const need = Math.max(1, Math.round(4 - this.kg * 1.5));
+    if (o.fishBites >= need) { Wanted.knockOut(t, 0); o.fishBites = 0; this.log(name + ' goes down, clutching their leg. (+' + Math.round(10 + this.kg * 4) + ' food)', 'good'); }
+    else this.log('You bite ' + name + '! (' + o.fishBites + '/' + need + ')', 'warn');
+  },
+
+  // People you've bitten stamp at you if you surface by their feet.
+  angry(dt) {
+    if (this.depth > 0.5 || this.jumpT > 0 || this.stompCool > 0) return;
+    for (const t of Wanted.targets()) {
+      const o = t.o;
+      if (!(o.fishMad > 0)) continue;
+      o.fishMad -= dt * 4;
+      if (U.dist(t.x, t.y, this.x, this.y) < 1.5) {
+        this.stompCool = 1.4; this.hp -= 10; Hud.ripple(this.x, this.y, 1); Sfx.slap && Sfx.slap(1);
+        this.log((o.name || 'Someone') + ' stamps at you! (dive with CTRL)', 'bad');
+        if (this.hp <= 0) this.over('Stomped', 'You picked on the wrong ankles.');
+        return;
+      }
+    }
+  },
+
+  eatBugsAt(x, y, r) {
+    for (let i = this.bugs.length - 1; i >= 0; i--) if (U.dist(this.bugs[i].x, this.bugs[i].y, x, y) < r) { this.bugGroup.remove(this.bugs[i].mesh); this.bugs.splice(i, 1); this.score.bugs++; this.eat(9, 'Snatched a bug out of the air!'); }
+  },
+
+  updateNibble(dt, click) {
     const N = this.nibble, n = N.n;
     if (n.state !== 'wait' || !n.lure) { this.nibble = null; return this.log('The bait\'s gone — someone else got it.', 'dim'); }
     N.t += dt;
@@ -177,11 +238,11 @@ const FishMode = {
     Player.x = this.x; Player.y = this.y;
     if (Math.random() < dt * 5) { n.lure.dip = 0.5; Hud.ripple(n.lure.x, n.lure.y, 0.3); }
     this.vitals(dt);
-    if (Input.pressed('Space') || Input.keys.has('ShiftLeft')) {
+    if (click || Input.keys.has('ShiftLeft')) {
       // Spit it and run: the longer you held on, the more you got.
       const got = 8 + Math.min(30, N.t * 26);
       this.nibble = null; this.score.baits++;
-      this.kg *= 1.07 + Math.min(0.05, N.t * 0.03); // every bait makes you a little bigger
+      this.kg *= 1.12 + Math.min(0.06, N.t * 0.04); // every bait makes you a little bigger
       n.state = 'cast'; n.t = 2 + Math.random(); n.lure = null;
       this.eat(got, 'Bait stolen! (+' + Math.round(got) + ' food) You\'re growing: ' + U.fmtKg(this.kg) + '.');
       Npcs.say(n, U.pick(Math.random, ['Bloody bait thief!', 'Cleaned me out AGAIN.', 'There\'s a smart one down there…', 'Felt that! Missed it.', 'Oi! That was my last worm.']), 3);
@@ -196,7 +257,7 @@ const FishMode = {
       this.hooked = { n, f, tension: 0, give: 0 };
       Npcs.say(n, U.pick(Math.random, ['FISH ON!', 'Got ya, ya little thief!', 'Ohh this one\'s got some fight!']), 2.5);
       Sfx.thunk && Sfx.thunk();
-      this.log('HOOKED! Swim AWAY from ' + n.name + ' and mash SPACE to thrash. Snap the line!', 'bad');
+      this.log('HOOKED! Swim AWAY from ' + n.name + ', mash CLICK to thrash and SPACE to leap. Snap the line!', 'bad');
     }
   },
 
@@ -253,7 +314,9 @@ const FishMode = {
   render(dt) {
     if (!this.on || !this.mesh) return;
     const s = Math.cbrt(this.kg / 0.4) * 0.9;
-    this.mesh.position.set(this.x, -0.1, this.y);
+    this.mesh.position.set(this.x, -0.1 + this.z - this.depth * 0.75, this.y);
+    this.ring.visible = this.z < 0.2; this.ring.position.y = 0.12 + this.depth * 0.75 - this.z;
+    this.body.rotation.z = this.jumpT > 0 ? (this.jumpT / 0.75 - 0.5) * 1.4 : 0;
     this.body.scale.setScalar(s);
     this.body.rotation.y = -this.ang;
     this.body.rotation.x = this.hooked ? Math.sin(this.t * 22) * 0.35 : 0;
@@ -265,16 +328,16 @@ const FishMode = {
     if (Math.random() < dt * (this.vel > 3 ? 6 : 1.2)) Hud.ripple(this.x, this.y, 0.25);
     // HUD.
     const H = this.hooked;
-    document.getElementById('fishStats').innerHTML = '<b>' + this.sp.name + '</b> · ' + U.fmtKg(this.kg) +
-      '<div class="fbar"><i style="width:' + this.food + '%;background:#E8B33A"></i><span>Food</span></div>' +
-      '<div class="fbar"><i style="width:' + Math.max(0, this.hp) + '%;background:#E2584D"></i><span>Health</span></div>' +
-      '<small>Baits stolen ' + this.score.baits + ' · Lines snapped ' + this.score.snapped + ' · Bugs ' + this.score.bugs + ' · Fish eaten ' + this.score.fish + ' · ' + Math.floor(this.t / 60) + ':' + String(Math.floor(this.t % 60)).padStart(2, '0') + '</small>';
+    document.getElementById('fishStats').innerHTML = '<b>' + this.sp.name + '</b> · ' + U.fmtKg(this.kg) + (this.depth > 0.5 ? ' · <i>deep</i>' : '') +
+      '<small>Baits ' + this.score.baits + ' · Lines snapped ' + this.score.snapped + ' · Ankles ' + this.score.bites + ' · Bugs ' + this.score.bugs + ' · Fish eaten ' + this.score.fish + ' · ' + Math.floor(this.t / 60) + ':' + String(Math.floor(this.t % 60)).padStart(2, '0') + '</small>';
+    Orbs.set(this.hp, this.food, 'FOOD');
     const tip = document.getElementById('fishTip');
-    if (H) tip.innerHTML = 'HOOKED by ' + H.n.name + ' — swim away + mash SPACE<div class="tens"><i style="width:' + Math.min(100, H.tension * 100) + '%"></i></div>';
-    else if (this.nibble) tip.textContent = 'Nibbling ' + this.nibble.n.name + '\'s bait… SPACE to spit it before they strike!';
+    if (H) tip.innerHTML = 'HOOKED by ' + H.n.name + ' — swim away, CLICK to thrash, SPACE to leap<div class="tens"><i style="width:' + Math.min(100, H.tension * 100) + '%"></i></div>';
+    else if (this.nibble) tip.textContent = 'Nibbling ' + this.nibble.n.name + '\'s bait… CLICK to spit it before they strike!';
     else {
       const m = this.mouth(), near = Npcs.list.find((q) => q.state === 'wait' && q.lure && U.dist(q.lure.x, q.lure.y, m.x, m.y) < 4);
-      tip.textContent = near ? 'A bobber up ahead — ' + near.name + '\'s bait. Bite it (SPACE)… if you dare.' : 'WASD swim · Shift dart · SPACE bite';
+      const legs = Wanted.targets().find((t) => U.dist(t.x, t.y, m.x, m.y) < 2.6);
+      tip.textContent = near ? 'A bobber up ahead: ' + near.name + '\'s bait. CLICK to bite it… if you dare.' : legs ? 'Ankles! CLICK to bite (SPACE to leap at them)' : 'WASD swim · CLICK bite · SPACE jump · hold CTRL dive · SHIFT dart';
     }
     tip.className = H ? 'bad' : this.nibble ? 'warn' : '';
   },

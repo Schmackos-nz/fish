@@ -253,6 +253,19 @@
   #modeMenu button { font-size: clamp(15px, 1.5vw, 21px); padding: 3px 18px; }
   #title.modes #saveInfo { display: none; }
   @media (max-height: 520px) { #modeMenu button { font-size: 4.2vh; padding: 2px 14px; } }
+  #orbs { position: absolute; inset: auto 0 0 0; height: 0; z-index: 6; pointer-events: none; }
+  .orb { position: absolute; bottom: 14px; width: 130px; height: 130px; border-radius: 50%; overflow: hidden; background: radial-gradient(circle at 50% 60%, #1a1016, #050306); border: 5px solid #6B5A3A; box-shadow: 0 0 0 2px #1A1208, 0 0 0 7px #3A2E1C, 0 8px 22px rgba(0,0,0,0.6), inset 0 0 22px rgba(0,0,0,0.9); }
+  .orb.hp { left: 18px; } .orb.food { right: 18px; }
+  .orb .liq { position: absolute; left: -20%; right: -20%; bottom: 0; transition: height 0.35s; }
+  .orb .liq::before { content: ''; position: absolute; left: 0; right: 0; top: -10px; height: 20px; border-radius: 45%; background: inherit; animation: slosh 3.2s linear infinite; }
+  @keyframes slosh { from { transform: translateX(-10%) rotate(0deg); } to { transform: translateX(-10%) rotate(360deg); } }
+  .orb.hp .liq { background: radial-gradient(circle at 40% 30%, #FF5A4A, #A3121A 55%, #4A0408); }
+  .orb.food .liq { background: radial-gradient(circle at 40% 30%, #FFD36A, #C98A12 55%, #5A3A04); }
+  .orb .gloss { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(ellipse at 35% 22%, rgba(255,255,255,0.55), rgba(255,255,255,0) 38%); }
+  .orb b { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 400 34px "Anton", Impact, sans-serif; color: #fff; text-shadow: 0 2px 0 #000, 0 0 8px #000; }
+  .orb span { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; font: 800 10px system-ui; letter-spacing: 2px; color: rgba(255,255,255,0.85); text-shadow: 0 1px 2px #000; }
+  .orb.low { animation: orbLow 0.6s infinite alternate; } @keyframes orbLow { to { box-shadow: 0 0 0 2px #1A1208, 0 0 0 7px #3A2E1C, 0 0 26px 6px rgba(255,40,40,0.8), inset 0 0 22px rgba(0,0,0,0.9); } }
+  @media (max-height: 520px) { .orb { width: 92px; height: 92px; } .orb b { font-size: 24px; } }
   #fishHud { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
   #fishStats { position: absolute; left: 20px; top: 20px; width: 300px; padding: 12px 14px; border-radius: 14px; background: rgba(10,22,30,0.82); color: #F4F0FA; font: 600 15px system-ui; }
   #fishStats b { color: #8FE3FF; font-size: 17px; } #fishStats small { display: block; margin-top: 6px; font-weight: 500; opacity: 0.8; font-size: 12px; }
@@ -261,7 +274,7 @@
   #fishFeed { position: absolute; left: 20px; top: 150px; width: 340px; font: 500 13px system-ui; }
   #fishFeed p { margin: 0 0 4px; padding: 4px 8px; border-radius: 8px; background: rgba(10,22,30,0.6); color: #E8E4F0; }
   #fishFeed p.good { color: #8FD16A; } #fishFeed p.bad { color: #FF8A8A; } #fishFeed p.warn { color: #F2C14E; } #fishFeed p.say { color: #9CD3FF; } #fishFeed p.dim { opacity: 0.7; }
-  #fishTip { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 10px 18px; border-radius: 12px; background: rgba(10,22,30,0.85); color: #F4F0FA; font: 700 15px system-ui; text-align: center; white-space: nowrap; }
+  #fishTip { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%); padding: 10px 18px; border-radius: 12px; background: rgba(10,22,30,0.85); color: #F4F0FA; font: 700 15px system-ui; text-align: center; white-space: nowrap; }
   #fishTip.warn { background: rgba(120,80,10,0.9); } #fishTip.bad { background: rgba(140,20,30,0.92); font-size: 18px; }
   #fishTip .tens { margin-top: 6px; height: 12px; border-radius: 6px; background: rgba(255,255,255,0.2); overflow: hidden; } #fishTip .tens i { display: block; height: 100%; background: linear-gradient(90deg, #F2C14E, #FF4A4A); }
   #title .gta-left { position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center; padding: 0 0 0 6vw; width: min(560px, 48vw); }
@@ -462,6 +475,7 @@
 <div id="reelW" class="hidden"><canvas id="reelCv" width="220" height="220"></canvas><button id="rigBtn">Tie on (T)</button></div>
 <div id="rig" class="hidden"><div class="rig-sheet"><canvas id="rigCv" width="520" height="340"></canvas><div class="rig-btns"><button id="rigTuck">Tuck</button><button id="rigWet">Lick the knot</button><button id="rigCancel">Cancel</button></div></div></div>
 <div id="rogueBar" class="hidden"></div>
+<div id="orbs" class="hidden"><div class="orb hp" id="orbHp"><div class="liq"></div><div class="gloss"></div><b>100</b><span>HEALTH</span></div><div class="orb food" id="orbOther"><div class="liq"></div><div class="gloss"></div><b>100</b><span>FOOD</span></div></div>
 <div id="fishHud" class="hidden"><div id="fishStats"></div><div id="fishFeed"></div><div id="fishTip"></div></div>
 <div id="rogue" class="hidden"><div id="rogueCard"></div></div>
 <div id="title">
@@ -617,69 +631,70 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=151"></script>
-<script src="js/data.js?v=151"></script>
-<script src="js/audio.js?v=151"></script>
-<script src="js/music.js?v=151"></script>
-<script src="js/voice.js?v=151"></script>
-<script src="js/world.js?v=151"></script>
-<script src="js/scene-sprites.js?v=151"></script>
-<script src="js/toon.js?v=151"></script>
-<script src="js/scene.js?v=151"></script>
-<script src="js/grass.js?v=151"></script>
-<script src="js/folk.js?v=151"></script>
-<script src="js/models.js?v=151"></script>
-<script src="js/actors.js?v=151"></script>
-<script src="js/fish.js?v=151"></script>
-<script src="js/legends.js?v=151"></script>
-<script src="js/fishing.js?v=151"></script>
-<script src="js/fight.js?v=151"></script>
-<script src="js/linedrag.js?v=151"></script>
-<script src="js/player.js?v=151"></script>
-<script src="js/npcs.js?v=151"></script>
-<script src="js/path.js?v=151"></script>
-<script src="js/gun.js?v=151"></script>
-<script src="js/arsenal.js?v=151"></script>
-<script src="js/camp.js?v=151"></script>
-<script src="js/wild.js?v=151"></script>
-<script src="js/decay.js?v=151"></script>
-<script src="js/contest.js?v=151"></script>
-<script src="js/bugs.js?v=151"></script>
-<script src="js/floaters.js?v=151"></script>
-<script src="js/animals.js?v=151"></script>
-<script src="js/wardens.js?v=151"></script>
-<script src="js/interiors.js?v=151"></script>
-<script src="js/life.js?v=151"></script>
-<script src="js/weed.js?v=151"></script>
-<script src="js/markers.js?v=151"></script>
-<script src="js/swimmers.js?v=151"></script>
-<script src="js/couples.js?v=151"></script>
-<script src="js/tim.js?v=151"></script>
-<script src="js/bikes.js?v=151"></script>
-<script src="js/lockpick.js?v=151"></script>
-<script src="js/wanted.js?v=151"></script>
-<script src="js/tools.js?v=151"></script>
-<script src="js/hud.js?v=151"></script>
-<script src="js/share.js?v=151"></script>
-<script src="js/menus.js?v=151"></script>
-<script src="js/mobile.js?v=151"></script>
-<script src="js/patchnotes.js?v=151"></script>
-<script src="js/staff.js?v=151"></script>
-<script src="js/thief.js?v=151"></script>
-<script src="js/needs.js?v=151"></script>
-<script src="js/seats.js?v=151"></script>
-<script src="js/waypoint.js?v=151"></script>
-<script src="js/boats.js?v=151"></script>
-<script src="js/prison.js?v=151"></script>
-<script src="js/coastguard.js?v=151"></script>
-<script src="js/swim.js?v=151"></script>
-<script src="js/cine.js?v=151"></script>
-<script src="js/text.js?v=151"></script>
-<script src="js/modes.js?v=151"></script>
-<script src="js/fishmode.js?v=151"></script>
-<script src="js/bodies.js?v=151"></script>
-<script src="js/inventory.js?v=151"></script>
-<script src="js/main.js?v=151"></script>
-<script src="js/rep.js?v=151"></script>
+<script src="js/util.js?v=153"></script>
+<script src="js/data.js?v=153"></script>
+<script src="js/audio.js?v=153"></script>
+<script src="js/music.js?v=153"></script>
+<script src="js/voice.js?v=153"></script>
+<script src="js/world.js?v=153"></script>
+<script src="js/scene-sprites.js?v=153"></script>
+<script src="js/toon.js?v=153"></script>
+<script src="js/scene.js?v=153"></script>
+<script src="js/grass.js?v=153"></script>
+<script src="js/folk.js?v=153"></script>
+<script src="js/models.js?v=153"></script>
+<script src="js/actors.js?v=153"></script>
+<script src="js/fish.js?v=153"></script>
+<script src="js/legends.js?v=153"></script>
+<script src="js/fishing.js?v=153"></script>
+<script src="js/fight.js?v=153"></script>
+<script src="js/linedrag.js?v=153"></script>
+<script src="js/player.js?v=153"></script>
+<script src="js/npcs.js?v=153"></script>
+<script src="js/path.js?v=153"></script>
+<script src="js/gun.js?v=153"></script>
+<script src="js/arsenal.js?v=153"></script>
+<script src="js/camp.js?v=153"></script>
+<script src="js/wild.js?v=153"></script>
+<script src="js/decay.js?v=153"></script>
+<script src="js/contest.js?v=153"></script>
+<script src="js/bugs.js?v=153"></script>
+<script src="js/floaters.js?v=153"></script>
+<script src="js/animals.js?v=153"></script>
+<script src="js/wardens.js?v=153"></script>
+<script src="js/interiors.js?v=153"></script>
+<script src="js/life.js?v=153"></script>
+<script src="js/weed.js?v=153"></script>
+<script src="js/markers.js?v=153"></script>
+<script src="js/swimmers.js?v=153"></script>
+<script src="js/couples.js?v=153"></script>
+<script src="js/tim.js?v=153"></script>
+<script src="js/bikes.js?v=153"></script>
+<script src="js/lockpick.js?v=153"></script>
+<script src="js/wanted.js?v=153"></script>
+<script src="js/tools.js?v=153"></script>
+<script src="js/hud.js?v=153"></script>
+<script src="js/share.js?v=153"></script>
+<script src="js/menus.js?v=153"></script>
+<script src="js/mobile.js?v=153"></script>
+<script src="js/patchnotes.js?v=153"></script>
+<script src="js/staff.js?v=153"></script>
+<script src="js/thief.js?v=153"></script>
+<script src="js/needs.js?v=153"></script>
+<script src="js/seats.js?v=153"></script>
+<script src="js/waypoint.js?v=153"></script>
+<script src="js/boats.js?v=153"></script>
+<script src="js/prison.js?v=153"></script>
+<script src="js/coastguard.js?v=153"></script>
+<script src="js/swim.js?v=153"></script>
+<script src="js/cine.js?v=153"></script>
+<script src="js/text.js?v=153"></script>
+<script src="js/modes.js?v=153"></script>
+<script src="js/orbs.js?v=153"></script>
+<script src="js/fishmode.js?v=153"></script>
+<script src="js/bodies.js?v=153"></script>
+<script src="js/inventory.js?v=153"></script>
+<script src="js/main.js?v=153"></script>
+<script src="js/rep.js?v=153"></script>
 </body>
 </html>

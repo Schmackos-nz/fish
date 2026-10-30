@@ -49,6 +49,7 @@ const Tools = {
   },
 
   update(dt) {
+    if (FishMode.on) return; // fins, not fists
     this.punchT = Math.max(0, (this.punchT || 0) - dt);
     if (this.current === 'hands' && Input.mousePressed && !Menus.open) this.punch();
     if (this.current === 'spade' && Input.mousePressed && !Menus.open) Needs.dig();
