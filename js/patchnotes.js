@@ -7,7 +7,7 @@ const PATCH_NOTES = [
     ['new', 'Fish Mode: you ARE the fish. Swim the lake, snap up bugs and smaller fish, and nibble the locals\' bait. Spit it before they strike, or get hooked and thrash to snap the line. Every bait you steal makes you bigger'],
     ['changed', 'All the special modes now live in their own Special Modes menu under New Game'],
     ['new', 'Dialog Mode: the whole game as a run of dialog boxes. Pick choices (or press 1-9) to look around, travel, talk, fish, strike and reel. Cast a line from anywhere and you walk to the nearest water first'],
-    ['changed', 'The lure always shows a GRAB & DRAG ring with arrows back toward you, and the Realism reel shows the handle's path and where to grab'],
+    ['changed', 'The lure always shows a GRAB & DRAG ring with arrows back toward you, and the Realism reel shows the handle path and where to grab'],
     ['new', 'Realism Mode: the valley runs on your real clock. Tie your own lure on (thread the eye, wrap, tuck, wet and pull tight; a sloppy knot snaps under load), open the bail yourself, cast, and turn the reel handle on screen'],
     ['new', 'Roguelike Run: a brand-new valley every run with one life. Earn the day\'s cash quota by 8pm, pick one of three rewards, and the quota climbs. Get wasted, busted or miss the quota and the run is over. Your normal save is never touched'],
     ['new', 'Text Mode on the main menu: play the whole game as an old-school MUD. Same valley, same locals, wardens, shops and trouble, all in text. Type HELP'],
