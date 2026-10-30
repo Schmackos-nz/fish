@@ -748,13 +748,20 @@ const Scene3D = {
     }
   },
 
-  // Third person (V): the camera sits behind your shoulder and turns with you.
-  tps: false, tpsYaw: 0,
-  toggleTps() {
-    this.tps = !this.tps;
+  // Views, cycled with V: over the shoulder (default) → first person → top-down.
+  // `tps` is true for both behind-the-player views; A/D turn and W/S walk in them.
+  view: 'top', tps: false, tpsYaw: 0,
+  VIEWS: { tps: 'Over the shoulder', fps: 'First person', top: 'Top-down' },
+  setView(v, quiet) {
+    this.view = v; this.tps = v !== 'top';
     this.tpsYaw = Player.face; this._cp = null;
-    Hud.toast(this.tps ? 'Third person — A/D turn, W/S walk, mouse still aims. V to switch back.' : 'Top-down view.', UI.muted, 2.2);
+    this.camera.fov = v === 'fps' ? 72 : v === 'tps' ? 60 : 38; this.camera.updateProjectionMatrix();
+    try { localStorage.setItem('reelwild.view', v); } catch (e) { /* ignore */ }
+    if (!quiet) Hud.toast(this.VIEWS[v] + (v === 'top' ? '' : ' — A/D turn, W/S walk, the mouse aims') + '. V to change view.', UI.muted, 2.2);
   },
+  toggleTps() { this.setView({ tps: 'fps', fps: 'top', top: 'tps' }[this.view]); },
+  // First person hides your own head so the camera isn't inside it.
+  hideHead(on) { if (Actors.rig && Actors.rig.head) Actors.rig.head.visible = !on; },
   tpsCamera(dt) {
     const P = Player;
     // On a bike or boat the view swings round behind the way you're travelling.
@@ -764,16 +771,32 @@ const Scene3D = {
     }
     this._px = P.x; this._py = P.y;
     const yaw = this.tpsYaw, gy = this.standH(P.x, P.y) + (P.z || 0);
-    const back = 4.8, cx = P.x - Math.cos(yaw) * back, cz = P.y - Math.sin(yaw) * back;
-    const want = new THREE.Vector3(cx, Math.max(gy + 2.4, this.groundH(cx, cz) + 0.9), cz);
-    if (!this._cp) this._cp = want.clone(); else this._cp.lerp(want, Math.min(1, dt * 8));
+    const fx = Math.cos(yaw), fz = Math.sin(yaw), rx = -fz, rz = fx; // forward, and to your right
     this.target.set(P.x, gy, P.y);
+    if (this.view === 'fps') {
+      // Eyes: where the head is (so riding, swimming and crouching all just work), looking ahead and a touch down.
+      const eye = Actors.rig && Actors.rig.head ? Actors.rig.head.getWorldPosition(new THREE.Vector3()) : new THREE.Vector3(P.x, gy + 1.5, P.y);
+      eye.x += fx * 0.12; eye.z += fz * 0.12; eye.y += 0.05;
+      this._cp = eye;
+      this.camera.position.copy(eye);
+      this.camera.lookAt(eye.x + fx * 10, eye.y - 1.4, eye.z + fz * 10);
+      return;
+    }
+    // Over the right shoulder: close behind, head height, you on the left of the frame looking where you're going.
+    const back = Bikes.riding || Boats.riding ? 3.8 : 3.1, side = 1.05;
+    const cx = P.x - fx * back + rx * side, cz = P.y - fz * back + rz * side;
+    const want = new THREE.Vector3(cx, Math.max(gy + 2.05, this.groundH(cx, cz) + 0.5), cz);
+    if (!this._cp) this._cp = want.clone(); else this._cp.lerp(want, Math.min(1, dt * 10));
     this.camera.position.copy(this._cp);
-    this.camera.lookAt(P.x + Math.cos(yaw) * 3.5, gy + 1.1, P.y + Math.sin(yaw) * 3.5);
+    this.camera.lookAt(P.x + fx * 9 + rx * side * 0.5, gy + 1.2, P.y + fz * 9 + rz * side * 0.5);
   },
 
   updateCamera(dt, focus) {
-    if (this.tps && Game.mode === 'play' && !Interior.active) {
+    const behind = this.tps && Game.mode === 'play' && !Interior.active;
+    const fov = behind ? (this.view === 'fps' ? 72 : 60) : 38;
+    if (this.camera.fov !== fov) { this.camera.fov = fov; this.camera.updateProjectionMatrix(); }
+    this.hideHead(behind && this.view === 'fps');
+    if (behind) {
       this.tpsCamera(dt);
       const sh0 = typeof Bugs !== 'undefined' ? Bugs.shake : 0;
       if (sh0 > 0.01) { this.camera.position.x += (Math.random() - 0.5) * sh0 * 0.25; this.camera.position.y += (Math.random() - 0.5) * sh0 * 0.25; }

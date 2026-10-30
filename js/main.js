@@ -526,6 +526,9 @@ window.addEventListener('load', () => {
   Hud.init();
   Input.init(document.getElementById('hud'));
   Mobile.init();
+  // Over the shoulder by default; phones stay top-down (thumbstick steering suits it). V cycles views.
+  { let v = null; try { v = localStorage.getItem('reelwild.view'); } catch (e) { /* default */ }
+    Scene3D.setView(Scene3D.VIEWS[v] ? v : Mobile.active ? 'top' : 'tps', true); }
   wireScreens();
   // Build the valley straight away so the title screen can show it.
   const saved = Game.load();
