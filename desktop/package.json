@@ -12,7 +12,8 @@
     "start": "node build.mjs && electron .",
     "dist": "node build.mjs && electron-builder --win dir",
     "dist:linux": "node build.mjs && electron-builder --linux dir",
-    "dist:mac": "node build.mjs && electron-builder --mac dir"
+    "dist:mac": "node build.mjs && electron-builder --mac dir",
+    "dist:installer": "node build.mjs && electron-builder --win nsis"
   },
   "build": {
     "appId": "nz.schmackos.troutforclout",
@@ -42,6 +43,17 @@
     "mac": {
       "icon": "build/icon.png",
       "category": "public.app-category.games"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Trout for Clout",
+      "artifactName": "TroutForClout-Setup-${version}.${ext}",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     }
   },
   "devDependencies": {
