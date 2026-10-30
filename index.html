@@ -161,6 +161,28 @@
   #title { justify-content: flex-start !important; align-items: stretch !important; }
   #title .gta-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(8,6,14,0.92) 0%, rgba(8,6,14,0.75) 34%, rgba(8,6,14,0.15) 62%, rgba(8,6,14,0.35) 100%); pointer-events: none; }
   #title footer { z-index: 4; }
+  #title .gta-collage, #title .gta-shade, #title footer { transition: opacity 0.6s; }
+  #title.cine-on .gta-collage, #title.cine-on .gta-shade, #title.cine-on footer { opacity: 0; pointer-events: none !important; }
+  #title.cine-on .gta-left { visibility: hidden; } /* not faded: the gradient-clipped logo text mis-paints mid-fade */
+  #cine { position: absolute; inset: 0; z-index: 40; pointer-events: none; }
+  #cine .bar { position: absolute; left: 0; right: 0; height: 11vh; background: #000; transition: transform 0.7s cubic-bezier(.6,0,.3,1); }
+  #cine .bar.top { top: 0; } #cine .bar.bot { bottom: 0; }
+  #cine.out .bar.top, #cine.logo .bar.top { transform: translateY(-100%); }
+  #cine.out .bar.bot, #cine.logo .bar.bot { transform: translateY(100%); }
+  #cine .cap { position: absolute; left: 7vw; bottom: 17vh; opacity: 0; transform: translateX(-3vw) skewX(-8deg); color: #fff; font-family: var(--font-display, 'Anton', 'Impact', sans-serif); text-shadow: 0 4px 0 #000, 3px 3px 0 #000, -2px -2px 0 #000; }
+  #cine .cap.right { left: auto; right: 7vw; text-align: right; }
+  #cine .cap b { display: block; font-size: clamp(34px, 7vw, 96px); line-height: 0.95; letter-spacing: 1px; text-transform: uppercase; }
+  #cine .cap i { display: block; font: italic 700 clamp(14px, 1.8vw, 24px) var(--font); letter-spacing: 3px; text-transform: uppercase; color: #F2C14E; margin-top: 6px; }
+  #cine .cap.card b { color: #fff; -webkit-text-stroke: 2px #000; }
+  #cine .cap.show { animation: capIn 1.5s cubic-bezier(.2,.9,.3,1) forwards; }
+  @keyframes capIn { 0% { opacity: 0; transform: translateX(-3vw) skewX(-8deg); } 18% { opacity: 1; transform: translateX(0) skewX(-8deg); } 82% { opacity: 1; transform: translateX(0.6vw) skewX(-8deg); } 100% { opacity: 0; transform: translateX(2vw) skewX(-8deg); } }
+  #cine .cap.right.show { animation-name: capInR; }
+  @keyframes capInR { 0% { opacity: 0; transform: translateX(3vw) skewX(-8deg); } 18% { opacity: 1; transform: translateX(0) skewX(-8deg); } 82% { opacity: 1; transform: translateX(-0.6vw) skewX(-8deg); } 100% { opacity: 0; transform: translateX(-2vw) skewX(-8deg); } }
+  #cineFlash { position: absolute; inset: 0; z-index: 41; background: #fff; opacity: 0; pointer-events: none; }
+  #cineFlash.go { animation: flash 0.9s ease-out; }
+  @keyframes flash { 0% { opacity: 0.95; } 100% { opacity: 0; } }
+  #cine .skip { position: absolute; right: 18px; bottom: calc(11vh + 10px); color: rgba(255,255,255,0.55); font: 600 11px var(--font); letter-spacing: 1px; }
+  #cine.out .skip, #cine.logo .skip { opacity: 0; }
   #title .gta-left { pointer-events: none; }
   #title .gta-left .gta-menu, #title .gta-left .gta-menu button { pointer-events: auto; }
   #title .gta-left { position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center; padding: 0 0 0 6vw; width: min(560px, 48vw); }
@@ -350,6 +372,8 @@
 <div id="repNote" class="hidden"></div>
 <div id="montage" class="hidden"><div class="mt-card"><div class="mt-icon"></div><div class="mt-text"><b class="mt-title"></b><div class="mt-sub"><span class="mt-clock"></span></div><div class="mt-bar"><div></div></div></div></div></div>
 
+<div id="cine" class="hidden"><div class="bar top"></div><div class="bar bot"></div><div class="cap"><b></b><i></i></div><div class="skip">Click or press any key to skip</div></div>
+<div id="cineFlash"></div>
 <div id="title">
   <div class="gta-shade"></div>
   <div class="gta-collage">
@@ -374,7 +398,7 @@
       <button id="settingsBtn"><span>Settings</span></button>
     </nav>
   </div>
-  <footer><button id="verBtn" class="ver-btn" title="Patch notes"><b>v2.1</b> · Patch notes</button><button id="themeBtn" class="theme-btn">♪ Play theme</button><span>🎣 Best with a mouse &amp; keyboard</span></footer>
+  <footer><button id="verBtn" class="ver-btn" title="Patch notes"><b>v2.1</b> · Patch notes</button><button id="themeBtn" class="theme-btn">▶ Replay cinematic</button><span>🎣 Best with a mouse &amp; keyboard</span></footer>
 </div>
 
 <div id="help" class="modal hidden"><div class="sheet">
@@ -493,65 +517,66 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=131"></script>
-<script src="js/data.js?v=131"></script>
-<script src="js/audio.js?v=131"></script>
-<script src="js/music.js?v=131"></script>
-<script src="js/voice.js?v=131"></script>
-<script src="js/world.js?v=131"></script>
-<script src="js/scene-sprites.js?v=131"></script>
-<script src="js/toon.js?v=131"></script>
-<script src="js/scene.js?v=131"></script>
-<script src="js/grass.js?v=131"></script>
-<script src="js/folk.js?v=131"></script>
-<script src="js/models.js?v=131"></script>
-<script src="js/actors.js?v=131"></script>
-<script src="js/fish.js?v=131"></script>
-<script src="js/legends.js?v=131"></script>
-<script src="js/fishing.js?v=131"></script>
-<script src="js/fight.js?v=131"></script>
-<script src="js/linedrag.js?v=131"></script>
-<script src="js/player.js?v=131"></script>
-<script src="js/npcs.js?v=131"></script>
-<script src="js/path.js?v=131"></script>
-<script src="js/gun.js?v=131"></script>
-<script src="js/arsenal.js?v=131"></script>
-<script src="js/camp.js?v=131"></script>
-<script src="js/wild.js?v=131"></script>
-<script src="js/decay.js?v=131"></script>
-<script src="js/contest.js?v=131"></script>
-<script src="js/bugs.js?v=131"></script>
-<script src="js/floaters.js?v=131"></script>
-<script src="js/animals.js?v=131"></script>
-<script src="js/wardens.js?v=131"></script>
-<script src="js/interiors.js?v=131"></script>
-<script src="js/life.js?v=131"></script>
-<script src="js/weed.js?v=131"></script>
-<script src="js/markers.js?v=131"></script>
-<script src="js/swimmers.js?v=131"></script>
-<script src="js/couples.js?v=131"></script>
-<script src="js/tim.js?v=131"></script>
-<script src="js/bikes.js?v=131"></script>
-<script src="js/lockpick.js?v=131"></script>
-<script src="js/wanted.js?v=131"></script>
-<script src="js/tools.js?v=131"></script>
-<script src="js/hud.js?v=131"></script>
-<script src="js/share.js?v=131"></script>
-<script src="js/menus.js?v=131"></script>
-<script src="js/mobile.js?v=131"></script>
-<script src="js/patchnotes.js?v=131"></script>
-<script src="js/staff.js?v=131"></script>
-<script src="js/thief.js?v=131"></script>
-<script src="js/needs.js?v=131"></script>
-<script src="js/seats.js?v=131"></script>
-<script src="js/waypoint.js?v=131"></script>
-<script src="js/boats.js?v=131"></script>
-<script src="js/prison.js?v=131"></script>
-<script src="js/coastguard.js?v=131"></script>
-<script src="js/swim.js?v=131"></script>
-<script src="js/bodies.js?v=131"></script>
-<script src="js/inventory.js?v=131"></script>
-<script src="js/main.js?v=131"></script>
-<script src="js/rep.js?v=131"></script>
+<script src="js/util.js?v=137"></script>
+<script src="js/data.js?v=137"></script>
+<script src="js/audio.js?v=137"></script>
+<script src="js/music.js?v=137"></script>
+<script src="js/voice.js?v=137"></script>
+<script src="js/world.js?v=137"></script>
+<script src="js/scene-sprites.js?v=137"></script>
+<script src="js/toon.js?v=137"></script>
+<script src="js/scene.js?v=137"></script>
+<script src="js/grass.js?v=137"></script>
+<script src="js/folk.js?v=137"></script>
+<script src="js/models.js?v=137"></script>
+<script src="js/actors.js?v=137"></script>
+<script src="js/fish.js?v=137"></script>
+<script src="js/legends.js?v=137"></script>
+<script src="js/fishing.js?v=137"></script>
+<script src="js/fight.js?v=137"></script>
+<script src="js/linedrag.js?v=137"></script>
+<script src="js/player.js?v=137"></script>
+<script src="js/npcs.js?v=137"></script>
+<script src="js/path.js?v=137"></script>
+<script src="js/gun.js?v=137"></script>
+<script src="js/arsenal.js?v=137"></script>
+<script src="js/camp.js?v=137"></script>
+<script src="js/wild.js?v=137"></script>
+<script src="js/decay.js?v=137"></script>
+<script src="js/contest.js?v=137"></script>
+<script src="js/bugs.js?v=137"></script>
+<script src="js/floaters.js?v=137"></script>
+<script src="js/animals.js?v=137"></script>
+<script src="js/wardens.js?v=137"></script>
+<script src="js/interiors.js?v=137"></script>
+<script src="js/life.js?v=137"></script>
+<script src="js/weed.js?v=137"></script>
+<script src="js/markers.js?v=137"></script>
+<script src="js/swimmers.js?v=137"></script>
+<script src="js/couples.js?v=137"></script>
+<script src="js/tim.js?v=137"></script>
+<script src="js/bikes.js?v=137"></script>
+<script src="js/lockpick.js?v=137"></script>
+<script src="js/wanted.js?v=137"></script>
+<script src="js/tools.js?v=137"></script>
+<script src="js/hud.js?v=137"></script>
+<script src="js/share.js?v=137"></script>
+<script src="js/menus.js?v=137"></script>
+<script src="js/mobile.js?v=137"></script>
+<script src="js/patchnotes.js?v=137"></script>
+<script src="js/staff.js?v=137"></script>
+<script src="js/thief.js?v=137"></script>
+<script src="js/needs.js?v=137"></script>
+<script src="js/seats.js?v=137"></script>
+<script src="js/waypoint.js?v=137"></script>
+<script src="js/boats.js?v=137"></script>
+<script src="js/prison.js?v=137"></script>
+<script src="js/coastguard.js?v=137"></script>
+<script src="js/swim.js?v=137"></script>
+<script src="js/cine.js?v=137"></script>
+<script src="js/bodies.js?v=137"></script>
+<script src="js/inventory.js?v=137"></script>
+<script src="js/main.js?v=137"></script>
+<script src="js/rep.js?v=137"></script>
 </body>
 </html>

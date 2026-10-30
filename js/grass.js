@@ -109,7 +109,7 @@ const Grass = {
   update(cx, cy, time) {
     if (!this.mesh) return;
     const inside = typeof Interior !== 'undefined' && Interior.active;
-    this.mesh.visible = !inside && cx > -10 && Game.mode !== 'title';
+    this.mesh.visible = !inside && cx > -10 && (Game.mode !== 'title' || Cine.active);
     if (!this.mesh.visible) return;
     if (Math.abs(cx - this.cx) + Math.abs(cy - this.cy) > 4 || Math.abs(Scene3D.camDist - this.cd) > 1.5) { this.cx = cx; this.cy = cy; this.cd = Scene3D.camDist; this.refill(cx, cy); }
     const u = this.mesh.material.uniforms, S = Scene3D;
