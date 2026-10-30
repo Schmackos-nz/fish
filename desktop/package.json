@@ -1,0 +1,54 @@
+{
+  "name": "grand-trout-auto-vi",
+  "productName": "Grand Trout Auto VI",
+  "version": "2.3.0",
+  "description": "Grand Trout Auto VI - an open-valley fishing and crime sandbox.",
+  "author": "Schmackos",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "stage": "node build.mjs",
+    "start": "node build.mjs && electron .",
+    "dist": "node build.mjs && electron-builder --win dir",
+    "dist:linux": "node build.mjs && electron-builder --linux dir",
+    "dist:mac": "node build.mjs && electron-builder --mac dir"
+  },
+  "build": {
+    "appId": "nz.schmackos.grandtroutauto",
+    "productName": "Grand Trout Auto VI",
+    "executableName": "GrandTroutAutoVI",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "src/**",
+      "app/**",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/steamworks.js/**"
+    ],
+    "extraFiles": [],
+    "win": {
+      "icon": "build/icon.png",
+      "signAndEditExecutable": true
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "category": "Game"
+    },
+    "mac": {
+      "icon": "build/icon.png",
+      "category": "public.app-category.games"
+    }
+  },
+  "devDependencies": {
+    "electron": "^45.1.0",
+    "electron-builder": "^26.18.0"
+  },
+  "dependencies": {
+    "steamworks.js": "^0.4.0"
+  }
+}
