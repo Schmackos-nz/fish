@@ -327,6 +327,7 @@ const Scene3D = {
       if (i >= 0) { G.list.splice(i, 1); G.mats.splice(i, 1); }
     }
     this.fol.cx = -1e9;
+    if (Grass.occ && World.inB(x, y)) { Grass.occ[World.idx(x, y)] = 0; Grass.cx = -1e9; }
   },
 
   // Only foliage near the camera is uploaded; refreshed whenever the view drifts far enough.
@@ -646,11 +647,15 @@ const Scene3D = {
     const sky = new THREE.Color().setHSL(0.57, 0.45, 0.06 + 0.55 * day * w);
     if (env.phase === 0 || env.phase === 2) sky.lerp(new THREE.Color(0xe39a6a), 0.35 * day);
     this.scene.background = sky;
-    this.hemi.intensity = 0.25 + 0.75 * day * w;
-    this.sun.intensity = 0.05 + 0.95 * day * (env.weather.id === 'clear' ? 1 : 0.45);
+    const clear = env.weather.id === 'clear';
+    this.hemi.intensity = 0.22 + 0.42 * day * w;
+    this.sun.intensity = 0.05 + 0.5 * day * (clear ? 1 : 0.45);
+    // Sunny days show it with glare instead of brightness.
+    const glare = document.getElementById('sunGlare'), inside0 = typeof Interior !== 'undefined' && Interior.active;
+    if (glare) glare.style.opacity = inside0 ? 0 : (clear ? 1 : 0) * Math.max(0, (day - 0.35) / 0.65) * w * (env.phase === 1 ? 1 : 0.7);
     this.sun.color.set(env.phase === 0 || env.phase === 2 ? 0xffc48a : 0xfff2d8);
     this.lantern.intensity = (1 - day) * 1.6;
-    this.waterMat.uniforms.uLight.value = 0.35 + 0.65 * day * w + (1 - day) * 0.1;
+    this.waterMat.uniforms.uLight.value = 0.33 + 0.5 * day * w + (1 - day) * 0.1;
     for (const m of this.windows) m.emissiveIntensity = (1 - day) * 1.2;
     // Indoors: a warm lamp and no sky.
     const inside = typeof Interior !== 'undefined' && Interior.active;

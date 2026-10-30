@@ -155,6 +155,15 @@ const Hud = {
     if (Mobile.active) this.drawVitals(20, 20 + sh + 12 + 152 + 42);
     this.drawMinimap(W - 20 - 82, 20 + 82);
     drawWindSock(this, W - 20 - 164 - 44, 52);
+    // Frames per second, averaged over half a second.
+    const now = performance.now(); this.fpsN = (this.fpsN || 0) + 1;
+    if (!this.fpsT0) this.fpsT0 = now;
+    if (now - this.fpsT0 >= 500) { this.fps = Math.round(this.fpsN * 1000 / (now - this.fpsT0)); this.fpsN = 0; this.fpsT0 = now; }
+    if (this.fps) {
+      const fx = W - 20 - 164 - 44;
+      this.card(fx - 30, 104, 60, 26, { r: 10 });
+      this.text(this.fps + ' FPS', fx, 121, this.fps >= 50 ? UI.good : this.fps >= 30 ? UI.accent : UI.bad, 11, 'center', 700);
+    }
     Contest.drawHud(this, W - 20 - 82, 222);
     // Bottom stack: tools, then lures (rod only), then the context panel.
     const barY = H - 20 - 64;

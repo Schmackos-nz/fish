@@ -133,8 +133,10 @@ const Needs = {
     const hole = this.holeNear(), seen = this.bushNear() ? [] : this.witnesses();
     this.act('bowels', hole ? 'Squatting over your hole…' : 'Squatting… no hole, no shame.', 3.2, () => {
       Game.bowels = 0;
-      if (hole) { hole.used = true; Hud.toast('Done, and buried. Leave no trace.', UI.good, 2); this.dirty = true; return; }
-      (Game.poos = Game.poos || []).push({ x: Player.x - Math.cos(Player.face) * 0.3, y: Player.y - Math.sin(Player.face) * 0.3, day: Game.env.day });
+      const px = Player.x - Math.cos(Player.face) * 0.3, py = Player.y - Math.sin(Player.face) * 0.3, wet = World.isWater(px, py);
+      if (hole && !wet) { hole.used = true; Hud.toast('Done, and buried. Leave no trace.', UI.good, 2); this.dirty = true; return; }
+      (Game.poos = Game.poos || []).push({ x: px, y: py, day: Game.env.day, float: wet || undefined, at: Game.time });
+      if (wet) { Sfx.splash(0.2); Hud.toast('Plop. It bobs to the surface and drifts off on the current…', UI.muted, 2.4); this.dirty = true; return; }
       this.dirty = true;
       if (seen.length) {
         const n = seen[0];
@@ -225,7 +227,7 @@ const Needs = {
       }
       if (Interior.active && e === Player) continue;
       for (const p of poos) {
-        if (U.dist(e.x, e.y, p.x, p.y) > 0.38 || p.hitBy === e) continue;
+        if (p.float || U.dist(e.x, e.y, p.x, p.y) > 0.38 || p.hitBy === e) continue;
         p.hitBy = e; p.smeared = (p.smeared || 0) + 1; e._smear = 10; e._sx = e.x; e._sy = e.y;
         this.addSmear(p.x, p.y, Math.random() * 6, 0.26); // a big skid
         this.dirty = true;
@@ -335,10 +337,50 @@ const Needs = {
     }
     for (const s of Game.smears || []) this.smearMesh(s);
     for (const p of Game.poos || []) {
+      if (p.float) continue; // drawn by PooFloat
       const g = new THREE.Group();
       [[0.12, 0.05], [0.09, 0.11], [0.06, 0.16]].forEach(([r, y]) => { const s = P(new THREE.SphereGeometry(r, 8, 6), '#5A3A1A'); s.scale.y = 0.7; s.position.y = y; g.add(s); });
       if (p.smeared) g.scale.set(1.5, 0.35, 1.3); // squashed flat
       g.position.set(p.x, Scene3D.groundH(p.x, p.y), p.y); this.group.add(g);
+    }
+  },
+};
+
+// ---------- floaters ----------
+// Poo dropped in the water bobs off on the current, and anyone it drifts past is revolted.
+const POO_GROSS = ['EWWW! Is that a— IT IS!', 'Something just floated past me. SOMETHING BROWN.', 'Who did that in the lake?!', 'I am never swimming here again.', 'Oh that is VILE.', 'Get it away! GET IT AWAY!'];
+const PooFloat = {
+  group: null,
+  mesh() {
+    const g = new THREE.Group(), P = (geo, c) => Models.part(geo, c, 0.03);
+    [[0.12, 0.0], [0.09, 0.06], [0.06, 0.11]].forEach(([r, y]) => { const s = P(this.geo || (this.geo = new THREE.SphereGeometry(1, 8, 6)), '#5A3A1A'); s.scale.set(r, r * 0.7, r); s.position.y = y; g.add(s); });
+    return g;
+  },
+  update(dt) {
+    if (!this.group) { this.group = new THREE.Group(); Scene3D.scene.add(this.group); }
+    const list = (Game.poos || []).filter((p) => p.float), w = Game.env.wind;
+    for (const m of this.group.children.slice()) if (!list.some((p) => p.mesh === m)) this.group.remove(m);
+    for (const p of list) {
+      if (!p.mesh || p.mesh.parent !== this.group) { p.mesh = this.mesh(); this.group.add(p.mesh); }
+      p.wob = (p.wob || Math.random() * 6) + dt;
+      const [fx, fy] = World.flowAt(p.x, p.y);
+      const nx = p.x + (fx * 0.55 + w.x * 0.05 + Math.sin(p.wob * 0.6) * 0.06) * dt, ny = p.y + (fy * 0.55 + (w.y || 0) * 0.05 + Math.cos(p.wob * 0.5) * 0.06) * dt;
+      if (World.isWater(nx, ny)) { p.x = nx; p.y = ny; } // washes up against the bank and sits there
+      p.mesh.visible = !Interior.active;
+      p.mesh.position.set(p.x, 0.0 + Math.sin(p.wob * 2.1) * 0.02, p.y); p.mesh.rotation.set(Math.sin(p.wob) * 0.15, p.wob * 0.25, 0);
+      // Anyone it drifts past.
+      const g = p.grossed || (p.grossed = {}), yours = Game.time - (p.at || -1e9) < 240;
+      for (const n of Npcs.list) {
+        if (g[n.name] || n.away || ['home', 'bush', 'ko', 'dead', 'jailed'].includes(n.state) || U.dist(n.x, n.y, p.x, p.y) > 2.6) continue;
+        g[n.name] = 1; Npcs.say(n, U.pick(Math.random, POO_GROSS), 3); n.poseT = 1.6; n.pose = 'brag';
+        if (yours && U.dist(Player.x, Player.y, p.x, p.y) < 16) { Rep.add(-2); Hud.toast(n.name + ' saw your little floater go by — and saw you.', UI.bad, 2.4); }
+      }
+      for (let i = 0; i < Swimmers.list.length; i++) {
+        const s = Swimmers.list[i];
+        if (g['swim' + i] || s.state !== 'swim' || U.dist(s.x, s.y, p.x, p.y) > 2.4) continue;
+        g['swim' + i] = 1; Swimmers.say(s, POO_GROSS, 3);
+        s.state = 'leaving'; s.shore = World.nearestShore(s.x, s.y); // everybody out of the pool
+      }
     }
   },
 };

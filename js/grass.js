@@ -8,7 +8,7 @@ const Grass = {
   build() {
     if (this.mesh) { Scene3D.scene.remove(this.mesh); this.mesh.geometry.dispose(); }
     const touch = matchMedia('(pointer: coarse)').matches;
-    this.R = touch ? 18 : 28; this.dens = touch ? 7 : 16;
+    this.R = touch ? 18 : 26; this.dens = touch ? 6 : 12;
     this.cap = (this.R * 2 + 1) ** 2 * this.dens;
     // One blade: a tapered strip, three rows high so it can curve.
     const g = new THREE.InstancedBufferGeometry();
@@ -57,30 +57,45 @@ const Grass = {
     this.mesh = new THREE.Mesh(g, mat);
     this.mesh.frustumCulled = false;
     Scene3D.scene.add(this.mesh);
-    this.cx = this.cy = -1e9;
+    this.cx = this.cy = -1e9; this.occ = null;
   },
 
   // Ground colour per tile type (matches the painted ground under it).
   COLS: { [T.GRASS]: [0.43, 0.73, 0.29], [T.MEADOW]: [0.56, 0.79, 0.36], [T.FOREST]: [0.31, 0.6, 0.27] },
 
+  // Tiles whose blades can never be seen: under buildings and the strip behind them (the camera looks north),
+  // and under tree canopies, bushes, boulders and logs.
+  buildOcclusion() {
+    const occ = this.occ = new Uint8Array(World.W * World.H), mark = (x, y) => { if (World.inB(x, y)) occ[World.idx(x, y)] = 1; };
+    for (const b of World.buildings) for (let y = b.y - 3; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) mark(x, y);
+    for (let i = 0; i < occ.length; i++) { const o = World.obj[i]; if (o === O.PINE || o === O.OAK || o === O.BUSH || o === O.BOULDER || o === O.LOG) occ[i] = 1; }
+  },
+
   refill(cx, cy) {
     const R = this.R, D = this.dens, P = this.iPos.array, Dt = this.iData.array, C = this.iCol.array;
+    if (!this.occ) this.buildOcclusion();
     let n = 0;
-    const x0 = Math.max(0, Math.floor(cx - R)), x1 = Math.min(World.W - 1, Math.floor(cx + R));
-    const y0 = Math.max(0, Math.floor(cy - R * 0.8)), y1 = Math.min(World.H - 1, Math.floor(cy + R * 1.1));
+    // Only what's on screen: the ground footprint of the view, padded a little for the next few steps.
+    let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+    for (const [sx, sy] of [[0, 0], [innerWidth, 0], [0, innerHeight], [innerWidth, innerHeight]]) {
+      const w = Scene3D.screenToWorld(sx, sy); x0 = Math.min(x0, w.x); x1 = Math.max(x1, w.x); y0 = Math.min(y0, w.y); y1 = Math.max(y1, w.y);
+    }
+    x0 = Math.max(0, Math.floor(Math.max(x0, cx - R) - 3)); x1 = Math.min(World.W - 1, Math.ceil(Math.min(x1, cx + R) + 3));
+    y0 = Math.max(0, Math.floor(Math.max(y0, cy - R) - 3)); y1 = Math.min(World.H - 1, Math.ceil(Math.min(y1, cy + R) + 3));
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
       const i = World.idx(x, y), t = World.tile[i], col = this.COLS[t];
-      if (!col) continue;
-      const o = World.obj[i], tall = t === T.MEADOW ? 1.35 : t === T.FOREST ? 0.8 : 1;
-      const cnt = o === O.NONE || o === O.FLOWERS ? D : Math.ceil(D * 0.4);
+      if (!col || this.occ[i]) continue;
+      // Thinner further from the middle of the view, where blades are tiny anyway.
+      const dd = Math.hypot(x + 0.5 - cx, y + 0.5 - cy), f = dd < 9 ? 1 : dd < 16 ? 0.55 : 0.3;
+      const tall = t === T.MEADOW ? 1.35 : t === T.FOREST ? 0.8 : 1, cnt = Math.max(1, Math.round(D * f));
       for (let j = 0; j < cnt && n < this.cap; j++) {
         const px = x + U.hash2(x * 16 + j, y, 21), py = y + U.hash2(x * 16 + j, y, 22);
         const gy = Scene3D.groundH(px, py);
         if (gy < 0.02) continue; // not on banks that dip under water
         P[n * 3] = px; P[n * 3 + 1] = gy - 0.02; P[n * 3 + 2] = py;
         Dt[n * 4] = U.hash2(x * 16 + j, y, 23) * Math.PI * 2;
-        Dt[n * 4 + 1] = (0.2 + U.hash2(x * 16 + j, y, 24) * 0.2) * tall;
-        Dt[n * 4 + 2] = 0.07 + U.hash2(x * 16 + j, y, 25) * 0.05;
+        Dt[n * 4 + 1] = (0.2 + U.hash2(x * 16 + j, y, 24) * 0.2) * tall * (f < 1 ? 1.15 : 1);
+        Dt[n * 4 + 2] = (0.07 + U.hash2(x * 16 + j, y, 25) * 0.05) * (f < 1 ? 1.3 : 1);
         Dt[n * 4 + 3] = U.hash2(x * 16 + j, y, 26);
         const v = 0.92 + U.hash2(x * 16 + j, y, 27) * 0.16;
         C[n * 3] = col[0] * v; C[n * 3 + 1] = col[1] * v; C[n * 3 + 2] = col[2] * v;
@@ -88,15 +103,15 @@ const Grass = {
       }
     }
     this.mesh.geometry.instanceCount = n;
-    for (const a of [this.iPos, this.iData, this.iCol]) a.needsUpdate = true;
+    for (const a of [this.iPos, this.iData, this.iCol]) { a.updateRange.offset = 0; a.updateRange.count = n * a.itemSize; a.needsUpdate = true; }
   },
 
   update(cx, cy, time) {
     if (!this.mesh) return;
     const inside = typeof Interior !== 'undefined' && Interior.active;
-    this.mesh.visible = !inside && cx > -10;
+    this.mesh.visible = !inside && cx > -10 && Game.mode !== 'title';
     if (!this.mesh.visible) return;
-    if (Math.abs(cx - this.cx) + Math.abs(cy - this.cy) > 7) { this.cx = cx; this.cy = cy; this.refill(cx, cy); }
+    if (Math.abs(cx - this.cx) + Math.abs(cy - this.cy) > 4 || Math.abs(Scene3D.camDist - this.cd) > 1.5) { this.cx = cx; this.cy = cy; this.cd = Scene3D.camDist; this.refill(cx, cy); }
     const u = this.mesh.material.uniforms, S = Scene3D;
     u.uTime.value = time;
     if (typeof Game !== 'undefined' && Game.env && Game.env.wind) u.uWind.value.set(Game.env.wind.x, Game.env.wind.y || 0);

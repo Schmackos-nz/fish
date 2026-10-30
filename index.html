@@ -35,6 +35,15 @@
   html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink);
     font-family: var(--font); font-size: 14px; -webkit-font-smoothing: antialiased; user-select: none; }
   canvas#game { display: block; width: 100vw; height: 100vh; }
+  #sunGlare { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 1.5s; overflow: hidden; mix-blend-mode: screen;
+    background: radial-gradient(circle at 6% -4%, rgba(255,248,220,1) 0, rgba(255,230,165,0.7) 12%, rgba(255,214,140,0.28) 32%, rgba(255,214,140,0) 58%),
+                linear-gradient(160deg, rgba(255,236,190,0.16), rgba(255,236,190,0) 55%); }
+  #sunGlare i { position: absolute; border-radius: 50%; animation: glareDrift 9s ease-in-out infinite alternate; }
+  #sunGlare .f1 { left: 30%; top: 26%; width: 7vmin; height: 7vmin; background: radial-gradient(circle, rgba(255,240,200,0.5), rgba(255,240,200,0) 70%); }
+  #sunGlare .f2 { left: 44%; top: 40%; width: 3vmin; height: 3vmin; background: rgba(190,230,255,0.16); box-shadow: 0 0 2vmin rgba(190,230,255,0.2); }
+  #sunGlare .f3 { left: 58%; top: 55%; width: 13vmin; height: 13vmin; border: 2px solid rgba(255,220,170,0.13); background: radial-gradient(circle, rgba(255,200,150,0) 55%, rgba(255,200,150,0.12)); }
+  #sunGlare .f4 { left: 72%; top: 70%; width: 5vmin; height: 5vmin; background: rgba(255,190,230,0.12); }
+  @keyframes glareDrift { from { transform: translate(0, 0); } to { transform: translate(1.2vmin, 0.8vmin); } }
   canvas#hud { position: absolute; inset: 0; width: 100vw; height: 100vh; cursor: crosshair; }
   .hidden { display: none !important; }
 
@@ -334,6 +343,7 @@
 </head>
 <body>
 <canvas id="game"></canvas>
+<div id="sunGlare"><i class="f1"></i><i class="f2"></i><i class="f3"></i><i class="f4"></i></div>
 <canvas id="hud"></canvas>
 <div id="toast"></div>
 <div id="sleepFade"></div>
@@ -483,64 +493,64 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=124"></script>
-<script src="js/data.js?v=124"></script>
-<script src="js/audio.js?v=124"></script>
-<script src="js/music.js?v=124"></script>
-<script src="js/voice.js?v=124"></script>
-<script src="js/world.js?v=124"></script>
-<script src="js/scene-sprites.js?v=124"></script>
-<script src="js/toon.js?v=124"></script>
-<script src="js/scene.js?v=124"></script>
-<script src="js/grass.js?v=124"></script>
-<script src="js/folk.js?v=124"></script>
-<script src="js/models.js?v=124"></script>
-<script src="js/actors.js?v=124"></script>
-<script src="js/fish.js?v=124"></script>
-<script src="js/legends.js?v=124"></script>
-<script src="js/fishing.js?v=124"></script>
-<script src="js/fight.js?v=124"></script>
-<script src="js/linedrag.js?v=124"></script>
-<script src="js/player.js?v=124"></script>
-<script src="js/npcs.js?v=124"></script>
-<script src="js/path.js?v=124"></script>
-<script src="js/gun.js?v=124"></script>
-<script src="js/arsenal.js?v=124"></script>
-<script src="js/camp.js?v=124"></script>
-<script src="js/wild.js?v=124"></script>
-<script src="js/decay.js?v=124"></script>
-<script src="js/contest.js?v=124"></script>
-<script src="js/bugs.js?v=124"></script>
-<script src="js/floaters.js?v=124"></script>
-<script src="js/animals.js?v=124"></script>
-<script src="js/wardens.js?v=124"></script>
-<script src="js/interiors.js?v=124"></script>
-<script src="js/life.js?v=124"></script>
-<script src="js/weed.js?v=124"></script>
-<script src="js/markers.js?v=124"></script>
-<script src="js/swimmers.js?v=124"></script>
-<script src="js/couples.js?v=124"></script>
-<script src="js/tim.js?v=124"></script>
-<script src="js/bikes.js?v=124"></script>
-<script src="js/lockpick.js?v=124"></script>
-<script src="js/wanted.js?v=124"></script>
-<script src="js/tools.js?v=124"></script>
-<script src="js/hud.js?v=124"></script>
-<script src="js/share.js?v=124"></script>
-<script src="js/menus.js?v=124"></script>
-<script src="js/mobile.js?v=124"></script>
-<script src="js/patchnotes.js?v=124"></script>
-<script src="js/staff.js?v=124"></script>
-<script src="js/thief.js?v=124"></script>
-<script src="js/needs.js?v=124"></script>
-<script src="js/seats.js?v=124"></script>
-<script src="js/waypoint.js?v=124"></script>
-<script src="js/boats.js?v=124"></script>
-<script src="js/prison.js?v=124"></script>
-<script src="js/coastguard.js?v=124"></script>
-<script src="js/bodies.js?v=124"></script>
-<script src="js/inventory.js?v=124"></script>
-<script src="js/main.js?v=124"></script>
-<script src="js/rep.js?v=124"></script>
+<script src="js/util.js?v=127"></script>
+<script src="js/data.js?v=127"></script>
+<script src="js/audio.js?v=127"></script>
+<script src="js/music.js?v=127"></script>
+<script src="js/voice.js?v=127"></script>
+<script src="js/world.js?v=127"></script>
+<script src="js/scene-sprites.js?v=127"></script>
+<script src="js/toon.js?v=127"></script>
+<script src="js/scene.js?v=127"></script>
+<script src="js/grass.js?v=127"></script>
+<script src="js/folk.js?v=127"></script>
+<script src="js/models.js?v=127"></script>
+<script src="js/actors.js?v=127"></script>
+<script src="js/fish.js?v=127"></script>
+<script src="js/legends.js?v=127"></script>
+<script src="js/fishing.js?v=127"></script>
+<script src="js/fight.js?v=127"></script>
+<script src="js/linedrag.js?v=127"></script>
+<script src="js/player.js?v=127"></script>
+<script src="js/npcs.js?v=127"></script>
+<script src="js/path.js?v=127"></script>
+<script src="js/gun.js?v=127"></script>
+<script src="js/arsenal.js?v=127"></script>
+<script src="js/camp.js?v=127"></script>
+<script src="js/wild.js?v=127"></script>
+<script src="js/decay.js?v=127"></script>
+<script src="js/contest.js?v=127"></script>
+<script src="js/bugs.js?v=127"></script>
+<script src="js/floaters.js?v=127"></script>
+<script src="js/animals.js?v=127"></script>
+<script src="js/wardens.js?v=127"></script>
+<script src="js/interiors.js?v=127"></script>
+<script src="js/life.js?v=127"></script>
+<script src="js/weed.js?v=127"></script>
+<script src="js/markers.js?v=127"></script>
+<script src="js/swimmers.js?v=127"></script>
+<script src="js/couples.js?v=127"></script>
+<script src="js/tim.js?v=127"></script>
+<script src="js/bikes.js?v=127"></script>
+<script src="js/lockpick.js?v=127"></script>
+<script src="js/wanted.js?v=127"></script>
+<script src="js/tools.js?v=127"></script>
+<script src="js/hud.js?v=127"></script>
+<script src="js/share.js?v=127"></script>
+<script src="js/menus.js?v=127"></script>
+<script src="js/mobile.js?v=127"></script>
+<script src="js/patchnotes.js?v=127"></script>
+<script src="js/staff.js?v=127"></script>
+<script src="js/thief.js?v=127"></script>
+<script src="js/needs.js?v=127"></script>
+<script src="js/seats.js?v=127"></script>
+<script src="js/waypoint.js?v=127"></script>
+<script src="js/boats.js?v=127"></script>
+<script src="js/prison.js?v=127"></script>
+<script src="js/coastguard.js?v=127"></script>
+<script src="js/bodies.js?v=127"></script>
+<script src="js/inventory.js?v=127"></script>
+<script src="js/main.js?v=127"></script>
+<script src="js/rep.js?v=127"></script>
 </body>
 </html>
