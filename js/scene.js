@@ -87,6 +87,8 @@ const Scene3D = {
   standH(x, y) {
     if (x < -50) return 0.04;
     if (World.tileAt(x, y) === T.PLANK) return 0.28;
+    const L = this.landing && World.inB(Math.floor(x), Math.floor(y)) ? this.landing.get(World.idx(Math.floor(x), Math.floor(y))) : undefined;
+    if (L !== undefined) return L;
     return Math.max(this.groundH(x, y), -0.42);
   },
 
@@ -375,6 +377,35 @@ const Scene3D = {
     });
     posts.count = np;
     this.world.add(mesh, posts);
+    // Where decking meets the bank, the ground slopes away into the water and leaves a gap. Run the planks one
+    // tile onto the land as a landing, and close the drop underneath with a timber bulkhead.
+    this.landing = new Map();
+    const lands = [], walls = [];
+    const isLand = (x, y) => World.inB(x, y) && World.tile[World.idx(x, y)] !== T.WATER && World.tile[World.idx(x, y)] !== T.PLANK && !World.buildingAt(x + 0.5, y + 0.5);
+    for (const idx of cells) {
+      const x = idx % World.W, y = (idx / World.W) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (!isLand(nx, ny)) continue;
+        // Only at the ends of a deck (the planks run on at least 3 tiles away from this bank), not along its sides.
+        let run = 0; while (run < 3 && World.tileAt(x - dx * (run + 1), y - dy * (run + 1)) === T.PLANK) run++;
+        if (run < 3) continue;
+        const j = World.idx(nx, ny);
+        if (!this.landing.has(j)) {
+          let gmax = -9; for (const [cx, cy] of [[0.1, 0.1], [0.9, 0.1], [0.1, 0.9], [0.9, 0.9], [0.5, 0.5]]) gmax = Math.max(gmax, this.groundH(nx + cx, ny + cy));
+          const top = Math.max(0.27, Math.min(gmax + 0.04, 0.6));
+          this.landing.set(j, top + 0.01); lands.push([nx, ny, top]);
+        }
+        walls.push([x + 0.5 + dx * 0.5, y + 0.5 + dy * 0.5, dx !== 0, this.landing.get(j) - 0.01]);
+      }
+    }
+    if (lands.length) {
+      const lm = new THREE.InstancedMesh(geo, mat, lands.length);
+      lands.forEach(([x, y, top], i) => { m.makeTranslation(x + 0.5, top - 0.05, y + 0.5); lm.setMatrixAt(i, m); });
+      const wg = new THREE.BoxGeometry(1, 1, 1), wm = new THREE.InstancedMesh(wg, new THREE.MeshLambertMaterial({ color: 0x5a3d22, map: this.texture('plank') }), walls.length);
+      walls.forEach(([x, y, side, top], i) => { const h = top + 1.0; wm.setMatrixAt(i, new THREE.Matrix4().compose(new THREE.Vector3(x, top - h / 2, y), new THREE.Quaternion(), new THREE.Vector3(side ? 0.14 : 1.0, h, side ? 1.0 : 0.14))); });
+      for (const o of [lm, wm]) { o.frustumCulled = false; this.world.add(o); }
+    }
     // Hand rails on some bridges: a post every metre along both edges and a top rail.
     const wood = new THREE.MeshLambertMaterial({ color: 0x6a4526 });
     for (const b of World.bridges || []) {

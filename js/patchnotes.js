@@ -10,6 +10,7 @@ const PATCH_NOTES = [
     ['changed', 'Sunny days are much less glaring on the eyes: softer light, with sun glare and a lens flare to show the sunshine instead'],
     ['changed', 'Grass only draws what is on screen, skips tiles hidden under buildings and trees, and thins out away from the middle of the view, for a big frame-rate boost'],
     ['changed', 'Mosquitoes and sandflies come in swarms of 1-5, then leave you alone for 20-30 seconds'],
+    ['fixed', 'Docks and bridges now run onto the bank with a plank landing and a timber bulkhead, instead of stopping short over a gap of water'],
     ['fixed', 'Boats float properly instead of sitting low and looking flooded. Arrested aboard a stolen boat? It goes back to its owner'],
     ['new', 'Everyone has been redrawn: shaped torsos, necks, real arms and legs, shoes with soles, belts, collars and buttons, faces with irises, noses, ears, smiles and blinking eyes, plus haircuts that differ from person to person'],
     ['new', 'Animated grass: thousands of stylised blades sway in the wind and part around your feet, and your lantern lights them at night'],
