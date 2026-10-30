@@ -360,6 +360,7 @@ const Interact = {
       if (who && b.type === 'store') add(World.clerk.x, World.clerk.y, 2.8, lbl(), () => Life.openStore());
       if (who && b.type === 'bikes') add(World.revs.x, World.revs.y, 2.8, lbl(), () => Bikes.openShop());
       if (who && b.type === 'clinic') add(World.nurse.x, World.nurse.y, 2.8, lbl(), () => Clinic.open());
+      Zombie.interiorActions(cands);
       const f = Interior.near();
       if (f) cands.push({ d: 0.5, x: f.x + f.w / 2, y: f.y + f.h / 2, label: Life.furnLabel(f), run: () => Life.useFurniture(f.kind) });
     } else {
@@ -367,6 +368,7 @@ const Interact = {
         const dr = World.doorOf(b);
         if (b.type === 'gas') add(dr.x, dr.y, 1.6, 'Gas Station — pay at the pump', () => Hud.toast('Pay at the pump across the forecourt.', UI.muted, 1.6));
         else if (b.type === 'prison') continue;
+        else if (Zombie.on) add(dr.x, dr.y, 1.6, 'Enter ' + (b.type === 'house' ? 'the abandoned house' : 'what\'s left of ' + b.name) + (Zombie.boardOf(b).n ? ' (boarded ' + Zombie.boardOf(b).n + '/5)' : ''), () => Interior.enter(b));
         else if (b.type !== 'house') { const shut = Staff.doorLabel(b); add(dr.x, dr.y, 1.6, shut || 'Enter ' + b.name + ' (' + Staff.hoursText(b.type) + ')', () => (shut ? Hud.toast(shut + '. The door\'s locked.', UI.muted, 1.8) : Interior.enter(b))); }
         else if (Game.home && Game.home.id === b.id) add(dr.x, dr.y, 1.6, 'Enter your cottage', () => Interior.enter(b));
         else if (b.unlocked) add(dr.x, dr.y, 1.6, 'Enter ' + b.name + ' (unlocked)', () => Life.enterHouse(b));

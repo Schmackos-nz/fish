@@ -24,14 +24,85 @@ const Zombie = {
     if (Couples.group) Couples.group.visible = false;
     Game.money = 60; Game.ammo = 30; Game.wood = 6; Game.food = 80;
     Game.env.hour = 9;
+    Game.env.weather = WEATHERS.find((w) => w.id === 'cloudy') || Game.env.weather;
+    this.searched = {};
     this.list = []; this.wave = 0; this.state = 'prep'; this.t = 75; this.kills = 0; this.boards = {};
     if (this.group) Scene3D.scene.remove(this.group);
     this.group = new THREE.Group(); Scene3D.scene.add(this.group);
+    this.wreck();
     document.body.classList.add('zombie');
     document.getElementById('rogueBar').classList.remove('hidden');
     this.hook();
     enterPlay();
     Hud.toast('ZOMBIE MODE · The dead rise in 75 seconds. Chop wood (axe), then press B at a door to board it up. Fish and hunt to eat.', UI.bad, 7);
+  },
+
+  // The apocalypse look: every building trashed and tagged, rubbish everywhere, burnt-out cars on the roads,
+  // smoke from a few rooftops, gaping dark doorways, and the whole picture drained of colour.
+  wreck() {
+    const st = Decay.state();
+    World.buildings.forEach((b, i) => { st.b[i] = 0.75 + Math.random() * 0.25; });
+    st.rubbish = [];
+    for (let k = 0; k < 70; k++) Decay.dropRubbish();
+    Decay.dirty = true;
+    const g = this.group, rnd = Math.random;
+    // Wrecks along the paths.
+    const paths = [];
+    for (let y = 2; y < World.H - 2; y += 2) for (let x = 2; x < World.W - 2; x += 2) if (World.tile[World.idx(x, y)] === T.PATH && !World.buildingAt(x + 0.5, y + 0.5)) paths.push([x + 0.5, y + 0.5]);
+    const rust = [0x5A3A2A, 0x3A3A3A, 0x6A4A2A, 0x4A2A22], mat = (c) => new THREE.MeshLambertMaterial({ color: c });
+    for (let k = 0; k < 14 && paths.length; k++) {
+      const [x, y] = paths.splice((rnd() * paths.length) | 0, 1)[0];
+      const car = new THREE.Group(), body = rust[(rnd() * rust.length) | 0];
+      const b1 = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.5, 0.95), mat(body)); b1.position.y = 0.42;
+      const b2 = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.42, 0.85), mat(0x2A2420)); b2.position.set(-0.15, 0.86, 0);
+      car.add(b1, b2);
+      for (const [wx, wz] of [[0.62, 0.45], [-0.62, 0.45], [0.62, -0.45], [-0.62, -0.45]]) {
+        if (rnd() < 0.25) continue; // a wheel's gone
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.14, 10), mat(0x161412)); w.rotation.x = Math.PI / 2; w.position.set(wx, 0.2, wz); car.add(w);
+      }
+      car.position.set(x, Scene3D.standH(x, y) - (rnd() < 0.4 ? 0.12 : 0), y);
+      car.rotation.set((rnd() - 0.5) * 0.12, rnd() * Math.PI * 2, (rnd() - 0.5) * 0.2);
+      g.add(car);
+    }
+    // Smoke from a few of the buildings.
+    this.smoke = [];
+    const smokeMat = new THREE.MeshLambertMaterial({ color: 0x5A5652, transparent: true, opacity: 0.5, depthWrite: false });
+    for (const b of World.buildings.filter(() => rnd() < 0.3).slice(0, 5)) {
+      const c = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+      for (let k = 0; k < 7; k++) {
+        const m = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 1), smokeMat.clone());
+        g.add(m); this.smoke.push({ m, x: c.x, y: c.y, base: Scene3D.standH(c.x, c.y) + 2.4, t: k / 7 });
+      }
+    }
+    // Dark, gaping doorways (until you board them).
+    this.doorways = {};
+    World.buildings.forEach((b, i) => {
+      if (b.type === 'prison' || b.type === 'gas') return;
+      const l = World.localToWorld(b, 0.45, World.depthOf(b) + 0.06), r = World.localToWorld(b, 1.35, World.depthOf(b) + 0.06);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 1.45), new THREE.MeshBasicMaterial({ color: 0x0A0806 }));
+      const d = World.doorOf(b);
+      m.position.set((l.x + r.x) / 2, Scene3D.standH(d.x, d.y) + 0.72, (l.y + r.y) / 2);
+      m.rotation.y = -Math.atan2(r.y - l.y, r.x - l.x);
+      g.add(m); this.doorways[i] = m;
+    });
+  },
+
+  // Inside a building: one good rummage per place.
+  interiorActions(cands) {
+    if (!this.on || !Interior.active) return;
+    const i = this.bIndex(Interior.active.b);
+    if (this.searched[i]) return;
+    cands.push({ d: 0.4, x: Player.x, y: Player.y, label: 'Search the place for supplies', run: () => this.search(i) });
+  },
+  search(i) {
+    this.searched[i] = true;
+    const got = [], r = Math.random;
+    const wood = 1 + ((r() * 4) | 0); Game.wood = (Game.wood || 0) + wood; got.push(wood + ' wood (smashed furniture)');
+    if (r() < 0.6) { const a = 3 + ((r() * 8) | 0); Game.ammo = (Game.ammo || 0) + a; got.push(a + ' rifle rounds'); }
+    if (r() < 0.55) { Game.food = Math.min(100, Game.food + 25); got.push('a tin of beans (eaten cold, +25 food)'); }
+    if (r() < 0.35) { Wanted.health = Math.min(100, Wanted.health + 30); got.push('a first-aid kit (+30 health)'); }
+    if (r() < 0.25) { Game.lures.worm = (Game.lures.worm || 0) + 6; got.push('a tub of worms'); }
+    Sfx.click(); Hud.toast('Found: ' + got.join(', ') + '.', UI.good, 3.5);
   },
 
   hook() {
@@ -53,6 +124,11 @@ const Zombie = {
     // Fists and the axe work on them too.
     const tu = Tools.update.bind(Tools);
     Tools.update = function (dt) {
+      // Boards gone and they're in the doorway: whatever you're holding, swing at them.
+      if (self.on && Input.mousePressed && !Menus.open && Interior.active && !self.boardOf(Interior.active.b).n) {
+        const d = World.doorOf(Interior.active.b), z = self.list.find((q) => q.hp > 0 && U.dist(q.x, q.y, d.x, d.y) < 1.6);
+        if (z) { self.damage(z, Tools.current === 'gun' ? 3 : Tools.current === 'axe' ? 2 : 1, d.x, d.y - 1); Sfx.whoosh(0.15); Input.mousePressed = false; }
+      }
       if (self.on && Input.mousePressed && !Menus.open && (Tools.current === 'hands' || Tools.current === 'axe') && !Interior.active) {
         const reach = Tools.current === 'axe' ? 1.9 : 1.5, f = Player.face;
         const z = self.list.filter((q) => q.hp > 0 && U.dist(q.x, q.y, Player.x, Player.y) < reach && Math.abs(U.angDiff(f, Math.atan2(q.y - Player.y, q.x - Player.x))) < 1.2)
@@ -98,6 +174,7 @@ const Zombie = {
 
   drawBoards(b) {
     const B = this.boardOf(b);
+    const dw = this.doorways && this.doorways[this.bIndex(b)]; if (dw) dw.material.color.set(B.n ? 0x2A1C10 : 0x0A0806);
     if (B.mesh) this.group.remove(B.mesh);
     if (!B.n) { B.mesh = null; return; }
     const g = new THREE.Group(), d = World.doorOf(b);
@@ -171,7 +248,7 @@ const Zombie = {
 
   update(dt) {
     if (!this.on || Game.mode !== 'play') return;
-    this.t -= dt; this.hurtCd -= dt;
+    this.t -= dt; this.hurtCd -= dt; this.bang = Math.max(0, (this.bang || 0) - dt);
     if (Input.pressed('KeyB') && Fishing.state === 'idle') this.boardUp();
     // Waves.
     if (this.state === 'prep') {
@@ -207,7 +284,7 @@ const Zombie = {
         z.face = Math.atan2(door.y - z.y, door.x - z.x);
         if (B.n > 0) {
           B.hp -= dt * 5;
-          if (z.cd <= 0) { z.cd = 1; Sfx.slap && Sfx.slap(0.4); }
+          if (z.cd <= 0) { z.cd = 0.8 + Math.random() * 0.6; Sfx.slap && Sfx.slap(1); Sfx.thunk && Sfx.thunk(); Bugs.shake = Math.max(Bugs.shake || 0, 0.6); this.bang = 0.5; }
           if (B.hp <= 0) { B.n--; B.hp = BOARD_HP; this.drawBoards(inside); Sfx.snap && Sfx.snap(); Hud.toast(B.n ? 'CRACK! A board gives way. (' + B.n + ' left — press B to nail another)' : 'The last board splinters! They\'re getting in!', UI.bad, 2.5); }
         } else if (this.hurtCd <= 0) { this.hurtCd = 0.9; Wanted.hurt(9, 'zombies'); Hud.toast('They\'re through the door!', UI.bad, 1); }
       } else if (this.hurtCd <= 0 && !Boats.riding && !Swim.on) {
@@ -227,7 +304,12 @@ const Zombie = {
   hud() {
     const alive = this.list.filter((z) => z.hp > 0).length + this.toSpawn;
     const b = this.doorNear(), B = b && this.boardOf(b);
-    document.getElementById('rogueBar').innerHTML = '<b>' + (this.state === 'prep' ? 'WAVE ' + (this.wave + 1) + ' IN ' + Math.ceil(this.t) + 's' : 'WAVE ' + this.wave + ' · ' + alive + ' LEFT') + '</b><span>Kills ' + this.kills + '</span><span>Wood ' + (Game.wood || 0) + ' · Ammo ' + (Game.ammo || 0) + '</span>' +
+    let atDoor = '';
+    if (Interior.active) {
+      const d = World.doorOf(Interior.active.b), n = this.list.filter((z) => z.hp > 0 && U.dist(z.x, z.y, d.x, d.y) < 1.6).length, IB = this.boardOf(Interior.active.b);
+      if (n) atDoor = '<span class="zwarn' + (this.bang > 0 ? ' bang' : '') + '">' + (this.bang > 0 ? 'BANG! ' : '') + n + ' at the door · boards ' + IB.n + '/' + MAX_BOARDS + (IB.n ? ' (' + Math.round(IB.hp / BOARD_HP * 100) + '%)' : ' — FIGHT THEM OFF') + '</span>';
+    }
+    document.getElementById('rogueBar').innerHTML = atDoor + '<b>' + (this.state === 'prep' ? 'WAVE ' + (this.wave + 1) + ' IN ' + Math.ceil(this.t) + 's' : 'WAVE ' + this.wave + ' · ' + alive + ' LEFT') + '</b><span>Kills ' + this.kills + '</span><span>Wood ' + (Game.wood || 0) + ' · Ammo ' + (Game.ammo || 0) + '</span>' +
       (b ? '<span>B: board up ' + (b.type === 'house' ? 'house' : b.name) + ' (' + B.n + '/' + MAX_BOARDS + ')</span>' : '');
     Orbs.set(Wanted.health, Game.food, 'FOOD');
   },
@@ -235,6 +317,24 @@ const Zombie = {
   render() {
     if (!this.on || !this.group) return;
     this.group.visible = !Interior.active;
+    // The same boards, seen from inside, across the room's doorway.
+    const IA = Interior.active, n = IA ? this.boardOf(IA.b).n : 0, key = IA ? this.bIndex(IA.b) + ':' + n : '';
+    if (key !== this.inKey) {
+      this.inKey = key;
+      if (this.inBoards) Scene3D.scene.remove(this.inBoards);
+      this.inBoards = null;
+      if (IA && n) {
+        const g = new THREE.Group(), mat = new THREE.MeshLambertMaterial({ color: 0x8A6236 }), ex = IA.exit, fy = Actors.player ? Actors.player.position.y : 0;
+        for (let i = 0; i < n; i++) {
+          const m = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.17, 0.08), mat);
+          m.position.set(ex.x, fy + 0.3 + i * 0.27, ex.y - 0.06); m.rotation.z = i % 2 ? 0.22 : -0.22;
+          g.add(m);
+        }
+        this.inBoards = g; Scene3D.scene.add(g);
+      }
+    }
+    if (this.inBoards && this.bang > 0) this.inBoards.position.z = Math.sin(Game.time * 60) * 0.03 * this.bang;
+    for (const s of this.smoke || []) { s.t = (s.t + 0.0025) % 1; const k = s.t; s.m.position.set(s.x + Math.sin(k * 6 + s.x) * 0.6 + k * 1.5, s.base + k * 6, s.y - k * 0.8); s.m.scale.setScalar(0.5 + k * 1.8); s.m.material.opacity = 0.55 * (1 - k); }
     for (const z of this.list) {
       const m = z.mesh, rig = m.userData.rig;
       m.position.set(z.x, Scene3D.standH(z.x, z.y), z.y);
