@@ -37,6 +37,7 @@ const Boats = {
 
   add(b) {
     b.mesh = b.type === 'jetski' ? this.jetski(BOAT_TYPES.jetski.color) : this.dinghy();
+    b.home = b.home || { x: b.x, y: b.y, ang: b.ang };
     this.group.add(b.mesh); this.list.push(b);
     return b;
   },
@@ -90,7 +91,7 @@ const Boats = {
       if (World.tileAt(Math.floor(x), Math.floor(y)) === T.PLANK || footOK(x, y, true)) {
         this.riding = null; this.driving = false; Player.place(x, y); Player.wading = World.isWater(x, y);
         if (this.prevTool) { Tools.current = this.prevTool; this.prevTool = null; }
-        if (b.mine) Game.boat = { type: b.type, x: b.x, y: b.y, ang: b.ang, owner: b.owner };
+        if (b.mine && !b.stolen) Game.boat = { type: b.type, x: b.x, y: b.y, ang: b.ang, owner: b.owner };
         Game.save(); return;
       }
     }
@@ -105,7 +106,7 @@ const Boats = {
 
   // ---------- borrowing someone else's ----------
   steal(b, quiet) {
-    b.mine = true; b.stolen = true;
+    b.mine = true; b.stolen = true; b.reportAt = Game.time + (quiet ? 60 + Math.random() * 60 : 0);
     Thief.record('boat', b.owner);
     if (!quiet) { Wanted.crime(1); (Wanted.rap = Wanted.rap || { ko: 0, cops: 0, booms: 0, thefts: 0 }).thefts++; }
     const own = Npcs.list.find((n) => n.name === b.owner);
@@ -118,6 +119,15 @@ const Boats = {
     const eyes = Npcs.list.filter((n) => !n.away && !['home', 'bush', 'ko', 'dead'].includes(n.state) && U.dist(n.x, n.y, Player.x, Player.y) < 14).length
       + Wardens.list.filter((w) => w.state !== 'ko' && w.state !== 'dead' && U.dist(w.x, w.y, Player.x, Player.y) < 18).length;
     this.steal(b, eyes === 0);
+  },
+
+  // Arrested aboard: you're off the boat, and a stolen one goes back to its mooring.
+  seize() {
+    const b = this.riding; this.riding = null; this.driving = false; this.vel = { x: 0, y: 0 };
+    if (this.prevTool) { Tools.current = this.prevTool; this.prevTool = null; }
+    if (!b || !b.stolen) return null;
+    b.mine = false; b.stolen = false; b.reportAt = undefined; b.x = b.home.x; b.y = b.home.y; b.ang = b.home.ang;
+    return BOAT_TYPES[b.type].name + ' returned to ' + b.owner;
   },
 
   // ---------- E key ----------
@@ -168,12 +178,12 @@ const Boats = {
       if (!Player.jumpT) { Player.z = 0; Sfx.splash(0.6); }
     }
     Player.x = b.x; Player.y = b.y;
-    if (b.mine) Game.boat = { type: b.type, x: b.x, y: b.y, ang: b.ang, owner: b.owner };
+    if (b.mine && !b.stolen) Game.boat = { type: b.type, x: b.x, y: b.y, ang: b.ang, owner: b.owner };
     return true;
   },
 
   // How high your feet are while aboard.
-  deckY() { const b = this.riding; return b ? (b.type === 'jetski' ? 0.28 : 0.08) + Math.sin(Game.time * 1.6) * 0.03 : 0; },
+  deckY() { const b = this.riding; return b ? (b.type === 'jetski' ? 0.34 : 0.22) + Math.sin(Game.time * 1.6) * 0.03 : 0; },
 
   render(dt) {
     let loud = 0, rpm = 60;
@@ -181,7 +191,7 @@ const Boats = {
       const vis = !Interior.active && U.dist(b.x, b.y, Player.x, Player.y) < 70;
       b.mesh.visible = vis; if (!vis) continue;
       const bob = Math.sin(Game.time * 1.6 + b.x) * 0.03, moving = this.riding === b && this.driving ? Math.hypot(this.vel.x, this.vel.y) : 0;
-      b.mesh.position.set(b.x, -0.08 + bob + (this === b ? 0 : 0) + (this.riding === b ? Player.z * 0.6 : 0), b.y);
+      b.mesh.position.set(b.x, (b.type === 'jetski' ? -0.02 : 0.06) + bob + (this.riding === b ? Player.z * 0.6 : 0), b.y);
       b.mesh.rotation.set(0, -b.ang, -moving * 0.012);
       if (this.riding === b && this.driving) { loud = Math.max(loud, 0.45 + moving / 25); rpm = 60 + moving * 10; }
     }

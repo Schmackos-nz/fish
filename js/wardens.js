@@ -220,6 +220,8 @@ const Jail = {
     }
     Fishing.reelInFast(); Fight.end(); Sfx.setDrag(0);
     if (Bikes.riding) Bikes.dismount();
+    const boatBack = Boats.seize(); if (boatBack) reasons = reasons.concat([boatBack]);
+    CoastGuard.stand(null);
     // A stolen ride gets impounded and handed back to its owner.
     this.impounded = Game.bike && !Bikes.ownsIt() ? BIKE_BY_ID[Game.bike.id].name : null;
     if (Game.bike && Bikes.ownsIt() && reasons.some((x) => /Dangerous driving/.test(x))) {

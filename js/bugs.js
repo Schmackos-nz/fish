@@ -9,7 +9,7 @@ const BUG_KINDS = {
 };
 
 const Bugs = {
-  list: [], splats: [], spawnT: 4, itch: 0, swatted: 0, bites: 0, shake: 0,
+  list: [], splats: [], spawnT: 4, itch: 0, swatted: 0, bites: 0, shake: 0, wave: 0, waveDone: false, breakT: 8,
 
   // The angler's head, in world space and on screen.
   headW() { return { x: Player.x, y: Player.y, z: Scene3D.standH(Player.x, Player.y) + 1.05 }; },
@@ -39,7 +39,13 @@ const Bugs = {
     if (Game.env.weather.id === 'rain') for (const b of this.list) if (b.state !== 'leave') { b.state = 'leave'; b.t = 0; }
     this.spawnT -= dt * this.rate() * 4 * (Tools.repelT > 0 || Interior.active || Bikes.riding ? 0 : 1);
     if (Interior.active) this.list = [];
-    if (this.spawnT <= 0) { this.spawnT = 4; if (this.list.length < 4) this.spawn(); }
+    if (this.breakT > 0) this.breakT -= dt;
+    else if (this.waveDone) { if (!this.list.length) { this.waveDone = false; this.breakT = 20 + Math.random() * 10; } }
+    else if (this.wave <= 0) this.wave = 1 + Math.floor(Math.random() * 5);
+    if (this.spawnT <= 0) {
+      this.spawnT = 4;
+      if (this.breakT <= 0 && !this.waveDone && this.wave > 0 && this.list.length < 5) { this.spawn(); if (--this.wave <= 0) this.waveDone = true; }
+    }
     const h = this.headW();
     let near = 1e9, pitch = 700;
     for (let i = this.list.length - 1; i >= 0; i--) {

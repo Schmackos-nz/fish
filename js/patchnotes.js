@@ -3,6 +3,9 @@
 
 const PATCH_NOTES = [
   { v: '2.3', name: 'Fresh Coat', date: '31 Oct 2026', notes: [
+    ['new', 'The Coast Guard: an orange patrol boat with lights and siren chases you down for reported boat theft, being wanted on the water, or fishing without a permit from a boat. A jetski can outrun them; if you reach the shore they radio the wardens'],
+    ['changed', 'Mosquitoes and sandflies come in swarms of 1-5, then leave you alone for 20-30 seconds'],
+    ['fixed', 'Boats float properly instead of sitting low and looking flooded. Arrested aboard a stolen boat? It goes back to its owner'],
     ['new', 'Everyone has been redrawn: shaped torsos, necks, real arms and legs, shoes with soles, belts, collars and buttons, faces with irises, noses, ears, smiles and blinking eyes, plus haircuts that differ from person to person'],
     ['new', 'Animated grass: thousands of stylised blades sway in the wind and part around your feet, and your lantern lights them at night'],
     ['changed', 'High-detail buildings with weatherboard and brick walls, shingle roofs with ridge caps and gutters, stone footings, panelled doors, glass with curtains, shop awnings, porch lamps, chimneys and side windows'],

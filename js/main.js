@@ -156,7 +156,7 @@ function buildWorld(seed, savedPos) {
   Floaters.init();
   Animals.init();
   Camp.init();
-  Forage.init(); Snakes.init(); Ducks.init(); Hunters.init(); Decay.init(); Staff.init(); Needs.init(); Seats.init(); Crabs.init(); Farts.init(); Waypoint.init(); Boats.init(); Prison.init();
+  Forage.init(); Snakes.init(); Ducks.init(); Hunters.init(); Decay.init(); Staff.init(); Needs.init(); Seats.init(); Crabs.init(); Farts.init(); Waypoint.init(); Boats.init(); Prison.init(); CoastGuard.init();
   for (const n of Npcs.list) if (n.home && n.state !== 'jailed' && Math.random() < 0.2) { n.state = 'home'; n.homeT = Math.random() * 90; }
   if (savedPos && !World.blocked(savedPos.x, savedPos.y)) Player.place(savedPos.x, savedPos.y);
   else Player.place(World.spawn.x, World.spawn.y);
@@ -176,24 +176,40 @@ const $ = (id) => document.getElementById(id);
 const TITLE_ENV = { phase: 2, daylight: 0.78, hour: 18.4, weather: WEATHERS[0], wind: { x: 0.3, y: 0.1 } };
 let titleT = 0, hasSave = false, newArmed = 0;
 
-// Tim proudly holding up his catch, for the front page.
+// The in-game guide (whoever's on duty this term), rendered in 3D for the front page, proudly holding up his catch.
 function drawTitleTim() {
   const c = document.getElementById('titleTim');
   if (!c) return;
-  const g = c.getContext('2d');
-  g.clearRect(0, 0, c.width, c.height);
-  // Body first, then the rod held up in front of him (his hand drawn over the grip), the line and a big trout.
-  g.save(); g.translate(12, 20); g.scale(4.6, 4.6);
-  Folk.draw(g, TIM_PAL, 'down', 0, 'grip');
-  g.restore();
-  const hx = 40 * 4.6 + 12, hy = 58 * 4.6 + 20;
-  g.lineCap = 'round';
-  g.strokeStyle = '#1a1410'; g.lineWidth = 9; g.beginPath(); g.moveTo(hx, hy); g.quadraticCurveTo(hx + 70, hy - 210, hx + 96, hy - 250); g.stroke();
-  g.strokeStyle = '#C9A86A'; g.lineWidth = 5; g.beginPath(); g.moveTo(hx, hy); g.quadraticCurveTo(hx + 70, hy - 210, hx + 96, hy - 250); g.stroke();
-  g.strokeStyle = '#EEE7D7'; g.lineWidth = 2; g.beginPath(); g.moveTo(hx + 96, hy - 250); g.lineTo(hx + 92, hy - 150); g.stroke();
-  Fish.drawPortrait(g, SPECIES_BY_ID.rainbow, hx + 92, hy - 110, 130, false, Math.PI / 2 - 0.2);
-  // His fist wrapped round the rod butt.
-  g.fillStyle = TIM_PAL.vest; g.strokeStyle = '#1a1410'; g.lineWidth = 4; g.beginPath(); g.arc(hx, hy, 15, 0, 7); g.fill(); g.stroke();
+  const g = c.getContext('2d'), W = c.width, H = c.height, k = 2;
+  g.clearRect(0, 0, W, H);
+  let r;
+  try { r = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true }); } catch (e) { return; }
+  r.setSize(W * k, H * k, false); r.setClearColor(0x000000, 0);
+  const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, W / H, 0.1, 50);
+  scene.add(new THREE.HemisphereLight(0xfff4e0, 0x6a5a4a, 0.75));
+  const sun = new THREE.DirectionalLight(0xffffff, 0.75); sun.position.set(-2, 4, 5); scene.add(sun);
+  const guide = Tim.guide(), m = Models.person({ ...guide.pal, female: guide.she }), rig = m.userData.rig;
+  rig.yaw.rotation.y = -Math.PI / 2 + 0.35; // three-quarters toward us
+  Models.pose(rig, { pose: 'normal', t: 1.2 });
+  rig.armL.rotation.set(0.25, 0, 1.15); rig.armR.rotation.set(-0.12, 0, -0.15); // rod in his left fist, out to the side
+  for (const l of rig.lids) l.scale.y = 0.001;
+  rig.head.rotation.set(0, 0.2, 0.05);
+  scene.add(m);
+  cam.position.set(0.6, 1.85, 3.9); cam.lookAt(0.6, 1.0, 0);
+  m.updateMatrixWorld(true);
+  // The rod: from his fist up and out to the right, bending under the fish.
+  const hand = rig.armL.children[rig.armL.children.length - 1].getWorldPosition(new THREE.Vector3()), tip = hand.clone().add(new THREE.Vector3(0.6, 1.15, 0.1));
+  const rod = Models.rod('#C9A86A');
+  Models.setRod(rod, hand.clone().add(new THREE.Vector3(-0.08, -0.12, 0)), hand.clone().add(new THREE.Vector3(0.38, 0.9, 0.1)), tip, 0.026);
+  scene.add(rod);
+  r.render(scene, cam);
+  g.drawImage(r.domElement, 0, 0, W, H);
+  // The line and a big trout hanging off the tip, drawn on top.
+  const toPx = (v) => { const p = v.clone().project(cam); return [(p.x + 1) / 2 * W, (1 - p.y) / 2 * H]; };
+  const [tx, ty] = toPx(tip), [fx, fy] = toPx(tip.clone().add(new THREE.Vector3(-0.05, -0.75, 0)));
+  g.lineCap = 'round'; g.strokeStyle = '#EEE7D7'; g.lineWidth = 2; g.beginPath(); g.moveTo(tx, ty); g.lineTo(fx, fy); g.stroke();
+  Fish.drawPortrait(g, SPECIES_BY_ID.rainbow, fx, fy + 42, 115, false, Math.PI / 2 - 0.2);
+  rod.geometry.dispose(); r.dispose(); r.forceContextLoss();
 }
 
 function refreshTitle() {
@@ -211,6 +227,7 @@ function refreshTitle() {
 }
 
 function showTitle() {
+  drawTitleTim();
   if (Sfx.ctx && Settings.music) setTimeout(() => { if (Game.mode === 'title') Music.play(); }, 400);
   Game.mode = 'title';
   $('title').classList.remove('hidden');
@@ -404,6 +421,7 @@ function frame(now) {
       Crabs.update(dt);
       Waypoint.update(dt);
       Prison.update(dt);
+      CoastGuard.update(dt);
       Bodies.update();
       Thief.update(dt);
       Forage.update(); Poison.update(dt); Snakes.update(dt); Ducks.update(dt); Hunters.update(dt);
@@ -468,7 +486,6 @@ window.addEventListener('load', () => {
   const saved = Game.load();
   if (!saved) Game.newGame((Math.random() * 1e9) | 0);
   buildWorld(Game.seed, saved ? { x: saved.px, y: saved.py } : null);
-  drawTitleTim();
   showTitle();
   requestAnimationFrame(frame);
 });
