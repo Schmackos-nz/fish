@@ -37,6 +37,7 @@ const Player = {
     if ((F === 'charging' || F === 'flying') || Menus.open) ix = iy = 0;
     const free = F === 'idle' && !Menus.open;
     if (Bikes.riding) { Bikes.ride(dt, ix, iy); return; }
+    if (Boats.riding) { Boats.ride(dt, ix, iy); return; }
 
     // Moves: Space jump; C crouches — or, while running, drops you into a slide.
     this.rollCool = Math.max(0, this.rollCool - dt);

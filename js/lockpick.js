@@ -7,13 +7,18 @@ const LOCK_STAGES = ['pins', 'latches', 'dial'];
 const LockPick = {
   r: null, alert: 0, stage: 0, stages: [], raf: 0, last: 0, msg: '', msgT: 0,
 
+  openBoat(b) {
+    this.r = null; this.house = null; this.boat = b;
+    this.start(false, 1, `${b.owner}'s jetski. One ignition to hot-wire — every slip makes noise.`);
+  },
+
   open(r) {
-    this.r = r; this.house = null;
+    this.r = r; this.house = null; this.boat = null;
     this.start(BIKE_BY_ID[r.bikeId].price > 800, 1, `${r.name}'s ${BIKE_BY_ID[r.bikeId].name} · plate ${r.plate}. One lock between you and the ignition — every slip makes noise.`);
   },
 
   openHouse(b) {
-    this.r = null; this.house = b;
+    this.r = null; this.house = b; this.boat = null;
     const owner = Npcs.list.find((n) => n.home === b);
     const n = b.big ? 3 : U.hash2(b.x, b.y, 7) < 0.45 ? 2 : 1; // big houses: 3; some cottages have a deadbolt
     this.start(!!b.big, n, `${b.name}'s front door. ${['One lock', 'Two locks', 'Three locks'][n - 1]} between you and whatever's inside${owner && owner.state === 'home' ? ' — and someone\'s HOME' : ''}. Every slip makes noise.`);
@@ -71,6 +76,7 @@ const LockPick = {
   rate() {
     let owner = 99;
     if (this.r) { const p = Bikes.riderPos(this.r); owner = U.dist(p.x, p.y, Player.x, Player.y); }
+    else if (this.boat) { const o = Npcs.list.find((n) => n.name === this.boat.owner); if (o) owner = U.dist(o.x, o.y, Player.x, Player.y); }
     else { const o = Npcs.list.find((n) => n.home === this.house); if (o) owner = o.state === 'home' ? 6 : U.dist(o.x, o.y, Player.x, Player.y); }
     const law = [...Wardens.list, ...Wanted.units].some((w) => U.dist(w.x, w.y, Player.x, Player.y) < 15);
     const night = Game.env.hour < 5 || Game.env.hour >= 22;
@@ -173,6 +179,7 @@ const LockPick = {
   success() {
     const loud = this.alert > 70;
     this.close();
+    if (this.boat) { Boats.steal(this.boat, !loud); return; }
     if (this.house) {
       const b = this.house;
       b.forcedDay = Game.env.day; // the lock's busted for the rest of the day
@@ -189,6 +196,7 @@ const LockPick = {
     const r = this.r;
     this.close();
     Sfx.fail();
+    if (this.boat) { Wanted.crime(1.5); Hud.toast('The jetski\'s alarm whoops! Someone\'s calling it in.', UI.bad, 2.6); return; }
     if (this.house) {
       const b = this.house, o = Npcs.list.find((n) => n.home === b);
       Hud.toast('A neighbour spots you jimmying ' + b.name + '\'s door. Breaking and entering!', UI.bad, 3);

@@ -61,7 +61,7 @@ const Game = {
     this.wood = 0; this.chopped = []; this.fires = [];
     this.energy = 100; this.food = 100; this.pantry = [{ name: 'Bread roll', energy: 15 }, { name: 'Bread roll', energy: 15 }];
     this.ingredients = { batter: 0, herbs: 0 }; this.storage = emptyStorage();
-    this.bike = null; this.fuel = 0; this.vpermits = []; this.contest = null; this.trophies = []; this.poison = null; this.picked = {}; this.decay = { b: {}, rubbish: [] }; this.staff = null; this.townAway = []; this.thief = null; this.safes = {}; this.repute = 0; this.bladder = 10; this.bowels = 5; this.holes = []; this.poos = []; this.smears = []; this.hotbar = DEFAULT_HOTBAR.slice(); this.waypoint = null; this.impound = null;
+    this.bike = null; this.fuel = 0; this.vpermits = []; this.contest = null; this.trophies = []; this.poison = null; this.picked = {}; this.decay = { b: {}, rubbish: [] }; this.staff = null; this.townAway = []; this.thief = null; this.safes = {}; this.repute = 0; this.bladder = 10; this.bowels = 5; this.holes = []; this.poos = []; this.smears = []; this.hotbar = DEFAULT_HOTBAR.slice(); this.waypoint = null; this.impound = null; this.boat = null;
     this.home = null; this.rentDebt = 0; this.lastDay = 1; this.weed = 0; this.seeds = 0; this.plants = [];
     this.permits = { town: true }; // the town lake permit comes with the cabin
     this.spray = 3;
@@ -73,7 +73,7 @@ const Game = {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         seed: this.seed, money: this.money, lures: this.lures, owned: this.owned, drag: this.drag,
         gear: { rod: this.gear.rod.id, reel: this.gear.reel.id, line: this.gear.line.id },
-        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords, ammo: this.ammo, spray: this.spray, permits: this.permits, guns: this.guns, weapon: this.weapon, ammoX: this.ammoX, wood: this.wood, chopped: this.chopped, fires: (Camp.group ? Camp.fires : this.fires).map((f) => ({ x: f.x, y: f.y, until: f.until })), energy: this.energy, food: this.food, pantry: this.pantry, ingredients: this.ingredients, storage: this.storage, home: this.home, rentDebt: this.rentDebt, lastDay: this.lastDay, weed: this.weed, seeds: this.seeds, plants: this.plants, bike: this.bike, fuel: this.fuel, vpermits: this.vpermits, contest: this.contest, trophies: this.trophies, poison: this.poison, picked: this.picked, staff: this.staff, townAway: this.townAway, thief: this.thief, safes: this.safes, repute: this.repute, bladder: this.bladder, bowels: this.bowels, holes: this.holes, hotbar: this.hotbar, waypoint: this.waypoint, impound: this.impound, poos: (this.poos || []).map((p) => ({ x: p.x, y: p.y, day: p.day, smeared: p.smeared })), smears: (this.smears || []).map((s) => ({ x: s.x, y: s.y, ang: s.ang, r: s.r, day: s.day })), decay: this.decay && { b: this.decay.b, rubbish: this.decay.rubbish.map((r) => ({ x: r.x, y: r.y, kind: r.kind, r: r.r })) },
+        creel: this.creel, creelMax: this.creelMax, journal: this.journal, stats: this.stats, npcRecords: this.npcRecords, ammo: this.ammo, spray: this.spray, permits: this.permits, guns: this.guns, weapon: this.weapon, ammoX: this.ammoX, wood: this.wood, chopped: this.chopped, fires: (Camp.group ? Camp.fires : this.fires).map((f) => ({ x: f.x, y: f.y, until: f.until })), energy: this.energy, food: this.food, pantry: this.pantry, ingredients: this.ingredients, storage: this.storage, home: this.home, rentDebt: this.rentDebt, lastDay: this.lastDay, weed: this.weed, seeds: this.seeds, plants: this.plants, bike: this.bike, fuel: this.fuel, vpermits: this.vpermits, contest: this.contest, trophies: this.trophies, poison: this.poison, picked: this.picked, staff: this.staff, townAway: this.townAway, thief: this.thief, safes: this.safes, repute: this.repute, bladder: this.bladder, bowels: this.bowels, holes: this.holes, hotbar: this.hotbar, waypoint: this.waypoint, impound: this.impound, boat: this.boat, poos: (this.poos || []).map((p) => ({ x: p.x, y: p.y, day: p.day, smeared: p.smeared })), smears: (this.smears || []).map((s) => ({ x: s.x, y: s.y, ang: s.ang, r: s.r, day: s.day })), decay: this.decay && { b: this.decay.b, rubbish: this.decay.rubbish.map((r) => ({ x: r.x, y: r.y, kind: r.kind, r: r.r })) },
         px: Player.x, py: Player.y, hour: this.env.hour, day: this.env.day, weather: this.env.weather.id,
       }));
     } catch (e) { /* storage unavailable: play on without saving */ }
@@ -90,7 +90,7 @@ const Game = {
       this.permits = s.permits || { town: true };
       this.food = s.food === undefined ? (s.energy === undefined ? 100 : s.energy) : s.food; // old saves: energy meant food
       for (const k of ['guns', 'weapon', 'ammoX', 'wood', 'chopped', 'fires']) if (s[k] !== undefined) this[k] = s[k];
-      for (const k of ['energy', 'pantry', 'ingredients', 'storage', 'home', 'rentDebt', 'lastDay', 'weed', 'seeds', 'plants', 'bike', 'fuel', 'vpermits', 'contest', 'trophies', 'poison', 'picked', 'decay', 'staff', 'townAway', 'thief', 'safes', 'repute', 'bladder', 'bowels', 'holes', 'poos', 'smears', 'hotbar', 'waypoint', 'impound']) if (s[k] !== undefined) this[k] = s[k];
+      for (const k of ['energy', 'pantry', 'ingredients', 'storage', 'home', 'rentDebt', 'lastDay', 'weed', 'seeds', 'plants', 'bike', 'fuel', 'vpermits', 'contest', 'trophies', 'poison', 'picked', 'decay', 'staff', 'townAway', 'thief', 'safes', 'repute', 'bladder', 'bowels', 'holes', 'poos', 'smears', 'hotbar', 'waypoint', 'impound', 'boat']) if (s[k] !== undefined) this[k] = s[k];
       Object.assign(this, { money: s.money, lures: s.lures, owned: s.owned, drag: s.drag, creel: s.creel, creelMax: s.creelMax, journal: s.journal, stats: s.stats });
       this.gear = {
         rod: RODS.find((r) => r.id === s.gear.rod) || RODS[0],
@@ -156,7 +156,7 @@ function buildWorld(seed, savedPos) {
   Floaters.init();
   Animals.init();
   Camp.init();
-  Forage.init(); Snakes.init(); Ducks.init(); Hunters.init(); Decay.init(); Staff.init(); Needs.init(); Seats.init(); Crabs.init(); Farts.init(); Waypoint.init();
+  Forage.init(); Snakes.init(); Ducks.init(); Hunters.init(); Decay.init(); Staff.init(); Needs.init(); Seats.init(); Crabs.init(); Farts.init(); Waypoint.init(); Boats.init();
   for (const n of Npcs.list) if (n.home && Math.random() < 0.2) { n.state = 'home'; n.homeT = Math.random() * 90; }
   if (savedPos && !World.blocked(savedPos.x, savedPos.y)) Player.place(savedPos.x, savedPos.y);
   else Player.place(World.spawn.x, World.spawn.y);
@@ -443,7 +443,7 @@ function frame(now) {
     Wanted.render(dt);
     Arsenal.render(dt);
     Camp.render(dt);
-    Snakes.render(); Ducks.render(); Hunters.render(); Decay.render(); Staff.render(); Needs.render(); Crabs.render(); Waypoint.render();
+    Snakes.render(); Ducks.render(); Hunters.render(); Decay.render(); Staff.render(); Needs.render(); Crabs.render(); Waypoint.render(); Boats.render(dt);
     Scene3D.render(Game.time);
     Hud.draw();
     saveT += dt;

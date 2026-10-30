@@ -334,6 +334,7 @@ const Interact = {
   best() {
     const P = Player, cands = [];
     const add = (x, y, r, label, run) => { const d = U.dist(P.x, P.y, x, y); if (d < r) cands.push({ d, x, y, label, run }); };
+    if (Boats.interactions(add, cands)) { cands.sort((a, b) => a.d - b.d); return cands[0] || null; }
     if (Bikes.riding) {
       const pump = Bikes.nearPump(P.x, P.y);
       if (pump && Game.fuel < 99) return { d: 0, x: pump.x, y: pump.y, label: 'Fill up — ' + U.fmtMoney(Math.ceil((100 - Game.fuel) * 0.2)), run: () => Bikes.fillUp() };

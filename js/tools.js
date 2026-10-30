@@ -14,7 +14,7 @@ const Tools = {
   current: 'rod', repelT: 0, looking: false, look: { x: 0, y: 0 }, mistT: 0,
 
   select(id) {
-    if (Bikes.riding) { Hud.toast('Hands on the bars! Get off first (E).', UI.muted, 1.4); return; }
+    if (Bikes.riding || (Boats.riding && Boats.driving)) { Hud.toast('Hands on the controls! Let go first (E).', UI.muted, 1.4); return; }
     if (Fishing.state !== 'idle') { Hud.toast('Reel in first (Space) before you swap tools.', '#f2c14e', 1.6); return; }
     // Pressing 2 again cycles through your guns; past the last one it goes away.
     if (id === 'gun' && this.current === 'gun' && Arsenal.cycle()) { Sfx.bail(); Hud.toast(Arsenal.weapon().name + ' · ' + Arsenal.ammo(Arsenal.weapon().ammo) + ' ' + AMMO[Arsenal.weapon().ammo].name.toLowerCase(), UI.ink, 1.4); return; }

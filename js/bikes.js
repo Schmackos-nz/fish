@@ -617,6 +617,7 @@ const Bikes = {
       <h3>Dirt bikes</h3>${BIKES.filter((b) => !b.kind).map(row).join('')}
       <h3>Go-karts</h3>${BIKES.filter((b) => b.kind === 'kart').map(row).join('')}
       ${Game.impound ? `<h3>Impound yard</h3><div class="row"><div><b>Your ${BIKE_BY_ID[Game.impound.id].name} · plate ${Game.impound.plate}</b><div class="desc">Seized for dangerous driving. Pay the release fee and it's yours again.</div></div><button class="primary" data-unimpound ${Game.money < 150 ? 'disabled' : ''}>Release — ${U.fmtMoney(150)}</button></div>` : ''}
+      <h3>Boats</h3>${Object.entries(BOAT_TYPES).map(([k, t]) => `<div class="row"><div><b>${t.name}</b><div class="desc">${k === 'jetski' ? 'Fast, loud, very fun.' : 'Stand up and fish from it; take the tiller to motor about.'} Delivered to the town dock.</div></div>${Game.boat && Game.boat.type === k && Game.boat.owner === 'you' ? '<span class="owned">✓ Yours</span>' : `<button class="primary" data-boat="${k}" ${Game.money < t.price ? 'disabled' : ''}>Buy ${U.fmtMoney(t.price)}</button>`}</div>`).join('')}
       <h3>Fuel &amp; the law</h3><div class="desc">Tank ${Math.round(Game.fuel)}% — fill up at the gas station at the bottom of the main street. The pump camera reads plates: a ride that isn't registered to you gets reported, and wardens check permits on sight.</div>
       ${Game.bike && !this.ownsIt() ? '<div class="desc" style="margin-top:8px">No trade-ins on stolen goods — buying a new ride leaves that one where it is.</div>' : ''}`, (el) => {
       const ub = el.querySelector('[data-unimpound]');
@@ -625,6 +626,16 @@ const Bikes = {
         Game.bike = { ...Game.impound, x: d.x - 2.6, y: d.y + 1.6, ang: Math.PI / 2 }; Game.impound = null;
         this.syncMine(); Sfx.coin(); Hud.toast('Released from the impound. Ride nicely this time.', UI.good, 2.4); Game.save(); this.openShop();
       };
+      el.querySelectorAll('[data-boat]').forEach((btn) => { btn.onclick = () => {
+        const k = btn.dataset.boat, t = BOAT_TYPES[k]; Game.money -= t.price;
+        for (const old of Boats.list.filter((b) => b.mine && b.owner === 'you')) { Boats.group.remove(old.mesh); Boats.list.splice(Boats.list.indexOf(old), 1); }
+        const d = World.dockEnd; let spot = null;
+        for (const [dx, dy] of [[1.9, 1], [-1.9, 1], [2.4, 3], [-2.4, 3], [0, -1.6]]) if (!spot && Boats.floats(d.x + dx, d.y + dy)) spot = { x: d.x + dx, y: d.y + dy };
+        spot = spot || { x: d.x, y: d.y - 2 };
+        const b = Boats.add({ type: k, x: spot.x, y: spot.y, ang: -Math.PI / 2, owner: 'you', mine: true });
+        Game.boat = { type: k, x: b.x, y: b.y, ang: b.ang, owner: 'you' };
+        Sfx.coin(); Hud.toast('Your ' + t.name.toLowerCase() + ' is moored at the end of the town dock.', UI.good, 2.6); Game.save(); this.openShop();
+      }; });
       el.querySelectorAll('[data-bike]').forEach((btn) => { btn.onclick = () => {
         const b = BIKE_BY_ID[btn.dataset.bike];
         Game.money -= b.price - trade;

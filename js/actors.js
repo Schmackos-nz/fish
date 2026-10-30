@@ -157,17 +157,19 @@ const Actors = {
     const S = riding ? seatOf(Game.bike.id) : null;
     if (riding) { const a = p.face; px += Math.cos(a) * S.seatX; py += Math.sin(a) * S.seatX; y += S.seatY; } // on the seat
     if (Seats.sitting) y += Seats.sitting.h - 0.12; // on the seat
+    if (Boats.riding) { y = Boats.deckY() + p.z; const off = Boats.riding.type === 'jetski' ? -0.15 : Boats.driving ? -0.62 : -0.1; px += Math.cos(p.face) * off; py += Math.sin(p.face) * off; } // aboard (at the tiller when driving)
     this.player.position.set(px, y, py);
     this.rig.yaw.rotation.y = -p.face;
     Models.pose(this.rig, {
       moving: p.moving && !riding && !p.rolling, phase: p.walkT, t: Game.time, crouch: p.crouch && !p.rolling,
-      pose: Seats.sitting ? 'kart' : riding ? S.pose : p.rolling ? 'slide' : holding ? 'grip' : 'normal',
+      pose: Seats.sitting ? 'kart' : Boats.riding && Boats.riding.type === 'jetski' ? 'ride' : Boats.driving ? 'normal' : riding ? S.pose : p.rolling ? 'slide' : holding ? 'grip' : 'normal',
     });
     if (Tools.punchT > 0) { // jab: right arm shoots straight out and back
       const k = Math.sin((1 - Tools.punchT / 0.4) * Math.PI);
       this.rig.armR.rotation.set(0, 0, 0.3 + k * 1.35); this.rig.upper.rotation.y = -k * 0.35;
     } else this.rig.upper.rotation.y = 0;
     if (riding) Bikes.holdBars(this.rig, Game.bike.id, p.x, p.y, p.face, base + p.z);
+    if (Boats.riding) Boats.posePlayer(this.rig);
     this.handWorld = Models.handPos(this.rig, this.handWorld || new THREE.Vector3());
     // While wading the shadow becomes a foam ring at the waterline.
     this.playerShadow.position.set(p.x, p.wading ? 0.03 : Math.max(base, 0.01) + 0.015, p.y);

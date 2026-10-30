@@ -2,6 +2,11 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '2.2', name: 'On the Water', date: '31 Oct 2026', notes: [
+    ['new', 'Jetskis and fishing dinghies. Ride a jetski (Space to jump the wake), or stand in a dinghy to fish and press E to take the outboard and motor about'],
+    ['new', 'A few boats are moored by the town dock. Hot-wire a jetski (lockpick) or quietly untie a dinghy (do it with nobody watching)'],
+    ['new', 'Revs sells jetskis ($900) and dinghies ($380), delivered to the town dock'],
+  ] },
   { v: '2.1', name: 'Take a Seat', date: '30 Oct 2026', notes: [
     ['new', 'Traffic enforcement: bikers and kart drivers who crash into buildings or run into people in front of a warden get pulled over, arrested, and their ride impounded for a couple of days'],
     ['new', 'Same goes for you: crash into a building or mow someone down near a warden and they chase you. Get caught and your bike goes to the impound (Revs releases it for $150)'],

@@ -8,7 +8,7 @@ const Bodies = {
   // Everyone standing on their own two feet right now: [object, x key, y key].
   list() {
     const out = [];
-    if (!Bikes.riding && !Seats.sitting) out.push([Player, 'x', 'y', true]);
+    if (!Bikes.riding && !Seats.sitting && !Boats.riding) out.push([Player, 'x', 'y', true]);
     for (const n of Npcs.list) if (!n.away && !['home', 'bush', 'ko', 'dead'].includes(n.state)) out.push([n, 'x', 'y']);
     for (const w of Wardens.list) if (w.state !== 'ko' && w.state !== 'dead') out.push([w, 'x', 'y']);
     for (const h of Hunters.list) if (!h.ko) out.push([h, 'x', 'y']);
