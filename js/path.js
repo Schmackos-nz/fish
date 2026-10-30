@@ -3,15 +3,16 @@
 'use strict';
 
 const Path = {
+  wade: false,
   okTile(x, y) {
     if (!World.inB(x, y)) return false;
-    return !World.blocked(x + 0.5, y + 0.5) && World.depthAt(x + 0.5, y + 0.5) < 0.35;
+    return footOK(x + 0.5, y + 0.5, this.wade);
   },
 
   // Line of sight between two points, stepping along it.
   clear(ax, ay, bx, by) {
     const d = U.dist(ax, ay, bx, by), n = Math.ceil(d / 0.3);
-    for (let i = 1; i <= n; i++) { const t = i / n, x = ax + (bx - ax) * t, y = ay + (by - ay) * t; if (!footOK(x, y)) return false; }
+    for (let i = 1; i <= n; i++) { const t = i / n, x = ax + (bx - ax) * t, y = ay + (by - ay) * t; if (!footOK(x, y, this.wade)) return false; }
     return true;
   },
 
@@ -59,13 +60,15 @@ const Path = {
   // Move e toward goal along a cached path. Returns true when there.
   follow(e, goal, speed, dt) {
     // Try a tight search first; rivers often mean a long way round to a bridge, so widen if needed.
+    this.wade = !!e.waders;
     if (!e.path || e.pathGoal !== goal) { e.path = this.find(e.x, e.y, goal.x, goal.y) || this.find(e.x, e.y, goal.x, goal.y, 60000, 90) || [{ x: goal.x, y: goal.y }]; e.pathGoal = goal; }
     let wp = e.path[0];
     while (wp && U.dist(e.x, e.y, wp.x, wp.y) < 0.25 && e.path.length > 1) { e.path.shift(); wp = e.path[0]; }
     if (!wp) return true;
     const d = U.dist(e.x, e.y, wp.x, wp.y), a = Math.atan2(wp.y - e.y, wp.x - e.x), step = Math.min(speed * dt, d);
     const nx = e.x + Math.cos(a) * step, ny = e.y + Math.sin(a) * step;
-    if (footOK(nx, ny)) { e.x = nx; e.y = ny; } else e.path = null; // something changed — replan
+    if (footOK(nx, ny, e.waders)) { e.x = nx; e.y = ny; } else e.path = null; // something changed — replan
+    this.wade = false;
     e.heading = e.face = a;
     if (unstick(e, dt)) e.path = null;
     return e.path && e.path.length <= 1 && U.dist(e.x, e.y, goal.x, goal.y) < 0.3;

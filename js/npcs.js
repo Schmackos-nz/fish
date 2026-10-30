@@ -34,14 +34,15 @@ const SAY = {
 };
 
 // Anyone on foot: somewhere you can actually stand (not in a wall, not out of your depth).
-function footOK(x, y) { return !World.blocked(x, y) && World.depthAt(x, y) < 0.35; }
+// Most locals treat any water as off-limits; those in waders know the shallows are fine.
+function footOK(x, y, wade) { return !World.blocked(x, y) && (wade ? World.depthAt(x, y) < 0.35 : !World.isWater(x, y)); }
 
 // Called while someone's trying to walk somewhere. Every 1.5 s, if they've barely moved (wedged on a
 // tree, sliding along a wall) or they're standing somewhere they shouldn't be (in a wall, in deep
 // water), hop them to the nearest good footing. kx/ky name the position fields (bikers on foot use px/py).
 function unstick(e, dt, kx = 'x', ky = 'y') {
   e._uT = (e._uT || 0) + dt;
-  const x0 = e[kx], y0 = e[ky], bad = !footOK(x0, y0);
+  const x0 = e[kx], y0 = e[ky], bad = !footOK(x0, y0, e.waders);
   if (e._uT < 1.5 && !bad) return false;
   const moved = e._ux === undefined ? 99 : U.dist(x0, y0, e._ux, e._uy);
   e._ux = x0; e._uy = y0; e._uT = 0;
@@ -49,13 +50,13 @@ function unstick(e, dt, kx = 'x', ky = 'y') {
   e._stuckN = (e._stuckN || 0) + 1;
   for (let r = 0.6; r < 8; r += 0.4) for (let k = 0; k < 12; k++) {
     const a = (k / 12) * Math.PI * 2 + e._stuckN * 0.7, x = x0 + Math.cos(a) * r, y = y0 + Math.sin(a) * r;
-    if (footOK(x, y)) { e[kx] = x; e[ky] = y; e._ux = x; e._uy = y; return true; }
+    if (footOK(x, y, e.waders)) { e[kx] = x; e[ky] = y; e._ux = x; e._uy = y; return true; }
   }
   // Way out in the middle of a lake: make for the nearest shore and find dry land there.
   const sh = World.nearestShore(x0, y0);
   for (let r = 0; r < 6; r += 0.4) for (let k = 0; k < 12; k++) {
     const a = (k / 12) * Math.PI * 2, x = sh.x + Math.cos(a) * r, y = sh.y + Math.sin(a) * r;
-    if (footOK(x, y)) { e[kx] = x; e[ky] = y; e._ux = x; e._uy = y; return true; }
+    if (footOK(x, y, e.waders)) { e[kx] = x; e[ky] = y; e._ux = x; e._uy = y; return true; }
   }
   return false;
 }
@@ -164,7 +165,7 @@ const Npcs = {
   // ---------- simulation ----------
   update(dt) {
     for (const n of this.list) {
-      if (n.state === 'ko' || n.state === 'dead' || n.state === 'armed') continue; // handled by Wanted
+      if (n.state === 'ko' || n.state === 'dead' || n.state === 'armed' || n.state === 'jailed') continue; // handled elsewhere
       n.t -= dt;
       n.bubbleT = Math.max(0, n.bubbleT - dt);
       if (n.poseT !== undefined) { n.poseT -= dt; if (n.poseT <= 0) { n.pose = 'normal'; n.poseT = undefined; } }
@@ -425,6 +426,8 @@ const Npcs = {
   buildMeshes(n) {
     this.drawSprite(n.palette, 'down', 0, 'normal'); // fills in hat style etc. on the palette
     n.palette.female = Models.isFemaleName(n.name);
+    if (n.waders === undefined) n.waders = U.hash2(n.name.length * 7, n.name.charCodeAt(0), 3) < 0.35;
+    if (n.waders) n.palette = { ...n.palette, pants: '#3A4A2A', waders: true };
     n.mesh = Models.person(n.palette);
     n.rig = n.mesh.userData.rig;
     n.shadow = new THREE.Mesh(new THREE.CircleGeometry(0.3, 10), new THREE.MeshBasicMaterial({ color: 0, transparent: true, opacity: 0.25, depthWrite: false }));
@@ -449,14 +452,14 @@ const Npcs = {
       const base = Scene3D.standH(n.x, n.y);
       const a = n.face;
       const dir = Math.abs(Math.cos(a)) > Math.abs(Math.sin(a)) ? 'side' : Math.sin(a) > 0 ? 'down' : 'up';
-      const walking = n.state === 'walk' || n.state === 'mob';
+      const walking = n.state === 'walk' || n.state === 'mob' || (n.state === 'jailed' && n.yardGoal && U.dist(n.x, n.y, n.yardGoal.x, n.yardGoal.y) > 0.3);
       n.mesh.position.set(n.x, base, n.y);
       n.rig.yaw.rotation.y = n.pose === 'normal' ? -a : Math.PI * -0.5; // face the camera to show off
       Models.pose(n.rig, { moving: walking, phase: n.walkT, t: Game.time + n.x, pose: n.pose !== 'normal' ? n.pose : walking ? 'normal' : 'grip' });
       n.shadow.position.set(n.x, Math.max(base, 0.01) + 0.015, n.y);
 
       // Rod: up and bent during a fight, laid back mid-cast, hidden while walking or posing.
-      const showRod = !walking && n.pose === 'normal' && !['brawl', 'ko', 'armed', 'mob'].includes(n.state);
+      const showRod = !walking && n.pose === 'normal' && !['brawl', 'ko', 'armed', 'mob', 'jailed'].includes(n.state);
       n.rod.visible = n.line.visible = showRod;
       const hand = Models.handPos(n.rig);
       const fighting = n.state === 'fight';

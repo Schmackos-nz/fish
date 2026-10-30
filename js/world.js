@@ -336,6 +336,7 @@ const World = {
     this.tim = { x: cx - 2.3, y: sy + 2.2 }; // the guide's patch, where the street meets the dock
     this.placeDusty(rng, cx, cy);
     this.placeHouses(rng);
+    this.placePrison(rng);
 
     // Footpaths from town to each lake and out to the rivers.
     for (const l of this.lakes) if (l !== lake && l.kind === K.LAKE) this.carvePath(cx, cy + 19, l.x, l.y);
@@ -455,6 +456,26 @@ const World = {
   },
 
   // Little cottages around the valley: most belong to the anglers, a few are for rent.
+  placePrison(rng) {
+    for (let t = 0; t < 4000; t++) {
+      const a = rng() * Math.PI * 2, d = 32 + rng() * 22;
+      const x = Math.round(this.town.x + Math.cos(a) * d), y = Math.round(this.town.y + 6 + Math.sin(a) * d), w = 8, h = 5;
+      if (!this.inB(x - 3, y - 3) || !this.inB(x + w + 3, y + h + 9)) continue;
+      if (!this.areaFree(x - 2, y - 2, w + 4, h + 10) || this.waterNear(x, y, w, h + 7, 3) || this.plotSlope(x - 2, y - 2, w + 4, h + 10) > 1.6) continue;
+      if (this.buildings.some((b) => U.dist(b.x + b.w / 2, b.y + b.h / 2, x + w / 2, y + h / 2) < 14)) continue;
+      this.levelPlot(x - 2, y - 2, w + 4, h + 10);
+      for (let yy = y - 1; yy <= y + h + 10; yy++) for (let xx = x - 2; xx <= x + w + 1; xx++) {
+        const i = this.idx(xx, yy); this.obj[i] = O.NONE;
+        if (this.tile[i] === T.FOREST || this.tile[i] === T.MEADOW || this.tile[i] === T.MUD) this.tile[i] = yy > y + h ? T.PATH : T.GRASS;
+      }
+      const b = { x, y, w, h, face: 'south', type: 'prison', name: 'Valley Prison' };
+      this.buildings.push(b);
+      for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + w; xx++) this.tile[this.idx(xx, yy)] = T.FLOOR;
+      this.carvePath(this.town.x, this.town.y + 19, x + w / 2, y + h + 8);
+      return;
+    }
+  },
+
   placeHouses(rng) {
     this.houses = [];
     for (let tries = 0; tries < 5000 && this.houses.length < 14; tries++) {

@@ -3,6 +3,9 @@
 
 const PATCH_NOTES = [
   { v: '2.2', name: 'On the Water', date: '31 Oct 2026', notes: [
+    ['new', 'The Valley Prison, just out of town. You do your time there (and walk out the gate), and so do locals: inmates mill about the fenced yard until their release'],
+    ['new', 'Wardens arrest locals they catch brawling or getting busy in a bush. They get the same term you would, then they are released'],
+    ['changed', 'Locals keep out of the water so they stop getting stuck. Some anglers wear waders and happily stand in the shallows. Wardens only splash in after you during a chase'],
     ['new', 'Jetskis and fishing dinghies. Ride a jetski (Space to jump the wake), or stand in a dinghy to fish and press E to take the outboard and motor about'],
     ['new', 'A few boats are moored by the town dock. Hot-wire a jetski (lockpick) or quietly untie a dinghy (do it with nobody watching)'],
     ['new', 'Revs sells jetskis ($900) and dinghies ($380), delivered to the town dock'],

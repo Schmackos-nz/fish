@@ -47,7 +47,7 @@ const Wanted = {
   // ---------- who can be shot ----------
   targets() {
     const out = [];
-    for (const n of Npcs.list) if (!n.away && !['home', 'bush', 'ko', 'dead'].includes(n.state)) out.push({ x: n.x, y: n.y, kind: 'npc', o: n });
+    for (const n of Npcs.list) if (!n.away && !['home', 'bush', 'ko', 'dead', 'jailed'].includes(n.state)) out.push({ x: n.x, y: n.y, kind: 'npc', o: n });
     for (const w of Wardens.list) if (w.state !== 'ko' && w.state !== 'dead') out.push({ x: w.x, y: w.y, kind: 'warden', o: w });
     for (const r of Bikes.riders) if (!(r.ko > 0) && !r.away) { const p = Bikes.riderPos(r); out.push({ x: p.x, y: p.y, kind: 'biker', o: r }); }
     for (const u of this.units) if (!u.ko) out.push({ x: u.x, y: u.y, kind: 'unit', o: u });

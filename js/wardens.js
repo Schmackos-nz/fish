@@ -76,6 +76,7 @@ const Wardens = {
 
       if (w.state === 'patrol') {
         if (pd > 95) { this.relocate(w, 60); continue; }
+        if (Prison.spot(w)) continue;
         // Amble from bank to bank, pausing to look over the water.
         if (!w.target || U.dist(w.x, w.y, w.target.x, w.target.y) < 0.5) {
           if (w.t > 3 + Math.random() * 4 || !w.target) {
@@ -104,6 +105,10 @@ const Wardens = {
         w.lost = pd > 20 ? w.lost + dt : 0;
         if (pd < 1.2 && !Player.rolling) return Jail.sentence([w.reason], w);
         if (w.lost > 2.5 || w.t > 25) { this.say(w, WARDEN_SAY.lost); w.state = 'patrol'; w.t = 0; w.checkCool = 90; Hud.toast('You gave ' + w.name + ' the slip.', UI.good, 2); }
+      } else if (w.state === 'collar') {
+        const [a, b] = w.collar || [];
+        if (!a || ![a.state, b.state].every((st) => ['brawl', 'bush', 'walk', 'cast', 'wait', 'chat'].includes(st))) { w.collar = null; w.state = 'patrol'; w.t = 0; }
+        else { const g = w.collarBush && w.collarAt ? w.collarAt : a; tx = g.x; ty = g.y; speed = 4; if (U.dist(w.x, w.y, g.x, g.y) < (w.collarBush ? 1.6 : 2.8)) { Prison.collar(w); } else if (w.t > 40) { w.collar = null; w.state = 'patrol'; } }
       } else if (w.state === 'pullover') {
         // Walking up to a rider they've pulled over.
         const r = w.rider;
@@ -120,7 +125,9 @@ const Wardens = {
         for (const off of [0, 0.5, 1.0, 1.6, 2.2]) {
           for (const sgn of off ? [w.side || 1, -(w.side || 1)] : [1]) {
             const a = base + off * sgn, dx = Math.cos(a) * speed * dt, dy = Math.sin(a) * speed * dt;
-            if (!World.blocked(w.x + dx, w.y + dy)) { w.x += dx; w.y += dy; w.face = a; moved = true; if (off) w.side = sgn; break; }
+            // Only a chase sends a warden splashing into the shallows after you.
+            const wet = World.isWater(w.x + dx, w.y + dy) && !(w.state === 'chase' || w.state === 'inspect') && !World.isWater(w.x, w.y);
+            if (!World.blocked(w.x + dx, w.y + dy) && !wet) { w.x += dx; w.y += dy; w.face = a; moved = true; if (off) w.side = sgn; break; }
           }
           if (moved) break;
         }
@@ -261,16 +268,16 @@ const Jail = {
     Wanted.clear();
     Decay.age(days, true); // the town goes to seed while you're away
     Game.stats.jailed = (Game.stats.jailed || 0) + 1;
-    // Out the front door of the Ranger Station (World.ranger is Dale's spot *inside* it).
-    const st = World.buildings.find((b) => b.type === 'ranger'), d = st ? World.doorOf(st) : World.spawn;
-    Player.place(d.x + 0.6, d.y + 0.6);
+    // Out through the prison gate.
+    const d = Prison.gate();
+    Player.place(d.x, d.y);
     Scene3D.target.set(Player.x, Scene3D.standH(Player.x, Player.y), Player.y);
     Tools.current = 'rod'; Gun.out = false;
     for (const w of Wardens.list) Wardens.relocate(w, 60);
     document.getElementById('jail').classList.add('hidden');
     Game.mode = 'play';
     Game.save();
-    Hud.toast('Released. Ranger Dale sells permits — keep it legal.' + (this.impounded ? ' The stolen ' + this.impounded + ' went back to its owner.' : ''), UI.accent, 3.5);
+    Hud.toast('Released from the Valley Prison. Ranger Dale sells permits — keep it legal.' + (this.impounded ? ' The stolen ' + this.impounded + ' went back to its owner.' : ''), UI.accent, 3.5);
     if (days >= 30) {
       const pct = Math.round(Decay.level() * 100), rub = Decay.state().rubbish.length;
       Life.panel(`<h2>While you were inside…</h2>

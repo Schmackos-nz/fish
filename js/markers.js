@@ -20,6 +20,7 @@ const Markers = {
       else if (b.type === 'ranger') out.push({ x: d.x, y: d.y, label: 'Ranger · Permits', icon: '🪪', color: '#E3A945' });
       else if (b.type === 'store') out.push({ x: d.x, y: d.y, label: 'General Store', icon: '🛒', color: '#E3A945' });
       else if (b.type === 'bikes') out.push({ x: d.x, y: d.y, label: 'Dirt Bikes', icon: '🏍️', color: '#E3A945' });
+      else if (b.type === 'prison') out.push({ x: d.x, y: d.y, label: 'Valley Prison', icon: '⛓️', color: '#9A9A94' });
       else if (b.type === 'clinic') out.push({ x: d.x, y: d.y, label: 'Clinic', icon: '🏥', color: '#E2584D' });
       else if (b.type === 'gas') { const p = World.pumps[0]; out.push({ x: p.x + 1.1, y: p.y + 1.2, label: 'Gas', icon: '⛽', color: '#E3A945' }); }
       else if (b.type === 'house' && Game.home && Game.home.id === b.id) out.push({ x: d.x, y: d.y, label: 'Home', icon: '🏠', color: '#7DC383' });

@@ -87,7 +87,7 @@ const Boats = {
     const b = this.riding; if (!b) return;
     for (let r = 0.8; r < 4; r += 0.3) for (let k = 0; k < 16; k++) {
       const a = k / 16 * Math.PI * 2, x = b.x + Math.cos(a) * r, y = b.y + Math.sin(a) * r;
-      if (World.tileAt(Math.floor(x), Math.floor(y)) === T.PLANK || footOK(x, y)) {
+      if (World.tileAt(Math.floor(x), Math.floor(y)) === T.PLANK || footOK(x, y, true)) {
         this.riding = null; this.driving = false; Player.place(x, y); Player.wading = World.isWater(x, y);
         if (this.prevTool) { Tools.current = this.prevTool; this.prevTool = null; }
         if (b.mine) Game.boat = { type: b.type, x: b.x, y: b.y, ang: b.ang, owner: b.owner };
@@ -99,7 +99,7 @@ const Boats = {
 
   canDisembark() {
     const b = this.riding; if (!b) return false;
-    for (let r = 0.8; r < 4; r += 0.6) for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, x = b.x + Math.cos(a) * r, y = b.y + Math.sin(a) * r; if (World.tileAt(Math.floor(x), Math.floor(y)) === T.PLANK || footOK(x, y)) return true; }
+    for (let r = 0.8; r < 4; r += 0.6) for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, x = b.x + Math.cos(a) * r, y = b.y + Math.sin(a) * r; if (World.tileAt(Math.floor(x), Math.floor(y)) === T.PLANK || footOK(x, y, true)) return true; }
     return false;
   },
 

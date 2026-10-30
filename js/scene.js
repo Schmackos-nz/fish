@@ -386,6 +386,7 @@ const Scene3D = {
       gas: { wall: 0xF4F0E6, roof: 0xD23A3A, sign: ['GAS', '#D23A3A', '#FFFFFF'] },
       bikes: { wall: 0x4a4a52, roof: 0x2a2a2e, sign: ['BIKES', '#1a1a1a', '#F2C14E'] },
       clinic: { wall: 0xF4F4F0, roof: 0x3A8AD2, sign: ['CLINIC', '#D23A3A', '#FFFFFF'] },
+      prison: { wall: 0x9A9A94, roof: 0x4A4A50, sign: ['PRISON', '#2A2A30', '#F2C14E'] },
     };
     const HOUSE_WALLS = [0xe2d3ac, 0xa9c4d2, 0xd7b0a8, 0xbfd0a0, 0xe8dcc8, 0xc8b8d8];
     const HOUSE_ROOFS = [0x7a3a2a, 0x3f5a7a, 0x5a6a3a, 0x6a4a3a, 0x8a5a2a];

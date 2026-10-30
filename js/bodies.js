@@ -9,7 +9,7 @@ const Bodies = {
   list() {
     const out = [];
     if (!Bikes.riding && !Seats.sitting && !Boats.riding) out.push([Player, 'x', 'y', true]);
-    for (const n of Npcs.list) if (!n.away && !['home', 'bush', 'ko', 'dead'].includes(n.state)) out.push([n, 'x', 'y']);
+    for (const n of Npcs.list) if (!n.away && !['home', 'bush', 'ko', 'dead'].includes(n.state)) out.push([n, 'x', 'y']); // inmates bump about the yard too
     for (const w of Wardens.list) if (w.state !== 'ko' && w.state !== 'dead') out.push([w, 'x', 'y']);
     for (const h of Hunters.list) if (!h.ko) out.push([h, 'x', 'y']);
     for (const st of Staff.list) if (st.mesh && st.mesh.visible && !Interior.active) out.push([st, 'x', 'y']);

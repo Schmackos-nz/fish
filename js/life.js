@@ -55,7 +55,7 @@ const Life = {
   // Rent is charged once per new day.
   processDays() {
     if (Game.lastDay === undefined) Game.lastDay = Game.env.day;
-    while (Game.lastDay < Game.env.day) { Game.lastDay++; this.payRent(); Decay.age(1, false); Staff.daily(); Thief.daily(); Rep.daily(); Tim.refresh(true); Game.shame = Math.max(0, (Game.shame || 0) - 1); }
+    while (Game.lastDay < Game.env.day) { Game.lastDay++; this.payRent(); Decay.age(1, false); Staff.daily(); Thief.daily(); Rep.daily(); Tim.refresh(true); Prison.daily(); Game.shame = Math.max(0, (Game.shame || 0) - 1); }
   },
 
   payRent() {
@@ -355,6 +355,7 @@ const Interact = {
       for (const b of World.buildings) {
         const dr = World.doorOf(b);
         if (b.type === 'gas') add(dr.x, dr.y, 1.6, 'Gas Station — pay at the pump', () => Hud.toast('Pay at the pump across the forecourt.', UI.muted, 1.6));
+        else if (b.type === 'prison') continue;
         else if (b.type !== 'house') { const shut = Staff.doorLabel(b); add(dr.x, dr.y, 1.6, shut || 'Enter ' + b.name + ' (' + Staff.hoursText(b.type) + ')', () => (shut ? Hud.toast(shut + '. The door\'s locked.', UI.muted, 1.8) : Interior.enter(b))); }
         else if (Game.home && Game.home.id === b.id) add(dr.x, dr.y, 1.6, 'Enter your cottage', () => Interior.enter(b));
         else if (b.unlocked) add(dr.x, dr.y, 1.6, 'Enter ' + b.name + ' (unlocked)', () => Life.enterHouse(b));
@@ -377,7 +378,7 @@ const Interact = {
       add(World.tim.x, World.tim.y, 2.6, 'Talk to ' + Tim.guide().name + ' — tips & goals', () => Tim.open());
       if (!Weed.dustyKO.ko) add(World.dusty.x, World.dusty.y, 2.4, 'Dusty — "psst…"', () => Weed.openSeeds());
       Weed.interactions(add);
-      Seats.interactions(add); Crabs.interactions(add);
+      Seats.interactions(add); Crabs.interactions(add); Prison.interactions(add);
       Needs.interactions(add);
       Staff.interactions(add);
       Camp.interactions(cands);
