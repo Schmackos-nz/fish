@@ -2,6 +2,12 @@
 'use strict';
 
 const PATCH_NOTES = [
+  { v: '2.3', name: 'Fresh Coat', date: '31 Oct 2026', notes: [
+    ['new', 'Everyone has been redrawn: shaped torsos, necks, real arms and legs, shoes with soles, belts, collars and buttons, faces with irises, noses, ears, smiles and blinking eyes, plus haircuts that differ from person to person'],
+    ['new', 'Animated grass: thousands of stylised blades sway in the wind and part around your feet, and your lantern lights them at night'],
+    ['changed', 'High-detail buildings with weatherboard and brick walls, shingle roofs with ridge caps and gutters, stone footings, panelled doors, glass with curtains, shop awnings, porch lamps, chimneys and side windows'],
+    ['changed', 'Crisper ground with fine surface detail up close, a smoother terrain mesh, and wooden plank docks'],
+  ] },
   { v: '2.2', name: 'On the Water', date: '31 Oct 2026', notes: [
     ['new', 'The Valley Prison, just out of town. You do your time there (and walk out the gate), and so do locals: inmates mill about the fenced yard until their release'],
     ['new', 'Wardens arrest locals they catch brawling or getting busy in a bush. They get the same term you would, then they are released'],
