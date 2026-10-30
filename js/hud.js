@@ -169,7 +169,7 @@ const Hud = {
     // Bottom stack: tools, then lures (rod only), then the context panel.
     const barY = H - 20 - 64;
     Tools.drawBar(this, W / 2, barY);
-    if (!Mobile.active) this.drawVitals(20, H - 20);
+    if (!Mobile.active && !Zombie.on) this.drawVitals(20, H - 20); // zombie mode shows the orbs instead
     let top = barY - 12;
     // Lures can only change with the line in, so the picker steps aside while you fish.
     if (Tools.current === 'rod' && Fishing.state === 'idle') { this.drawLureBar(W / 2, top - 50); top -= 62; } else this.slots = [];

@@ -69,7 +69,7 @@ const Game = {
   },
 
   save() {
-    if (Rogue.on || FishMode.on) return; // a roguelike run (or a fish) never touches your real save
+    if (Rogue.on || FishMode.on || Zombie.on) return; // a roguelike run, a fish, or the apocalypse never touches your real save
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         seed: this.seed, money: this.money, lures: this.lures, owned: this.owned, drag: this.drag,
@@ -229,7 +229,7 @@ function refreshTitle() {
 }
 
 function showTitle() {
-  if (Rogue.on || FishMode.on) return location.reload(); // back to the real save
+  if (Rogue.on || FishMode.on || Zombie.on) return location.reload(); // back to the real save
   if (Mud.on) Mud.stop();
   Realism.stop();
   drawTitleTim();
@@ -324,6 +324,7 @@ function wireScreens() {
   $('realBtn').onclick = () => { enterPlay(); Realism.start(); };
   $('rogueBtn').onclick = () => Rogue.start();
   $('fishBtn').onclick = () => FishMode.start();
+  $('zombieBtn').onclick = () => Zombie.start();
   // Special Modes: a sub-menu that swaps in for the main one.
   const modes = (on) => {
     $('mainMenu').classList.toggle('hidden', on); $('modeMenu').classList.toggle('hidden', !on); $('title').classList.toggle('modes', on);
@@ -482,10 +483,10 @@ function frame(now) {
     Scene3D.updateCamera(dt, { x: fx, y: fy });
     Scene3D.camDist = baseDist;
     Scene3D.updateEnv(Game.env, dt);
-    Mud.update(dt); Realism.update(); Rogue.update();
+    Mud.update(dt); Realism.update(); Rogue.update(); Zombie.update(dt);
     if (!Mud.on || Mud.style === 'dialog') {
     Actors.update(dt, Game.env);
-    FishMode.render(dt);
+    FishMode.render(dt); Zombie.render();
     Npcs.render();
     Wardens.render();
     Gun.render(dt);
@@ -529,5 +530,6 @@ window.addEventListener('load', () => {
   requestAnimationFrame(frame);
   // 'New run' from a roguelike death reloads straight into another run.
   if (sessionStorage.getItem('reelwild.autoRogue')) { sessionStorage.removeItem('reelwild.autoRogue'); setTimeout(() => Rogue.start(), 300); }
+  if (sessionStorage.getItem('reelwild.autoZombie')) { sessionStorage.removeItem('reelwild.autoZombie'); setTimeout(() => Zombie.start(), 300); }
   if (sessionStorage.getItem('reelwild.autoFish')) { sessionStorage.removeItem('reelwild.autoFish'); setTimeout(() => FishMode.start(), 300); }
 });
