@@ -486,6 +486,7 @@ function frame(now) {
     Scene3D.updateCamera(dt, { x: fx, y: fy });
     Scene3D.camDist = baseDist;
     Scene3D.updateEnv(Game.env, dt);
+    if (Input.pressed('KeyV') && !Mud.on && !FishMode.on) Scene3D.toggleTps();
     Mud.update(dt); Realism.update(); Rogue.update(); Zombie.update(dt);
     if (!Mud.on || Mud.style === 'dialog') {
     Actors.update(dt, Game.env);

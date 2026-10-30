@@ -39,6 +39,12 @@ const Player = {
     const free = F === 'idle' && !Menus.open;
     if (Bikes.riding) { Bikes.ride(dt, ix, iy); return; }
     if (Boats.riding) { Boats.ride(dt, ix, iy); return; }
+    // Third person: tank-style, A/D turn the view and W/S walk along it.
+    if (Scene3D.tps && !Interior.active) {
+      Scene3D.tpsYaw += ix * 2.6 * dt;
+      const fwd = -iy; ix = Math.cos(Scene3D.tpsYaw) * fwd; iy = Math.sin(Scene3D.tpsYaw) * fwd;
+      if (Math.abs(ix) < 1e-3 && Math.abs(iy) < 1e-3) { ix = iy = 0; if (Fishing.state === 'idle' && !Gun.out) this.face = Scene3D.tpsYaw; }
+    }
     // Somehow out of your depth (off a jetski, a fall, a reload): you're swimming.
     if (!Swim.on && !this.airborne && !Interior.active && Swim.deep(this.x, this.y)) Swim.start(this.x, this.y);
     if (Swim.on) { Swim.move(dt, ix, iy); return; }

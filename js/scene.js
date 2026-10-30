@@ -706,7 +706,37 @@ const Scene3D = {
     }
   },
 
+  // Third person (V): the camera sits behind your shoulder and turns with you.
+  tps: false, tpsYaw: 0,
+  toggleTps() {
+    this.tps = !this.tps;
+    this.tpsYaw = Player.face; this._cp = null;
+    Hud.toast(this.tps ? 'Third person — A/D turn, W/S walk, mouse still aims. V to switch back.' : 'Top-down view.', UI.muted, 2.2);
+  },
+  tpsCamera(dt) {
+    const P = Player;
+    // On a bike or boat the view swings round behind the way you're travelling.
+    if ((Bikes.riding || Boats.riding) && this._px !== undefined) {
+      const vx = P.x - this._px, vy = P.y - this._py;
+      if (Math.hypot(vx, vy) > dt * 1.2) this.tpsYaw += U.angDiff(this.tpsYaw, Math.atan2(vy, vx)) * Math.min(1, dt * 3);
+    }
+    this._px = P.x; this._py = P.y;
+    const yaw = this.tpsYaw, gy = this.standH(P.x, P.y) + (P.z || 0);
+    const back = 4.8, cx = P.x - Math.cos(yaw) * back, cz = P.y - Math.sin(yaw) * back;
+    const want = new THREE.Vector3(cx, Math.max(gy + 2.4, this.groundH(cx, cz) + 0.9), cz);
+    if (!this._cp) this._cp = want.clone(); else this._cp.lerp(want, Math.min(1, dt * 8));
+    this.target.set(P.x, gy, P.y);
+    this.camera.position.copy(this._cp);
+    this.camera.lookAt(P.x + Math.cos(yaw) * 3.5, gy + 1.1, P.y + Math.sin(yaw) * 3.5);
+  },
+
   updateCamera(dt, focus) {
+    if (this.tps && Game.mode === 'play' && !Interior.active) {
+      this.tpsCamera(dt);
+      const sh0 = typeof Bugs !== 'undefined' ? Bugs.shake : 0;
+      if (sh0 > 0.01) { this.camera.position.x += (Math.random() - 0.5) * sh0 * 0.25; this.camera.position.y += (Math.random() - 0.5) * sh0 * 0.25; }
+      return;
+    }
     const fy = this.standH(focus.x, focus.y);
     this.target.lerp(new THREE.Vector3(focus.x, fy, focus.y), Math.min(1, dt * 5));
     const d = this.camDist;
@@ -727,7 +757,11 @@ const Scene3D = {
     let h = Math.max(0, this.target.y * 0.5);
     for (let k = 0; k < 4; k++) {
       plane.constant = -h;
-      if (!this.ray.ray.intersectPlane(plane, hit)) return { x: this.target.x, y: this.target.z };
+      if (!this.ray.ray.intersectPlane(plane, hit)) {
+        // Pointing at the sky (third person): aim far off in that direction instead.
+        const d = this.ray.ray.direction, l = Math.hypot(d.x, d.z) || 1;
+        return { x: this.camera.position.x + d.x / l * 40, y: this.camera.position.z + d.z / l * 40 };
+      }
       h = Math.max(0, this.groundH(hit.x, hit.z));
     }
     return { x: hit.x, y: hit.z };

@@ -80,6 +80,7 @@ const Grass = {
     for (const [sx, sy] of [[0, 0], [innerWidth, 0], [0, innerHeight], [innerWidth, innerHeight]]) {
       const w = Scene3D.screenToWorld(sx, sy); x0 = Math.min(x0, w.x); x1 = Math.max(x1, w.x); y0 = Math.min(y0, w.y); y1 = Math.max(y1, w.y);
     }
+    if (Scene3D.tps) { x0 = cx - R; x1 = cx + R; y0 = cy - R; y1 = cy + R; } // the horizon's in view: fill all round
     x0 = Math.max(0, Math.floor(Math.max(x0, cx - R) - 3)); x1 = Math.min(World.W - 1, Math.ceil(Math.min(x1, cx + R) + 3));
     y0 = Math.max(0, Math.floor(Math.max(y0, cy - R) - 3)); y1 = Math.min(World.H - 1, Math.ceil(Math.min(y1, cy + R) + 3));
     for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
