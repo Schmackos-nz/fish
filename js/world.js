@@ -304,6 +304,8 @@ const World = {
       const i = this.idx(x, y);
       this.tile[i] = T.PLANK; this.obj[i] = O.NONE;
     }
+    // The shore is rarely straight: carry each plank column on until it actually reaches land.
+    for (let x = cx - 1; x <= cx; x++) for (let y = sy; y < sy + 20 && this.inB(x, y) && this.tile[this.idx(x, y)] === T.WATER; y++) { this.tile[this.idx(x, y)] = T.PLANK; this.obj[this.idx(x, y)] = O.NONE; }
     this.dockEnd = { x: cx, y: sy - 8 };
     // Buildings front onto the street. w/h are the footprint along x/y; face says which side the door is on.
     const shop = { x: cx + 2, y: cy - 4, w: 4, h: 6, face: 'west', type: 'shop', name: "Hettie's Tackle" };

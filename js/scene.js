@@ -396,7 +396,7 @@ const Scene3D = {
           const top = Math.max(0.27, Math.min(gmax + 0.04, 0.6));
           this.landing.set(j, top + 0.01); lands.push([nx, ny, top]);
         }
-        walls.push([x + 0.5 + dx * 0.5, y + 0.5 + dy * 0.5, dx !== 0, this.landing.get(j) - 0.01]);
+        walls.push([x + 0.5 + dx * 0.5, y + 0.5 + dy * 0.5, dx !== 0, this.landing.get(j) - 0.13]);
       }
     }
     if (lands.length) {
