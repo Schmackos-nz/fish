@@ -331,9 +331,17 @@ const Travel = {
 
 // ---------- the E key ----------
 const Interact = {
+  reach: 1, cands: null,
+  // Everything currently in reach, nearest first (text mode lists them all).
+  all() {
+    const b = this.best();
+    const list = (this.cands || []).slice().sort((p, q) => p.d - q.d);
+    return list.length ? list : b ? [b] : [];
+  },
   best() {
     const P = Player, cands = [];
-    const add = (x, y, r, label, run) => { const d = U.dist(P.x, P.y, x, y); if (d < r) cands.push({ d, x, y, label, run }); };
+    this.cands = cands;
+    const add = (x, y, r, label, run) => { const d = U.dist(P.x, P.y, x, y); if (d < r * (this.reach || 1)) cands.push({ d, x, y, label, run }); };
     if (Boats.interactions(add, cands)) { cands.sort((a, b) => a.d - b.d); return cands[0] || null; }
     Swim.interactions(add);
     if (Swim.on) { cands.sort((a, b) => a.d - b.d); return cands[0] || null; }

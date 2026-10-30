@@ -10,7 +10,7 @@
 <title>Grand Trout Auto VI — Jack GAY?</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700&family=Lilita+One&family=Anton&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700&family=Lilita+One&family=Anton&family=VT323&display=swap" rel="stylesheet">
 <style>
   :root {
     --font: "Inter", "Segoe UI", system-ui, sans-serif;
@@ -178,6 +178,29 @@
   @keyframes capIn { 0% { opacity: 0; transform: translateX(-3vw) skewX(-8deg); } 18% { opacity: 1; transform: translateX(0) skewX(-8deg); } 82% { opacity: 1; transform: translateX(0.6vw) skewX(-8deg); } 100% { opacity: 0; transform: translateX(2vw) skewX(-8deg); } }
   #cine .cap.right.show { animation-name: capInR; }
   @keyframes capInR { 0% { opacity: 0; transform: translateX(3vw) skewX(-8deg); } 18% { opacity: 1; transform: translateX(0) skewX(-8deg); } 82% { opacity: 1; transform: translateX(-0.6vw) skewX(-8deg); } 100% { opacity: 0; transform: translateX(-2vw) skewX(-8deg); } }
+  body.mud canvas#game, body.mud canvas#hud, body.mud #sunGlare, body.mud #toast, body.mud #repNote { display: none !important; }
+  #mud { position: absolute; inset: 0; z-index: 5; background: #050805; color: #8FE08A; font: 16px/1.35 "VT323", "Consolas", monospace; display: flex; flex-direction: column; }
+  #mudStatus { padding: 6px 14px; background: #0D1A0D; color: #CFEFC0; border-bottom: 1px solid #1E3A1E; font-size: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #mudOut { flex: 1; overflow-y: auto; padding: 10px 16px; white-space: pre-wrap; word-break: break-word; text-shadow: 0 0 6px rgba(120,255,120,0.25); }
+  #mudOut .ml { margin: 1px 0; }
+  #mudOut .title { color: #F2C14E; font-size: 30px; letter-spacing: 2px; }
+  #mudOut .room { color: #7FE3FF; font-size: 19px; margin-top: 8px; }
+  #mudOut .dim, #mudOut .sys { color: #6FA06A; }
+  #mudOut .say { color: #F2D27E; }
+  #mudOut .you { color: #FFFFFF; opacity: 0.85; }
+  #mudOut .act { color: #B6A2FF; }
+  #mudOut .bad { color: #FF7A6A; }
+  #mudOut .good { color: #9CFF7A; }
+  #mudOut .event { color: #E8F0E0; }
+  #mudOut b { color: #CFEFC0; font-weight: normal; text-decoration: underline; }
+  .mud-map { font: 15px/1.0 "VT323", Consolas, monospace; margin: 4px 0; color: #4A6A48; }
+  .mud-map .m-you { color: #FFFFFF; background: #2A5A2A; } .mud-map .m-npc { color: #F2D27E; } .mud-map .m-law { color: #FF6A5A; }
+  .mud-map .m-boat { color: #FFFFFF; } .mud-map .m-water { color: #4AA8C8; } .mud-map .m-deep { color: #2A6AB0; } .mud-map .m-grass { color: #3E7A3A; }
+  .mud-map .m-forest { color: #2E9A4A; } .mud-map .m-sand { color: #C8B070; } .mud-map .m-rock { color: #9A9A92; } .mud-map .m-path { color: #A88A58; }
+  .mud-map .m-plank { color: #C89A5A; } .mud-map .m-bld { color: #D8D0C0; }
+  #mudForm { display: flex; gap: 8px; align-items: center; padding: 8px 14px 12px; border-top: 1px solid #1E3A1E; background: #081008; }
+  #mudForm span { color: #F2C14E; font-size: 20px; }
+  #mudIn { flex: 1; background: transparent; border: 0; outline: 0; color: #CFFFC8; font: 19px "VT323", Consolas, monospace; caret-color: #9CFF7A; }
   #cineFlash { position: absolute; inset: 0; z-index: 41; background: #fff; opacity: 0; pointer-events: none; }
   #cineFlash.go { animation: flash 0.9s ease-out; }
   @keyframes flash { 0% { opacity: 0.95; } 100% { opacity: 0; } }
@@ -374,6 +397,11 @@
 
 <div id="cine" class="hidden"><div class="bar top"></div><div class="bar bot"></div><div class="cap"><b></b><i></i></div><div class="skip">Click or press any key to skip</div></div>
 <div id="cineFlash"></div>
+<div id="mud" class="hidden">
+  <div id="mudStatus"></div>
+  <div id="mudOut"></div>
+  <form id="mudForm" autocomplete="off"><span>&gt;</span><input id="mudIn" spellcheck="false" placeholder="type a command — HELP if you're lost"></form>
+</div>
 <div id="title">
   <div class="gta-shade"></div>
   <div class="gta-collage">
@@ -394,6 +422,7 @@
     <nav class="gta-menu">
       <button id="startBtn" class="primary"><span>Start fishing</span></button>
       <button id="newBtn"><span>New Game</span></button>
+      <button id="mudBtn"><span>Text Mode</span></button>
       <button id="helpBtn"><span>How to play</span></button>
       <button id="settingsBtn"><span>Settings</span></button>
     </nav>
@@ -517,66 +546,67 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=137"></script>
-<script src="js/data.js?v=137"></script>
-<script src="js/audio.js?v=137"></script>
-<script src="js/music.js?v=137"></script>
-<script src="js/voice.js?v=137"></script>
-<script src="js/world.js?v=137"></script>
-<script src="js/scene-sprites.js?v=137"></script>
-<script src="js/toon.js?v=137"></script>
-<script src="js/scene.js?v=137"></script>
-<script src="js/grass.js?v=137"></script>
-<script src="js/folk.js?v=137"></script>
-<script src="js/models.js?v=137"></script>
-<script src="js/actors.js?v=137"></script>
-<script src="js/fish.js?v=137"></script>
-<script src="js/legends.js?v=137"></script>
-<script src="js/fishing.js?v=137"></script>
-<script src="js/fight.js?v=137"></script>
-<script src="js/linedrag.js?v=137"></script>
-<script src="js/player.js?v=137"></script>
-<script src="js/npcs.js?v=137"></script>
-<script src="js/path.js?v=137"></script>
-<script src="js/gun.js?v=137"></script>
-<script src="js/arsenal.js?v=137"></script>
-<script src="js/camp.js?v=137"></script>
-<script src="js/wild.js?v=137"></script>
-<script src="js/decay.js?v=137"></script>
-<script src="js/contest.js?v=137"></script>
-<script src="js/bugs.js?v=137"></script>
-<script src="js/floaters.js?v=137"></script>
-<script src="js/animals.js?v=137"></script>
-<script src="js/wardens.js?v=137"></script>
-<script src="js/interiors.js?v=137"></script>
-<script src="js/life.js?v=137"></script>
-<script src="js/weed.js?v=137"></script>
-<script src="js/markers.js?v=137"></script>
-<script src="js/swimmers.js?v=137"></script>
-<script src="js/couples.js?v=137"></script>
-<script src="js/tim.js?v=137"></script>
-<script src="js/bikes.js?v=137"></script>
-<script src="js/lockpick.js?v=137"></script>
-<script src="js/wanted.js?v=137"></script>
-<script src="js/tools.js?v=137"></script>
-<script src="js/hud.js?v=137"></script>
-<script src="js/share.js?v=137"></script>
-<script src="js/menus.js?v=137"></script>
-<script src="js/mobile.js?v=137"></script>
-<script src="js/patchnotes.js?v=137"></script>
-<script src="js/staff.js?v=137"></script>
-<script src="js/thief.js?v=137"></script>
-<script src="js/needs.js?v=137"></script>
-<script src="js/seats.js?v=137"></script>
-<script src="js/waypoint.js?v=137"></script>
-<script src="js/boats.js?v=137"></script>
-<script src="js/prison.js?v=137"></script>
-<script src="js/coastguard.js?v=137"></script>
-<script src="js/swim.js?v=137"></script>
-<script src="js/cine.js?v=137"></script>
-<script src="js/bodies.js?v=137"></script>
-<script src="js/inventory.js?v=137"></script>
-<script src="js/main.js?v=137"></script>
-<script src="js/rep.js?v=137"></script>
+<script src="js/util.js?v=138"></script>
+<script src="js/data.js?v=138"></script>
+<script src="js/audio.js?v=138"></script>
+<script src="js/music.js?v=138"></script>
+<script src="js/voice.js?v=138"></script>
+<script src="js/world.js?v=138"></script>
+<script src="js/scene-sprites.js?v=138"></script>
+<script src="js/toon.js?v=138"></script>
+<script src="js/scene.js?v=138"></script>
+<script src="js/grass.js?v=138"></script>
+<script src="js/folk.js?v=138"></script>
+<script src="js/models.js?v=138"></script>
+<script src="js/actors.js?v=138"></script>
+<script src="js/fish.js?v=138"></script>
+<script src="js/legends.js?v=138"></script>
+<script src="js/fishing.js?v=138"></script>
+<script src="js/fight.js?v=138"></script>
+<script src="js/linedrag.js?v=138"></script>
+<script src="js/player.js?v=138"></script>
+<script src="js/npcs.js?v=138"></script>
+<script src="js/path.js?v=138"></script>
+<script src="js/gun.js?v=138"></script>
+<script src="js/arsenal.js?v=138"></script>
+<script src="js/camp.js?v=138"></script>
+<script src="js/wild.js?v=138"></script>
+<script src="js/decay.js?v=138"></script>
+<script src="js/contest.js?v=138"></script>
+<script src="js/bugs.js?v=138"></script>
+<script src="js/floaters.js?v=138"></script>
+<script src="js/animals.js?v=138"></script>
+<script src="js/wardens.js?v=138"></script>
+<script src="js/interiors.js?v=138"></script>
+<script src="js/life.js?v=138"></script>
+<script src="js/weed.js?v=138"></script>
+<script src="js/markers.js?v=138"></script>
+<script src="js/swimmers.js?v=138"></script>
+<script src="js/couples.js?v=138"></script>
+<script src="js/tim.js?v=138"></script>
+<script src="js/bikes.js?v=138"></script>
+<script src="js/lockpick.js?v=138"></script>
+<script src="js/wanted.js?v=138"></script>
+<script src="js/tools.js?v=138"></script>
+<script src="js/hud.js?v=138"></script>
+<script src="js/share.js?v=138"></script>
+<script src="js/menus.js?v=138"></script>
+<script src="js/mobile.js?v=138"></script>
+<script src="js/patchnotes.js?v=138"></script>
+<script src="js/staff.js?v=138"></script>
+<script src="js/thief.js?v=138"></script>
+<script src="js/needs.js?v=138"></script>
+<script src="js/seats.js?v=138"></script>
+<script src="js/waypoint.js?v=138"></script>
+<script src="js/boats.js?v=138"></script>
+<script src="js/prison.js?v=138"></script>
+<script src="js/coastguard.js?v=138"></script>
+<script src="js/swim.js?v=138"></script>
+<script src="js/cine.js?v=138"></script>
+<script src="js/text.js?v=138"></script>
+<script src="js/bodies.js?v=138"></script>
+<script src="js/inventory.js?v=138"></script>
+<script src="js/main.js?v=138"></script>
+<script src="js/rep.js?v=138"></script>
 </body>
 </html>

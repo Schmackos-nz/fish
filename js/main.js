@@ -314,6 +314,16 @@ function wireScreens() {
     if (!Settings.music) Music.stop(0.3); else if (Game.mode === 'title') { Sfx.init(); Settings.apply(); Music.play(); }
   };
   $('themeBtn').onclick = () => Cine.start();
+  $('mudBtn').onclick = () => { enterPlay(); Mud.start(); };
+  const mudIn = $('mudIn');
+  mudIn.addEventListener('keydown', (e) => {
+    e.stopPropagation(); // typing never drives the 3D controls underneath
+    if (e.key === 'ArrowUp' && Mud.history.length) { Mud.hIdx = Math.max(0, Mud.hIdx - 1); mudIn.value = Mud.history[Mud.hIdx] || ''; e.preventDefault(); }
+    if (e.key === 'ArrowDown') { Mud.hIdx = Math.min(Mud.history.length, Mud.hIdx + 1); mudIn.value = Mud.history[Mud.hIdx] || ''; e.preventDefault(); }
+  });
+  mudIn.addEventListener('keyup', (e) => e.stopPropagation());
+  $('mudForm').onsubmit = (e) => { e.preventDefault(); const v = mudIn.value; mudIn.value = ''; Mud.run(v); };
+  $('mud').addEventListener('mousedown', (e) => { if (!e.target.closest('button,input')) setTimeout(() => { if (!getSelection().toString()) mudIn.focus(); }, 0); });
   // Browsers only allow sound after a click or key press: the first one on the menu starts the theme.
   const firstTouch = (e) => {
     removeEventListener('pointerdown', firstTouch); removeEventListener('keydown', firstTouch);
@@ -454,6 +464,8 @@ function frame(now) {
     Scene3D.updateCamera(dt, { x: fx, y: fy });
     Scene3D.camDist = baseDist;
     Scene3D.updateEnv(Game.env, dt);
+    Mud.update(dt);
+    if (!Mud.on) {
     Actors.update(dt, Game.env);
     Npcs.render();
     Wardens.render();
@@ -472,6 +484,7 @@ function frame(now) {
     Snakes.render(); Ducks.render(); Hunters.render(); Decay.render(); Staff.render(); Needs.render(); Crabs.render(); Waypoint.render(); Boats.render(dt);
     Scene3D.render(Game.time);
     Hud.draw();
+    }
     saveT += dt;
     if (saveT > 20) { saveT = 0; Game.save(); }
   }

@@ -4,6 +4,7 @@
 const PATCH_NOTES = [
   { v: '2.3', name: 'Fresh Coat', date: '31 Oct 2026', notes: [
     ['new', 'The Coast Guard: an orange patrol boat with lights and siren chases you down for reported boat theft, being wanted on the water, or fishing without a permit from a boat. A jetski can outrun them; if you reach the shore they radio the wardens'],
+    ['new', 'Text Mode on the main menu: play the whole game as an old-school MUD. Same valley, same locals, wardens, shops and trouble, all in text. Type HELP'],
     ['new', 'An intro cinematic cut to the theme song plays on the main menu. Skip it with any click or key, and watch it again with Replay cinematic'],
     ['new', 'Swimming! Face deep water and press E to dive in, or jump off a boat mid-lake. Front crawl anywhere (Shift to sprint), climb back aboard boats or up onto docks. It tires you out: run out of energy and you start taking damage'],
     ['new', 'Poo in the water floats. It drifts off on the current, and anyone it bobs past is horrified. Swimmers get straight out'],
