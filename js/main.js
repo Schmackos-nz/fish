@@ -195,7 +195,7 @@ function drawTitleTim() {
   for (const l of rig.lids) l.scale.y = 0.001;
   rig.head.rotation.set(0, 0.2, 0.05);
   scene.add(m);
-  cam.position.set(0.6, 1.85, 3.9); cam.lookAt(0.6, 1.0, 0);
+  cam.position.set(0.38, 1.95, 4.5); cam.lookAt(0.38, 0.95, 0);
   m.updateMatrixWorld(true);
   // The rod: from his fist up and out to the right, bending under the fish.
   const hand = rig.armL.children[rig.armL.children.length - 1].getWorldPosition(new THREE.Vector3()), tip = hand.clone().add(new THREE.Vector3(0.6, 1.15, 0.1));
