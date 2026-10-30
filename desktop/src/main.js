@@ -8,6 +8,10 @@ const path = require('node:path');
 const DEV = !app.isPackaged || process.argv.includes('--dev');
 const GAME = path.join(__dirname, '..', 'app', 'game', 'index.html');
 
+// --profile=<dir> runs with its own saves and settings (testing never touches a player's real save).
+const profileArg = process.argv.find((a) => a.startsWith('--profile='));
+if (profileArg) app.setPath('userData', path.resolve(profileArg.slice(10)));
+
 if (!app.requestSingleInstanceLock()) { app.quit(); process.exit(0); }
 
 // ---- Steam ----
