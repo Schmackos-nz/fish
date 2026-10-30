@@ -127,6 +127,48 @@ const Zombie = {
     }
   },
 
+  relocate(z, goal) {
+    for (let k = 0; k < 40; k++) {
+      const a = Math.random() * Math.PI * 2, r = 20 + Math.random() * 8, x = goal.x + Math.cos(a) * r, y = goal.y + Math.sin(a) * r;
+      if (World.inB(Math.floor(x), Math.floor(y)) && footOK(x, y, false)) { z.x = x; z.y = y; return; }
+    }
+  },
+
+  // The stragglers: on the minimap (pulsing when there are only a few left), and an arrow round you to the nearest.
+  remaining() { return this.list.filter((z) => z.hp > 0); },
+  drawMini(hud, cx, cy, s, R) {
+    if (!this.on) return;
+    const g = hud.g, left = this.remaining(), few = left.length <= 3, pulse = 0.5 + 0.5 * Math.sin(Game.time * 6);
+    for (const z of left) {
+      let nx = (z.x - Player.x) * s, ny = (z.y - Player.y) * s;
+      const d = Math.hypot(nx, ny);
+      if (d > R - 6) { if (!few) continue; nx *= (R - 6) / d; ny *= (R - 6) / d; } // pinned to the rim
+      g.fillStyle = '#E23A2E'; g.beginPath(); g.arc(cx + nx, cy + ny, few ? 4 : 2.6, 0, 7); g.fill();
+      if (few) { g.strokeStyle = 'rgba(255,70,50,' + (1 - pulse) + ')'; g.lineWidth = 2; g.beginPath(); g.arc(cx + nx, cy + ny, 4 + pulse * 9, 0, 7); g.stroke(); }
+    }
+  },
+  drawArrow(hud) {
+    if (!this.on || Interior.active || this.state !== 'wave') return;
+    const left = this.remaining();
+    if (!left.length || left.length > 3) return;
+    const z = left.sort((a, b) => U.dist(a.x, a.y, Player.x, Player.y) - U.dist(b.x, b.y, Player.x, Player.y))[0];
+    const dist = U.dist(z.x, z.y, Player.x, Player.y);
+    if (dist < 7) return;
+    const [px, py, ok1] = Scene3D.project(Player.x, Player.y, Scene3D.standH(Player.x, Player.y) + 1);
+    const [zx, zy] = Scene3D.project(z.x, z.y, Scene3D.standH(z.x, z.y) + 1);
+    if (!ok1) return;
+    let a = Math.atan2(zy - py, zx - px);
+    if (Scene3D.tps) a = -Math.PI / 2 + U.angDiff(Scene3D.tpsYaw, Math.atan2(z.y - Player.y, z.x - Player.x)); // ahead = up
+    const g = hud.g, r = 78 + Math.sin(Game.time * 5) * 6, ax = px + Math.cos(a) * r, ay = py + Math.sin(a) * r;
+    g.save(); g.translate(ax, ay); g.rotate(a);
+    g.fillStyle = '#E23A2E'; g.strokeStyle = '#000'; g.lineWidth = 2;
+    g.beginPath(); g.moveTo(24, 0); g.lineTo(-12, -16); g.lineTo(-4, 0); g.lineTo(-12, 16); g.closePath(); g.fill(); g.stroke();
+    g.restore();
+    const lx = ax + Math.cos(a) * 46, ly = ay + Math.sin(a) * 40;
+    g.fillStyle = 'rgba(20,6,6,0.85)'; g.beginPath(); g.roundRect(lx - 48, ly - 11, 96, 22, 11); g.fill();
+    hud.text('ZOMBIE ' + Math.round(dist) + ' m', lx, ly + 4, '#FF6A5A', 12, 'center', 800);
+  },
+
   update(dt) {
     if (!this.on || Game.mode !== 'play') return;
     this.t -= dt; this.hurtCd -= dt;
@@ -156,6 +198,9 @@ const Zombie = {
         z.walk += dt * z.speed * 0.5;
         z.stuck = moved ? 0 : z.stuck + dt;
         if (z.stuck > 3) { unstick(z, 99); z.stuck = 0; }
+        // Hung up somewhere miles away (across a river, up a hill): bring it back into the fight.
+        z.farT = d > 40 ? (z.farT || 0) + dt : 0;
+        if (z.farT > 15) { z.farT = 0; this.relocate(z, goal); }
       } else if (door) {
         // Beating on the boards.
         const B = this.boardOf(inside);

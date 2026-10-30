@@ -143,6 +143,7 @@ const Hud = {
     Wanted.drawWorld(this);
     this.drawGunCursor();
     Waypoint.draw(this);
+    Zombie.drawArrow(this);
     Needs.drawCensor(this);
     if (!Realism.on) LineDrag.draw(this);
     // Panels are laid out on a virtual screen, scaled down to fit phones.
@@ -429,6 +430,7 @@ const Hud = {
       g.fillStyle = n.palette.shirt; g.beginPath(); g.arc(nx, ny, 2, 0, 7); g.fill();
     }
     Waypoint.drawMini(this, cx, cy, s, R);
+    Zombie.drawMini(this, cx, cy, s, R);
     g.restore();
     g.strokeStyle = 'rgba(255,255,255,0.18)'; g.lineWidth = 2;
     g.beginPath(); g.arc(cx, cy, R, 0, 7); g.stroke();
