@@ -3,6 +3,8 @@
 
 const PATCH_NOTES = [
   { v: '2.3', name: 'Fresh Coat', date: '31 Oct 2026', notes: [
+    ['fixed', 'Aiming over the shoulder and in first person: put the cursor on whoever or whatever you are shooting at and that is what you hit, instead of having to aim at the ground under them'],
+    ['fixed', 'The over-the-shoulder camera looks level and straight ahead, so your angler stands upright instead of leaning'],
     ['changed', 'The game now starts over the shoulder: a close camera behind your right shoulder with a wider view. V cycles over the shoulder, first person and the classic top-down view, and remembers your choice. Phones still start top-down'],
     ['changed', 'The game is now called Trout for Clout: Hunting and Fishing Simulator'],
     ['new', 'The Coast Guard: an orange patrol boat with lights and siren chases you down for reported boat theft, being wanted on the water, or fishing without a permit from a boat. A jetski can outrun them; if you reach the shore they radio the wardens'],

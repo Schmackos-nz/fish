@@ -152,6 +152,7 @@ const Gun = {
     Arsenal.useAmmo(W.ammo);
     this.cooldown = W.cd; this.flashT = 0.06; this.kick = W.id === 'smg' ? 0.35 : W.id === 'pistol' ? 0.6 : 1;
     // Hip range depends on the gun; the scope (rifle) lets you reach further.
+    if (!a.scoped && Input.mouse.wh && U.dist(Player.x, Player.y, a.x, a.y) > W.range + 1) Hud.toast('Out of range: the ' + W.short.toLowerCase() + ' carries about ' + W.range + ' m.', UI.muted, 1.4);
     if (!a.scoped && U.dist(Player.x, Player.y, a.x, a.y) > W.range) a = { ...a, x: Player.x + Math.cos(a.ang) * W.range, y: Player.y + Math.sin(a.ang) * W.range };
     if (W.id === 'launcher') { Sfx.whoosh(1); Sfx.gunshot('shotgun', 0.6); } else Sfx.gunshot(W.id);
     // Flash and kick.
@@ -171,7 +172,7 @@ const Gun = {
       }
       const t = this.tracers.find((x) => x.userData.t >= 1) || this.tracers[k % this.tracers.length];
       this.setTracer(t, new THREE.Vector3(Player.x + Math.cos(a.ang) * 1.1, base, Player.y + Math.sin(a.ang) * 1.1),
-        new THREE.Vector3(p.x, Math.max(0, Scene3D.groundH(p.x, p.y)) + 0.05, p.y));
+        new THREE.Vector3(p.x, Math.max(0, Scene3D.groundH(p.x, p.y)) + (a.scoped ? 0.05 : Math.max(0.05, Input.mouse.wh || 0)), p.y));
       t.userData.t = 0; t.visible = true;
       if (!W.blast) this.puff(p.x, p.y, World.isWater(p.x, p.y));
       if (W.blast) { setTimeout(() => Arsenal.explode(p.x, p.y, W.blast), 220); continue; }

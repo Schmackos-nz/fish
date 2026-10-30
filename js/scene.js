@@ -755,10 +755,11 @@ const Scene3D = {
   setView(v, quiet) {
     this.view = v; this.tps = v !== 'top';
     this.tpsYaw = Player.face; this._cp = null;
-    this.camera.fov = v === 'fps' ? 72 : v === 'tps' ? 60 : 38; this.camera.updateProjectionMatrix();
+    this.camera.fov = v === 'fps' ? 70 : v === 'tps' ? 52 : 38; this.camera.updateProjectionMatrix();
     try { localStorage.setItem('reelwild.view', v); } catch (e) { /* ignore */ }
     if (!quiet) Hud.toast(this.VIEWS[v] + (v === 'top' ? '' : ' — A/D turn, W/S walk, the mouse aims') + '. V to change view.', UI.muted, 2.2);
   },
+  behindNow() { return this.tps && Game.mode === 'play' && !Interior.active; },
   toggleTps() { this.setView({ tps: 'fps', fps: 'top', top: 'tps' }[this.view]); },
   // First person hides your own head so the camera isn't inside it.
   hideHead(on) { if (Actors.rig && Actors.rig.head) Actors.rig.head.visible = !on; },
@@ -785,15 +786,16 @@ const Scene3D = {
     // Over the right shoulder: close behind, head height, you on the left of the frame looking where you're going.
     const back = Bikes.riding || Boats.riding ? 3.8 : 3.1, side = 1.05;
     const cx = P.x - fx * back + rx * side, cz = P.y - fz * back + rz * side;
-    const want = new THREE.Vector3(cx, Math.max(gy + 2.05, this.groundH(cx, cz) + 0.5), cz);
+    const want = new THREE.Vector3(cx, Math.max(gy + 1.85, this.groundH(cx, cz) + 0.5), cz);
     if (!this._cp) this._cp = want.clone(); else this._cp.lerp(want, Math.min(1, dt * 10));
-    this.camera.position.copy(this._cp);
-    this.camera.lookAt(P.x + fx * 9 + rx * side * 0.5, gy + 1.2, P.y + fz * 9 + rz * side * 0.5);
+    const c = this._cp;
+    this.camera.position.copy(c);
+    this.camera.lookAt(c.x + fx * 20, c.y - 20 * 0.06, c.z + fz * 20);
   },
 
   updateCamera(dt, focus) {
-    const behind = this.tps && Game.mode === 'play' && !Interior.active;
-    const fov = behind ? (this.view === 'fps' ? 72 : 60) : 38;
+    const behind = this.behindNow();
+    const fov = behind ? (this.view === 'fps' ? 70 : 52) : 38;
     if (this.camera.fov !== fov) { this.camera.fov = fov; this.camera.updateProjectionMatrix(); }
     this.hideHead(behind && this.view === 'fps');
     if (behind) {
@@ -830,6 +832,35 @@ const Scene3D = {
       h = Math.max(0, this.groundH(hit.x, hit.z));
     }
     return { x: hit.x, y: hit.z };
+  },
+
+  // Behind-the-player aiming: the cursor's ray hits the first body it passes through (people, animals,
+  // ducks, snakes, bikes, zombies), and the shot goes there, not to the ground behind it.
+  // Returns the ground point under that body plus how high up it was hit; null if the ray hits nothing.
+  aimPick(sx, sy) {
+    const ndc = new THREE.Vector2((sx / window.innerWidth) * 2 - 1, -(sy / window.innerHeight) * 2 + 1);
+    this.ray.setFromCamera(ndc, this.camera);
+    const o = this.ray.ray.origin, d = this.ray.ray.direction, dh = d.x * d.x + d.z * d.z;
+    if (dh < 1e-6) return null;
+    const cands = [];
+    const add = (x, y, h, r) => cands.push({ x, y, h, r });
+    for (const t of Wanted.targets()) add(t.x, t.y, 1.65, 0.42);
+    for (const a of Animals.list) if (a.state !== 'dead') add(a.x, a.y, a.type === 'boar' ? 0.85 : a.buck ? 1.75 : 1.4, a.type === 'boar' ? 0.6 : 0.75);
+    for (const f of Ducks.flocks) for (const q of f.ducks) if (!q.dead) add(f.x + q.ox, f.y + q.oy, 0.4, 0.3);
+    for (const s of Snakes.list) if (!s.dead) add(s.x, s.y, 0.2, 0.45);
+    for (const v of Bikes.vehicles()) add(v.x, v.y, 1.0, 0.75);
+    if (Zombie.on) for (const z of Zombie.list) if (z.hp > 0) add(z.x, z.y, 1.65, 0.42);
+    // Anything further than the ground the cursor lands on is hidden behind it.
+    const g = this.screenToWorld(sx, sy), gt = Math.hypot(g.x - o.x, g.y - o.z) / Math.sqrt(dh) + 0.5;
+    let best = null, bt = gt;
+    for (const c of cands) {
+      const t = ((c.x - o.x) * d.x + (c.y - o.z) * d.z) / dh;
+      if (t < 0.5 || t >= bt) continue;
+      const px = o.x + d.x * t, pz = o.z + d.z * t, py = o.y + d.y * t, base = this.standH(c.x, c.y);
+      if (Math.hypot(px - c.x, pz - c.y) > c.r || py < base - 0.1 || py > base + c.h + 0.15) continue;
+      bt = t; best = { x: c.x, y: c.y, h: U.clamp(py - base, 0.1, c.h) };
+    }
+    return best;
   },
 
   // World point (tiles, height) -> screen pixels, for HUD labels.

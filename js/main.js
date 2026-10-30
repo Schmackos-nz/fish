@@ -426,7 +426,12 @@ function frame(now) {
     Scene3D.render(Game.time);
     Hud.draw();
   } else {
-    const w = Scene3D.screenToWorld(Input.mouse.sx, Input.mouse.sy);
+    let w = Scene3D.screenToWorld(Input.mouse.sx, Input.mouse.sy);
+    Input.mouse.wh = 0; // how far above the ground the aim point is (behind-the-player views only)
+    if (Scene3D.tps && Game.mode === 'play' && !Interior.active && Gun.out) {
+      const t = Scene3D.aimPick(Input.mouse.sx, Input.mouse.sy);
+      if (t) { w = t; Input.mouse.wh = t.h; }
+    }
     Input.mouse.wx = w.x; Input.mouse.wy = w.y;
     // Only the handle turns the reel; the anti-reverse ignores counter-clockwise turns.
     LineDrag.update(dt);

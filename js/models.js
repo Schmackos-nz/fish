@@ -270,6 +270,13 @@ const Models = {
   // s: { moving, phase, pose: normal|grip|brag|hold|ride|slide, crouch, t }
   pose(rig, s) {
     rig.armL.scale.y = rig.armR.scale.y = 1;
+    // Standing figures are tipped back toward the top-down camera; from behind the player that reads as a lean,
+    // so stand them straight then. Anyone lying down or knocked out keeps whatever pose they were given.
+    if (rig.lean) {
+      const up = typeof Scene3D !== 'undefined' && Scene3D.behindNow();
+      if (up && Math.abs(rig.lean.rotation.x + 0.38) < 1e-6) { rig.lean.rotation.x = 0; rig.untilted = true; }
+      else if (!up && rig.untilted) { if (rig.lean.rotation.x === 0) rig.lean.rotation.x = -0.38; rig.untilted = false; }
+    }
     const ph = Math.sin(s.phase * 9), sw = s.moving ? ph * 0.65 : 0, t = s.t !== undefined ? s.t : performance.now() / 1000;
     rig.legL.rotation.set(0, 0, sw); rig.legR.rotation.set(0, 0, -sw);
     rig.armL.rotation.set(0.08, 0, -sw * 0.8); rig.armR.rotation.set(-0.08, 0, sw * 0.8);
