@@ -3,6 +3,7 @@
 
 const PATCH_NOTES = [
   { v: '2.3', name: 'Fresh Coat', date: '31 Oct 2026', notes: [
+    ['changed', 'The game is now called Trout for Clout: Hunting and Fishing Simulator'],
     ['new', 'The Coast Guard: an orange patrol boat with lights and siren chases you down for reported boat theft, being wanted on the water, or fishing without a permit from a boat. A jetski can outrun them; if you reach the shore they radio the wardens'],
     ['fixed', 'Wardens no longer get stranded in the water after a chase: they wade straight back out, and their patrols now path round lakes and rivers'],
     ['changed', 'Trees and bushes are textured to match the grass: painted leaves and needles, and lumpier, bushier canopies'],

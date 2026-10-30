@@ -1,8 +1,8 @@
 {
-  "name": "grand-trout-auto-vi",
-  "productName": "Grand Trout Auto VI",
+  "name": "trout-for-clout",
+  "productName": "Trout for Clout",
   "version": "2.3.0",
-  "description": "Grand Trout Auto VI - an open-valley fishing and crime sandbox.",
+  "description": "Trout for Clout - an open-valley hunting, fishing and crime sandbox.",
   "author": "Schmackos",
   "license": "UNLICENSED",
   "private": true,
@@ -15,9 +15,9 @@
     "dist:mac": "node build.mjs && electron-builder --mac dir"
   },
   "build": {
-    "appId": "nz.schmackos.grandtroutauto",
-    "productName": "Grand Trout Auto VI",
-    "executableName": "GrandTroutAutoVI",
+    "appId": "nz.schmackos.troutforclout",
+    "productName": "Trout for Clout",
+    "executableName": "TroutForClout",
     "directories": {
       "output": "dist",
       "buildResources": "build"

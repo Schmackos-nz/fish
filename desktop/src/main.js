@@ -1,4 +1,4 @@
-// Desktop (Steam) shell for Grand Trout Auto VI: one fullscreen window running the staged web game,
+// Desktop (Steam) shell for Trout for Clout: one fullscreen window running the staged web game,
 // saves mirrored to a plain file (so Steam Cloud can sync it), and Steamworks when launched through Steam.
 'use strict';
 const { app, BrowserWindow, ipcMain, shell, Menu } = require('electron');
@@ -32,7 +32,7 @@ try {
 
 // ---- Saves ----
 // The game keeps everything in localStorage; the page mirrors its keys here as one JSON file.
-// Point Steam Auto-Cloud at %APPDATA%/Grand Trout Auto VI/saves (see desktop/README.md).
+// Point Steam Auto-Cloud at %APPDATA%/Trout for Clout/saves (see desktop/README.md).
 const saveDir = path.join(app.getPath('userData'), 'saves');
 const saveFile = path.join(saveDir, 'reelwild.json');
 const prefsFile = path.join(app.getPath('userData'), 'window.json');
@@ -65,7 +65,7 @@ function createWindow() {
     width: 1600, height: 900, minWidth: 960, minHeight: 540,
     fullscreen: prefs.fullscreen !== false,
     backgroundColor: '#0F1A1C',
-    title: 'Grand Trout Auto VI',
+    title: 'Trout for Clout',
     icon: path.join(__dirname, '..', 'build', 'icon.png'),
     autoHideMenuBar: true,
     show: false,
@@ -96,9 +96,9 @@ function createWindow() {
     if (/^https?:/.test(url)) shell.openExternal(url);
   });
 
-  // Catch photos ("Download" on the share card) go straight to Pictures/Grand Trout Auto VI.
+  // Catch photos ("Download" on the share card) go straight to Pictures/Trout for Clout.
   win.webContents.session.on('will-download', (e, item) => {
-    const dir = path.join(app.getPath('pictures'), 'Grand Trout Auto VI');
+    const dir = path.join(app.getPath('pictures'), 'Trout for Clout');
     fs.mkdirSync(dir, { recursive: true });
     item.setSavePath(path.join(dir, item.getFilename()));
   });

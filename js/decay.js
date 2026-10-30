@@ -3,7 +3,7 @@
 // Fix buildings up (or bin the rubbish) and the council pays you for it.
 'use strict';
 
-const TAGS = ['TROUT GANG', 'DAZZA', 'BRAAAP', 'TIM 4EVA', 'NO FISH', 'LOL', 'GTA VI', 'ZORK', 'RIP SILVERJAW', 'BUNYIP IS REAL', 'KEV WOZ ERE', '>:)'];
+const TAGS = ['TROUT GANG', 'DAZZA', 'BRAAAP', 'TIM 4EVA', 'NO FISH', 'LOL', 'TROUT 4 CLOUT', 'ZORK', 'RIP SILVERJAW', 'BUNYIP IS REAL', 'KEV WOZ ERE', '>:)'];
 const TAG_COLS = ['#E2584D', '#3AD2B0', '#F2C14E', '#B85AE2', '#4AA8F2', '#F4F0E6', '#7FE04A'];
 
 const Decay = {

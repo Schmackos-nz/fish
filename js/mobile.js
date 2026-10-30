@@ -144,7 +144,7 @@ const Mobile = {
     this.gate.classList.toggle('hidden', !b);
     if (b) {
       this.gate.querySelector('b').textContent = b === 'rotate' ? 'Turn your phone sideways' : 'Tap to play fullscreen';
-      this.gate.querySelector('span').textContent = b === 'rotate' ? 'Grand Trout Auto VI only plays in landscape.' : 'The valley needs the whole screen.';
+      this.gate.querySelector('span').textContent = b === 'rotate' ? 'Trout for Clout only plays in landscape.' : 'The valley needs the whole screen.';
     }
   },
 

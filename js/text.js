@@ -19,7 +19,7 @@ const Mud = {
     if (this.style === 'dialog') Dlg.start(); else document.getElementById('mud').classList.remove('hidden');
     this.hook();
     const out = document.getElementById('mudOut'); out.innerHTML = '';
-    this.print('GRAND TROUT AUTO VI', 'title');
+    this.print('TROUT FOR CLOUT', 'title');
     this.print('— the text edition. Type HELP for commands. —', 'sys');
     this.lastWanted = Wanted.level; this.lastPhase = Game.env.phase; this.lastWeather = Game.env.weather.id;
     this.look();
