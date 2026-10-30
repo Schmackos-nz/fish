@@ -232,6 +232,7 @@ function showTitle() {
   if (Rogue.on || FishMode.on || Zombie.on) return location.reload(); // back to the real save
   if (Mud.on) Mud.stop();
   Realism.stop();
+  Chess.on = false;
   drawTitleTim();
   if (Sfx.ctx && Settings.music) setTimeout(() => { if (Game.mode === 'title') Music.play(); }, 400);
   Game.mode = 'title';

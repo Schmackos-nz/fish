@@ -1,5 +1,5 @@
-// Chess Mode: every fish you hook challenges you to a game. Checkmate it to land it; lose, draw or resign and it
-// swims off. Bigger fish think further ahead; tiddlers play without their queen. Full rules: castling,
+// Chess Mode: every fish you hook (and every animal you shoot, ride you hot-wire, lock you pick and safe you crack)
+// challenges you to a game, with an Elo from ~150 (tiddlers) to 3000 (monsters). Checkmate wins it; lose, draw or resign and it's gone. Full rules: castling,
 // en passant, promotion (to a queen), check, checkmate and stalemate.
 'use strict';
 
@@ -108,56 +108,151 @@ const ChessEng = {
     return s.turn === 'w' ? v : -v;
   },
 
-  search(s, depth, alpha, beta) {
+  // Captures only, until the dust settles, so it doesn't stop counting halfway through a trade.
+  quiesce(s, alpha, beta, ctx, qd) {
+    if (++ctx.n % 512 === 0 && performance.now() > ctx.deadline) throw ctx;
+    const stand = this.evaluate(s);
+    if (stand >= beta) return beta;
+    if (stand > alpha) alpha = stand;
+    if (qd <= 0) return alpha;
+    const caps = this.legal(s).filter((m) => s.b[m.t] || m.epCap);
+    caps.sort((a, b) => (s.b[b.t] ? CH_VAL[s.b[b.t].toLowerCase()] : 100) - (s.b[a.t] ? CH_VAL[s.b[a.t].toLowerCase()] : 100));
+    for (const m of caps) {
+      const v = -this.quiesce(this.make(s, m), -beta, -alpha, ctx, qd - 1);
+      if (v >= beta) return beta;
+      if (v > alpha) alpha = v;
+    }
+    return alpha;
+  },
+
+  search(s, depth, alpha, beta, ctx) {
+    if (++ctx.n % 512 === 0 && performance.now() > ctx.deadline) throw ctx;
     const ms = this.legal(s);
     if (!ms.length) return this.inCheck(s, s.turn) ? -100000 - depth : 0;
-    if (depth === 0) return this.evaluate(s);
+    if (depth <= 0) return ctx.q ? this.quiesce(s, alpha, beta, ctx, 4) : this.evaluate(s);
     ms.sort((a, b) => (s.b[b.t] ? CH_VAL[s.b[b.t].toLowerCase()] : 0) - (s.b[a.t] ? CH_VAL[s.b[a.t].toLowerCase()] : 0));
     for (const m of ms) {
-      const v = -this.search(this.make(s, m), depth - 1, -beta, -alpha);
+      const v = -this.search(this.make(s, m), depth - 1, -beta, -alpha, ctx);
       if (v > alpha) alpha = v;
       if (alpha >= beta) break;
     }
     return alpha;
   },
 
-  best(s, depth, blunder) {
+  // How a rating plays: how often it just shoves something, how far it looks, and how fuzzy its judgement is.
+  style(elo) {
+    return {
+      rnd: elo < 400 ? 0.7 : elo < 800 ? 0.4 : elo < 1200 ? 0.18 : elo < 1600 ? 0.07 : elo < 2000 ? 0.025 : 0,
+      depth: elo < 700 ? 1 : elo < 1300 ? 2 : elo < 1900 ? 3 : elo < 2500 ? 4 : 6,
+      q: elo >= 1100,
+      fuzz: Math.max(0, (1700 - elo) / 4),
+      ms: elo >= 2500 ? 2200 : elo >= 1900 ? 1500 : 900,
+    };
+  },
+
+  best(s, elo) {
     const ms = this.legal(s);
     if (!ms.length) return null;
-    if (Math.random() < blunder) return ms[(Math.random() * ms.length) | 0]; // a fish is still a fish
-    let best = null, bv = -1e9;
-    for (const m of ms.sort(() => Math.random() - 0.5)) {
-      const v = -this.search(this.make(s, m), depth - 1, -1e9, -bv);
-      if (v > bv) { bv = v; best = m; }
+    const st = this.style(elo);
+    if (Math.random() < st.rnd) return ms[(Math.random() * ms.length) | 0]; // a fish is still a fish
+    const ctx = { n: 0, deadline: performance.now() + st.ms, q: st.q };
+    const fuzz = new Map(ms.map((m) => [m, (Math.random() - 0.5) * st.fuzz]));
+    let order = ms.sort(() => Math.random() - 0.5), best = order[0];
+    // Iterative deepening: keep the best move from the deepest search that finished in time.
+    for (let d = 1; d <= st.depth; d++) {
+      try {
+        const scored = [];
+        let alpha = -1e9;
+        for (const m of order) {
+          const v = -this.search(this.make(s, m), d - 1, -1e9, -alpha + 400, ctx) + fuzz.get(m);
+          scored.push([v, m]);
+          if (v > alpha) alpha = v;
+        }
+        scored.sort((a, b) => b[0] - a[0]);
+        order = scored.map((x) => x[1]); best = order[0];
+        if (scored[0][0] > 90000) break; // found a mate
+      } catch (e) { if (e !== ctx) throw e; break; }
     }
     return best;
   },
 };
 
-const Chess = {
-  on: false, open: false, s: null, sel: -1, fish: null, depth: 1, blunder: 0, thinking: false, moves: 0, history: [],
+// Elo for a fish: tiddlers barely know how the horse moves; monsters play like grandmasters.
+function fishElo(f) {
+  const kg = f.kg || 0.3, frac = U.clamp(Math.log(kg / 0.05) / Math.log(400), 0, 1);
+  return Math.min(3000, Math.round(150 + 2850 * Math.pow(frac, 1.6) + (f.prized || f.sp.legendary ? 300 : 0)));
+}
+const eloTier = (e) => (e < 500 ? 'barely knows the rules' : e < 1000 ? 'a casual player' : e < 1500 ? 'club player' : e < 2000 ? 'a strong club player' : e < 2400 ? 'a master' : 'a grandmaster');
 
-  start() { this.on = true; document.body.classList.add('chessmode'); enterPlay(); Hud.toast('Chess Mode: hook a fish, then beat it at chess to land it.', UI.accent, 5); },
+const Chess = {
+  on: false, open: false, s: null, sel: -1, duel: null, elo: 800, thinking: false, moves: 0, pendingWin: false,
+
+  start() { this.on = true; document.body.classList.add('chessmode'); enterPlay(); Hud.toast('Chess Mode: hook a fish, shoot game, hot-wire a ride, pick a lock or crack a safe — you have to beat it at chess first.', UI.accent, 6); },
 
   hook() {
     if (this.hooked) return;
     this.hooked = true;
+    const self = this;
+    // Fish: checkmate to land it.
     const start = Fight.start.bind(Fight);
-    Fight.start = function (f, q) { start(f, q); if (Chess.on) Chess.challenge(f); };
+    Fight.start = function (f, q) {
+      start(f, q);
+      if (!self.on) return;
+      self.challenge({ title: 'CHECKMATE TO LAND IT', who: (f.prized ? '★ PRIZED ' : '') + f.sp.name + ' · ' + U.fmtKg(f.kg), elo: fishElo(f), fish: true,
+        win: () => { if (Fight.fish) Fight.land(); },
+        lose: (msg) => { if (Fight.fish) Fight.thrown(msg); } });
+    };
+    // Game: hit it, then beat it, or it bolts.
+    const shotAt = Animals.shotAt.bind(Animals);
+    Animals.shotAt = function (x, y, scoped) {
+      if (!self.on) return shotAt(x, y, scoped);
+      const an = Animals.list.filter((a) => a.state !== 'dead' && U.dist(a.x, a.y, x, y) < (a.type === 'deer' ? 1.2 : 0.9) * (scoped ? 0.7 : 1))
+        .sort((a, b) => U.dist(a.x, a.y, x, y) - U.dist(b.x, b.y, x, y))[0];
+      if (!an) return false;
+      const name = an.type === 'boar' ? 'wild boar' : an.buck ? 'stag' : 'deer';
+      const keep = { speed: an.speed, state: an.state }; an.speed = 0;
+      self.challenge({ title: 'CHECKMATE TO BAG IT', who: 'A ' + name, elo: an.type === 'boar' ? 2100 : an.buck ? 1800 : 1300,
+        win: () => {
+          an.state = 'dead'; an.deadT = 45; an.speed = 0;
+          an.kg = an.type === 'boar' ? 45 + Math.random() * 75 : an.buck ? 65 + Math.random() * 55 : 35 + Math.random() * 35;
+          Hud.toast('Bagged a ' + name + '! Walk over to collect it.', UI.good, 2.4);
+        },
+        lose: () => { an.speed = keep.speed; Animals.startle(an); Hud.toast('The ' + name + ' outplays you and bolts.', UI.bad, 2); } });
+      return true;
+    };
+    // Hot-wiring and break-ins: the lock plays you.
+    const via = (setup, desc, elo) => {
+      LockPick.alert = 0; LockPick.done = false; setup();
+      self.challenge({ title: 'CHECKMATE TO GET IN', who: desc, elo, win: () => LockPick.success(), lose: () => LockPick.fail() });
+    };
+    for (const [fn, mk] of [
+      ['openBoat', (b) => [() => { LockPick.r = null; LockPick.house = null; LockPick.boat = b; }, b.owner + '\'s jetski ignition', 1500]],
+      ['open', (r) => [() => { LockPick.r = r; LockPick.house = null; LockPick.boat = null; }, r.name + '\'s ' + BIKE_BY_ID[r.bikeId].name, Math.round(U.clamp(700 + BIKE_BY_ID[r.bikeId].price * 0.9, 700, 2600))]],
+      ['openHouse', (b) => [() => { LockPick.r = null; LockPick.house = b; LockPick.boat = null; }, b.name.replace(/ house$/, '') + ' front door', b.big ? 2000 : 1100]],
+    ]) {
+      const orig = LockPick[fn].bind(LockPick);
+      LockPick[fn] = function (x) { if (!self.on) return orig(x); const [setup, desc, elo] = mk(x); via(setup, desc, elo); };
+    }
+    // Safes.
+    const crack = Thief.crack.bind(Thief);
+    Thief.crack = function (b) {
+      if (!self.on || !Thief.safeReady(b)) return crack(b);
+      Thief.safe = { b, owner: Npcs.list.find((n) => n.home === b), done: false };
+      self.challenge({ title: 'CHECKMATE TO CRACK IT', who: b.name + '\'s safe', elo: b.big ? 2600 : 1700, win: () => Thief.safeEnd('ok'), lose: () => Thief.safeEnd('fail') });
+    };
   },
 
-  challenge(f) {
-    this.fish = f;
-    const kg = f.kg || 0.3, big = kg >= 4 || f.prized || f.sp.legendary;
-    this.depth = big ? 3 : kg >= 1.2 ? 2 : 1;
-    this.blunder = big ? 0.02 : kg >= 1.2 ? 0.08 : 0.2;
-    this.s = ChessEng.start(kg < 0.4 && !f.prized);
-    this.sel = -1; this.thinking = false; this.moves = 0; this.history = [];
-    this.open = true; Game.mode = 'chess';
+  challenge(d) {
+    this.duel = d; this.elo = d.elo;
+    this.s = ChessEng.start(false);
+    this.sel = -1; this.thinking = false; this.moves = 0; this.last = null; this.pendingWin = false;
+    this.open = true; this.prevMode = Game.mode === 'chess' ? 'play' : Game.mode; Game.mode = 'chess';
     Sfx.setDrag && Sfx.setDrag(0);
-    document.getElementById('chessWho').textContent = (f.prized ? '★ PRIZED ' : '') + f.sp.name + ' · ' + U.fmtKg(kg) + ' — ' + (big ? 'a grandmaster of the deep' : kg >= 1.2 ? 'a cunning one' : kg < 0.4 ? 'a tiddler (plays without its queen)' : 'a casual player');
+    document.querySelector('#chess .chess-head b').textContent = d.title;
+    document.getElementById('chessWho').innerHTML = d.who.replace(/</g, '&lt;') + ' — <span class="elo">ELO ' + d.elo + '</span> · ' + eloTier(d.elo);
+    document.getElementById('chessResign').textContent = d.fish ? 'Resign (let it go)' : 'Resign (walk away)';
     document.getElementById('chess').classList.remove('hidden');
-    this.status('FISH ON! It challenges you. You\'re white — your move.');
+    this.status((d.fish ? 'FISH ON! ' : '') + 'It challenges you. You\'re white — your move.');
     this.draw();
   },
 
@@ -181,12 +276,13 @@ const Chess = {
     this.draw();
     if (this.checkEnd()) return;
     if (this.s.turn === 'b') {
-      this.thinking = true; this.status('The ' + this.fish.sp.name + ' is thinking…', 'dim');
+      this.thinking = true; this.status('Thinking…' + (this.elo >= 1900 ? ' (it\'s good at this)' : ''), 'dim');
       setTimeout(() => {
-        const r = ChessEng.best(this.s, this.depth, this.blunder);
+        if (!this.open) return;
+        const r = ChessEng.best(this.s, this.elo);
         this.thinking = false;
         if (r) this.play(r);
-      }, 350);
+      }, 300);
     } else this.status(ChessEng.inCheck(this.s, 'w') ? 'CHECK! Your move.' : 'Your move.', ChessEng.inCheck(this.s, 'w') ? 'bad' : '');
   },
 
@@ -198,24 +294,26 @@ const Chess = {
       return false;
     }
     const mate = !ms.length && ChessEng.inCheck(this.s, side);
-    if (mate && side === 'b') this.finish(true, 'CHECKMATE! The ' + this.fish.sp.name + ' surrenders. Into the net it goes.');
-    else if (mate) this.finish(false, 'Checkmated by a fish. It spits the hook and swims off, smug.');
-    else this.finish(false, 'Stalemate. The ' + this.fish.sp.name + ' slips away while you argue about it.');
+    if (mate && side === 'b') this.finish(true, 'CHECKMATE! You win.');
+    else if (mate) this.finish(false, this.duel.fish ? 'Checkmated by a fish. It spits the hook and swims off, smug.' : 'Checkmated. You lose.');
+    else this.finish(false, this.duel.fish ? 'Stalemate. It slips the hook while you argue about it.' : 'Stalemate — that counts as a loss here.');
     return true;
   },
 
   finish(won, msg) {
+    if (!this.open) return;
     this.status(msg, won ? 'good' : 'bad');
-    this.open = false;
+    this.open = false; this.pendingWin = won;
+    const d = this.duel;
     setTimeout(() => {
       document.getElementById('chess').classList.add('hidden');
-      Game.mode = 'play';
-      if (!Fight.fish) return;
-      if (won) Fight.land(); else Fight.thrown(msg);
-    }, 1400);
+      Game.mode = this.prevMode || 'play';
+      this.pendingWin = false;
+      if (won) d.win(); else d.lose(msg);
+    }, 1300);
   },
 
-  resign() { if (!this.open) return; this.finish(false, 'You resign. The ' + this.fish.sp.name + ' swims off with your dignity.'); },
+  resign() { if (!this.open) return; this.finish(false, this.duel.fish ? 'You resign. It swims off with your dignity.' : 'You resign and walk away.'); },
 
   draw() {
     const el = document.getElementById('chessBoard'), legal = this.sel >= 0 ? ChessEng.legal(this.s).filter((m) => m.f === this.sel).map((m) => m.t) : [];

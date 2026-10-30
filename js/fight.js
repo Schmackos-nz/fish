@@ -41,6 +41,7 @@ const Fight = {
   effort() { return { run: 1, side: 0.85, sulk: 0.55, jump: 0.7, tire: 0.2 }[this.mode]; },
 
   update(dt, turns) {
+    if (typeof Chess !== 'undefined' && (Chess.open || Chess.pendingWin)) return; // frozen while you play it at chess
     const f = this.fish, sp = f.sp, gear = Game.gear, l = Fishing.lure;
     this.time += dt;
     if (this.mythDoom > 0) {
