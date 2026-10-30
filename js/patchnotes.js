@@ -4,6 +4,9 @@
 const PATCH_NOTES = [
   { v: '2.3', name: 'Fresh Coat', date: '31 Oct 2026', notes: [
     ['new', 'The Coast Guard: an orange patrol boat with lights and siren chases you down for reported boat theft, being wanted on the water, or fishing without a permit from a boat. A jetski can outrun them; if you reach the shore they radio the wardens'],
+    ['new', 'Dialog Mode: the whole game as a run of dialog boxes. Pick choices (or press 1-9) to look around, travel, talk, fish, strike and reel'],
+    ['new', 'Realism Mode: the valley runs on your real clock. Tie your own lure on (thread the eye, wrap, tuck, wet and pull tight; a sloppy knot snaps under load), open the bail yourself, cast, and turn the reel handle on screen'],
+    ['new', 'Roguelike Run: a brand-new valley every run with one life. Earn the day\'s cash quota by 8pm, pick one of three rewards, and the quota climbs. Get wasted, busted or miss the quota and the run is over. Your normal save is never touched'],
     ['new', 'Text Mode on the main menu: play the whole game as an old-school MUD. Same valley, same locals, wardens, shops and trouble, all in text. Type HELP'],
     ['new', 'An intro cinematic cut to the theme song plays on the main menu. Skip it with any click or key, and watch it again with Replay cinematic'],
     ['new', 'Swimming! Face deep water and press E to dive in, or jump off a boat mid-lake. Front crawl anywhere (Shift to sprint), climb back aboard boats or up onto docks. It tires you out: run out of energy and you start taking damage'],

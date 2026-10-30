@@ -47,6 +47,7 @@ const Fishing = {
   selectLure(id) {
     if (this.state !== 'idle') { this.say('Reel in first (Space) to change lures.', '#f2c14e'); return; }
     if (!this.canCastWith(id)) { this.say('No ' + LURE_BY_ID[id].name + ' left — buy more at Hettie\'s Tackle.', '#e2584d'); return; }
+    if (id !== this.lureId) Realism.rigged = false;
     this.lureId = id;
     this.say('Tied on: ' + LURE_BY_ID[id].name, '#8fd16a', 1.4);
   },
@@ -72,6 +73,7 @@ const Fishing = {
         // Press and hold to load the rod; the bail flips open by itself.
         if (Input.mousePressed && Tools.current === 'rod' && !Interior.active && !Bikes.riding && !Boats.driving) {
           if (!this.canCastWith(this.lureId)) { this.say('Out of that lure — pick another from the lure bar.', '#e2584d'); break; }
+          if (!Realism.ready()) break;
           this.bailOpen = true; Sfx.bail();
           this.state = 'charging'; this.chargeT = 0;
         }
@@ -128,7 +130,8 @@ const Fishing = {
     const l = this.lure;
     l.h = 0;
     this.state = 'line';
-    this.bailOpen = false; Sfx.bail();
+    // Realism: the bail stays open until you turn the handle.
+    this.bailOpen = Realism.on; if (!Realism.on) Sfx.bail();
     this.lineOut = U.dist(this.tip.x, this.tip.y, l.x, l.y) + 0.3;
     if (World.isWater(l.x, l.y)) {
       const fl = Floaters.near(l.x, l.y, 1.1);
@@ -184,7 +187,7 @@ const Fishing = {
     if (striking && (LineDrag.doubleTap || Input.pressed('Space'))) { this.hookset(1); if (this.state !== 'line') return; }
     else if (striking && Input.reelGrab && this.omega > 0.4 && Game.time - this.strikeAt > 0.3) { this.hookset(0.85); if (this.state !== 'line') return; }
     else if (LineDrag.doubleTap && Game.time - this.nibbleAt < 0.6) this.strikeEarly();
-    else if (Input.pressed('Space')) { this.reelInFast(); return; }
+    else if (Input.pressed('Space') && !Realism.on) { this.reelInFast(); return; }
 
     if (!this.bailOpen) {
       this.lineOut = Math.max(0, this.lineOut - lineIn);
@@ -376,6 +379,7 @@ const Fishing = {
   useLure(id) { Game.lures[id] = Math.max(0, (Game.lures[id] || 0) - 1); },
 
   loseLure(msg) {
+    Realism.rigged = false;
     this.useLure(this.lure ? this.lure.id : this.lureId);
     this.say(msg, '#e2584d', 2.2);
     this.state = 'idle'; this.lure = null; this.lineOut = 0; this.engaged = null; this.snag = null; this.bailOpen = false;

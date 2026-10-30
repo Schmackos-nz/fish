@@ -13,21 +13,21 @@ const Mud = {
   history: [], hIdx: 0, lastWanted: 0, lastPhase: -1, lastWeather: '', actions: [],
 
   // ---------- turning it on and off ----------
-  start() {
-    this.on = true;
-    document.body.classList.add('mud');
-    document.getElementById('mud').classList.remove('hidden');
+  start(style) {
+    this.on = true; this.style = style || 'text';
+    document.body.classList.add(this.style === 'dialog' ? 'dlgmode' : 'mud');
+    if (this.style === 'dialog') Dlg.start(); else document.getElementById('mud').classList.remove('hidden');
     this.hook();
     const out = document.getElementById('mudOut'); out.innerHTML = '';
     this.print('GRAND TROUT AUTO VI', 'title');
     this.print('— the text edition. Type HELP for commands. —', 'sys');
     this.lastWanted = Wanted.level; this.lastPhase = Game.env.phase; this.lastWeather = Game.env.weather.id;
     this.look();
-    setTimeout(() => document.getElementById('mudIn').focus(), 50);
+    if (this.style !== 'dialog') setTimeout(() => document.getElementById('mudIn').focus(), 50);
   },
   stop() {
     this.on = false; this.goal = null; TFish.reset();
-    document.body.classList.remove('mud');
+    document.body.classList.remove('mud', 'dlgmode'); Dlg.stop();
     document.getElementById('mud').classList.add('hidden');
   },
 
@@ -68,6 +68,7 @@ const Mud = {
 
   // ---------- output ----------
   print(text, cls = '') {
+    if (this.style === 'dialog') Dlg.push(text, cls);
     const out = document.getElementById('mudOut');
     const p = document.createElement('div');
     p.className = 'ml ' + cls; p.textContent = text;
@@ -249,6 +250,7 @@ const Mud = {
   update(dt) {
     if (!this.on) return;
     TFish.update(dt);
+    Dlg.update(dt);
     // Swimming strokes.
     if (this.swimDir) {
       Swim.move(dt, this.swimDir.x, this.swimDir.y);
@@ -322,7 +324,7 @@ const Mud = {
       case 'poo': case 'poop': return Needs.poo();
       case 'clear': case 'cls': document.getElementById('mudOut').innerHTML = ''; return;
       case 'save': Game.save(); return this.print('Game saved.', 'good');
-      case 'quit': case 'menu': Game.save(); this.stop(); showTitle(); return;
+      case 'quit': case 'menu': if (Rogue.on) return location.reload(); Game.save(); this.stop(); showTitle(); return;
       default: return this.print('Huh? "' + cmd0 + '" isn\'t something you know how to do. Type HELP.', 'sys');
     }
   },

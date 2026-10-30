@@ -34,6 +34,8 @@ const LineDrag = {
     if (Input.pressed('KeyZ')) Fight.setDrag(Game.drag - 0.25);
     if (Input.pressed('KeyX')) Fight.setDrag(Game.drag + 0.25);
     if (Input.wheel && Fishing.state !== 'fight') Fight.setDrag(Game.drag - Math.sign(Input.wheel) * 0.25);
+    // Realism: no dragging the lure in; only the reel handle on screen turns the reel.
+    if (Realism.on) { this.grabbing = false; Input.reelGrab = Realism.turning; if (Input.pressed('Space')) this.doubleTap = true; return; }
     // Press on the lure: grab it (and two quick presses = strike).
     if (Input.mousePressed && this.hover) {
       const now = performance.now();

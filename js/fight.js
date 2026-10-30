@@ -142,7 +142,7 @@ const Fight = {
     Fishing.bend = U.clamp(this.tension / gear.line.strength, 0, 1.3);
 
     // ----- outcomes -----
-    if (this.tension > gear.line.strength * (0.95 + gear.line.stretch * 0.15)) return this.snap();
+    if (this.tension > gear.line.strength * Realism.k() * (0.95 + gear.line.stretch * 0.15)) return this.snap();
     // Slack lets the hook fall out.
     if (this.tension < 0.08 && !f.airborne) {
       this.slackT += dt;

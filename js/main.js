@@ -69,6 +69,7 @@ const Game = {
   },
 
   save() {
+    if (Rogue.on) return; // a roguelike run never touches your real save
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         seed: this.seed, money: this.money, lures: this.lures, owned: this.owned, drag: this.drag,
@@ -104,12 +105,12 @@ const Game = {
 
   updateEnv(dt) {
     const e = this.env;
-    e.hour += dt * 24 / 1200; // a day lasts 20 minutes
-    if (e.hour >= 24) { e.hour -= 24; e.day++; }
+    if (Realism.on) Realism.clock(e); // realism: the valley keeps your own clock
+    else { e.hour += dt * 24 / 1200; if (e.hour >= 24) { e.hour -= 24; e.day++; } } // a day lasts 20 minutes
     const h = e.hour;
     e.phase = h >= 5 && h < 8 ? 0 : h >= 8 && h < 17 ? 1 : h >= 17 && h < 20 ? 2 : 3;
     e.daylight = h < 5 || h >= 21 ? 0 : h < 8 ? U.smooth((h - 5) / 3) : h < 18 ? 1 : U.smooth(1 - (h - 18) / 3);
-    e.weatherT -= dt * 24 / 1200;
+    e.weatherT -= dt * (Realism.on ? 1 / 3600 : 24 / 1200);
     if (e.weatherT <= 0) {
       e.weatherT = 2 + Math.random() * 4;
       const next = U.weighted(Math.random, WEATHERS, (w) => (w.id === 'clear' ? 5 : w.id === 'cloudy' ? 3 : 2));
@@ -227,6 +228,9 @@ function refreshTitle() {
 }
 
 function showTitle() {
+  if (Rogue.on) return location.reload(); // back to the real save
+  if (Mud.on) Mud.stop();
+  Realism.stop();
   drawTitleTim();
   if (Sfx.ctx && Settings.music) setTimeout(() => { if (Game.mode === 'title') Music.play(); }, 400);
   Game.mode = 'title';
@@ -315,6 +319,10 @@ function wireScreens() {
   };
   $('themeBtn').onclick = () => Cine.start();
   $('mudBtn').onclick = () => { enterPlay(); Mud.start(); };
+  $('dlgBtn').onclick = () => { enterPlay(); Mud.start('dialog'); };
+  $('realBtn').onclick = () => { enterPlay(); Realism.start(); };
+  $('rogueBtn').onclick = () => Rogue.start();
+  Rogue.hook();
   const mudIn = $('mudIn');
   mudIn.addEventListener('keydown', (e) => {
     e.stopPropagation(); // typing never drives the 3D controls underneath
@@ -396,7 +404,7 @@ function frame(now) {
   last = now;
   try {
   if (Game.mode === 'title') titleFrame(dt);
-  else if (Game.mode === 'jail') {
+  else if (Game.mode === 'jail' || Game.mode === 'rogue') {
     Scene3D.render(Game.time);
   } else if (Game.mode === 'pause') {
     if (Input.pressed('Escape') && !closeModals()) resume();
@@ -464,8 +472,8 @@ function frame(now) {
     Scene3D.updateCamera(dt, { x: fx, y: fy });
     Scene3D.camDist = baseDist;
     Scene3D.updateEnv(Game.env, dt);
-    Mud.update(dt);
-    if (!Mud.on) {
+    Mud.update(dt); Realism.update(); Rogue.update();
+    if (!Mud.on || Mud.style === 'dialog') {
     Actors.update(dt, Game.env);
     Npcs.render();
     Wardens.render();
@@ -483,7 +491,7 @@ function frame(now) {
     Camp.render(dt);
     Snakes.render(); Ducks.render(); Hunters.render(); Decay.render(); Staff.render(); Needs.render(); Crabs.render(); Waypoint.render(); Boats.render(dt);
     Scene3D.render(Game.time);
-    Hud.draw();
+    if (!Mud.on) Hud.draw();
     }
     saveT += dt;
     if (saveT > 20) { saveT = 0; Game.save(); }
@@ -508,4 +516,6 @@ window.addEventListener('load', () => {
   buildWorld(Game.seed, saved ? { x: saved.px, y: saved.py } : null);
   showTitle();
   requestAnimationFrame(frame);
+  // 'New run' from a roguelike death reloads straight into another run.
+  if (sessionStorage.getItem('reelwild.autoRogue')) { sessionStorage.removeItem('reelwild.autoRogue'); setTimeout(() => Rogue.start(), 300); }
 });

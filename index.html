@@ -199,6 +199,45 @@
   .mud-map .m-forest { color: #2E9A4A; } .mud-map .m-sand { color: #C8B070; } .mud-map .m-rock { color: #9A9A92; } .mud-map .m-path { color: #A88A58; }
   .mud-map .m-plank { color: #C89A5A; } .mud-map .m-bld { color: #D8D0C0; }
   #mudForm { display: flex; gap: 8px; align-items: center; padding: 8px 14px 12px; border-top: 1px solid #1E3A1E; background: #081008; }
+  #dlg { position: absolute; inset: 0; z-index: 5; pointer-events: none; display: flex; align-items: flex-end; justify-content: center; padding: 0 16px 18px; background: linear-gradient(transparent 40%, rgba(5,8,14,0.55)); }
+  body.dlgmode #hud { visibility: hidden; }
+  #dlg.panel #dlgText { display: none; }
+  #dlg.panel { background: none; padding-bottom: 8px; }
+  #dlg.panel .dlg-box { width: min(520px, 100%); }
+  .dlg-box { pointer-events: auto; width: min(880px, 100%); background: rgba(14,18,30,0.94); border: 2px solid #F2C14E; border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,0.6); color: #F4F0FA; font: 15px/1.45 system-ui, sans-serif; overflow: hidden; }
+  #dlgHead { padding: 8px 16px; background: #F2C14E; color: #10081C; font: 700 13px system-ui; letter-spacing: 0.5px; }
+  #dlgText { max-height: 34vh; overflow-y: auto; padding: 10px 16px 4px; }
+  #dlgText p { margin: 0 0 4px; color: #B9B3C8; }
+  #dlgText p.last { color: #fff; font-weight: 600; }
+  #dlgText p.good { color: #8FD16A; } #dlgText p.bad { color: #FF8A8A; } #dlgText p.say { color: #9CD3FF; } #dlgText p.room { color: #F2C14E; font-weight: 800; }
+  #dlgChoices { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px; padding: 10px 14px 14px; }
+  #dlgChoices button { all: unset; cursor: pointer; padding: 9px 12px; border-radius: 8px; background: #232A40; color: #F4F0FA; font: 600 14px system-ui; display: flex; gap: 8px; align-items: center; }
+  #dlgChoices button:hover { background: #F4F0FA; color: #10081C; }
+  #dlgChoices button kbd { font: 700 11px system-ui; opacity: 0.55; min-width: 10px; }
+  #dlgChoices button.go { background: #2F5A2A; } #dlgChoices button.bad { background: #5A2430; } #dlgChoices button.back { background: transparent; color: #B9B3C8; }
+  #dlgChoices button.dim { opacity: 0.6; cursor: default; }
+  #dlgChoices button.big { grid-column: 1 / -1; justify-content: center; font-size: 26px; padding: 16px; background: #D23A3A; animation: dlgPulse 0.5s infinite alternate; }
+  @keyframes dlgPulse { to { background: #FF5F5F; } }
+  #reelW { position: absolute; right: 18px; bottom: 96px; z-index: 4; width: 200px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  #reelCv { width: 200px; height: 200px; touch-action: none; cursor: grab; }
+  #rigBtn, .rig-btns button { all: unset; cursor: pointer; padding: 6px 14px; border-radius: 8px; background: rgba(14,18,30,0.85); color: #F2C14E; font: 700 13px system-ui; border: 1px solid #F2C14E; }
+  #rig { position: absolute; inset: 0; z-index: 30; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .rig-sheet { background: #10181A; border: 2px solid #F2C14E; border-radius: 14px; padding: 12px; max-width: 100%; }
+  #rigCv { width: min(520px, calc(100vw - 60px)); aspect-ratio: 520 / 340; touch-action: none; cursor: crosshair; display: block; border-radius: 8px; }
+  .rig-btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+  .rig-btns button:disabled { opacity: 0.35; cursor: default; }
+  #rogueBar { position: absolute; left: 50%; top: 10px; transform: translateX(-50%); z-index: 6; display: flex; gap: 14px; padding: 6px 16px; border-radius: 999px; background: rgba(16,8,28,0.85); border: 1px solid #FF5FA2; color: #F4F0FA; font: 600 13px system-ui; pointer-events: none; white-space: nowrap; }
+  #rogueBar b { color: #FF5FA2; } #rogueBar i { font-style: normal; color: #FF8A8A; } #rogueBar i.ok { color: #8FD16A; }
+  #rogue { position: absolute; inset: 0; z-index: 35; background: rgba(5,3,10,0.72); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  #rogueCard { width: min(720px, 100%); background: #140A22; border: 2px solid #FF5FA2; border-radius: 16px; padding: 22px; color: #F4F0FA; font: 15px system-ui; text-align: center; }
+  #rogueCard h2 { margin: 0 0 6px; font: 400 44px "Anton", Impact, sans-serif; letter-spacing: 1px; color: #FF5FA2; }
+  #rogueCard h2.dead { color: #FF4A4A; font-size: 64px; }
+  #rogueCard .perks { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 16px; }
+  #rogueCard .perks button { all: unset; cursor: pointer; padding: 14px; border-radius: 10px; background: #261640; display: flex; flex-direction: column; gap: 4px; text-align: left; }
+  #rogueCard .perks button:hover { background: #F4F0FA; color: #10081C; }
+  #rogueCard .perks b { font-size: 17px; } #rogueCard .perks span { font-size: 13px; opacity: 0.8; }
+  #rogueCard .score { display: flex; justify-content: center; gap: 28px; margin: 14px 0; } #rogueCard .score div { display: flex; flex-direction: column; font-size: 12px; opacity: 0.85; } #rogueCard .score b { font-size: 30px; color: #F2C14E; }
+  #rogueCard .best { color: #F2C14E; }
   #mudForm span { color: #F2C14E; font-size: 20px; }
   #mudIn { flex: 1; background: transparent; border: 0; outline: 0; color: #CFFFC8; font: 19px "VT323", Consolas, monospace; caret-color: #9CFF7A; }
   #cineFlash { position: absolute; inset: 0; z-index: 41; background: #fff; opacity: 0; pointer-events: none; }
@@ -402,6 +441,11 @@
   <div id="mudOut"></div>
   <form id="mudForm" autocomplete="off"><span>&gt;</span><input id="mudIn" spellcheck="false" placeholder="type a command — HELP if you're lost"></form>
 </div>
+<div id="dlg" class="hidden"><div class="dlg-box"><div id="dlgHead"></div><div id="dlgText"></div><div id="dlgChoices"></div></div></div>
+<div id="reelW" class="hidden"><canvas id="reelCv" width="220" height="220"></canvas><button id="rigBtn">Tie on (T)</button></div>
+<div id="rig" class="hidden"><div class="rig-sheet"><canvas id="rigCv" width="520" height="340"></canvas><div class="rig-btns"><button id="rigTuck">Tuck</button><button id="rigWet">Lick the knot</button><button id="rigCancel">Cancel</button></div></div></div>
+<div id="rogueBar" class="hidden"></div>
+<div id="rogue" class="hidden"><div id="rogueCard"></div></div>
 <div id="title">
   <div class="gta-shade"></div>
   <div class="gta-collage">
@@ -423,6 +467,9 @@
       <button id="startBtn" class="primary"><span>Start fishing</span></button>
       <button id="newBtn"><span>New Game</span></button>
       <button id="mudBtn"><span>Text Mode</span></button>
+      <button id="dlgBtn"><span>Dialog Mode</span></button>
+      <button id="realBtn"><span>Realism Mode</span></button>
+      <button id="rogueBtn"><span>Roguelike Run</span></button>
       <button id="helpBtn"><span>How to play</span></button>
       <button id="settingsBtn"><span>Settings</span></button>
     </nav>
@@ -546,67 +593,68 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=138"></script>
-<script src="js/data.js?v=138"></script>
-<script src="js/audio.js?v=138"></script>
-<script src="js/music.js?v=138"></script>
-<script src="js/voice.js?v=138"></script>
-<script src="js/world.js?v=138"></script>
-<script src="js/scene-sprites.js?v=138"></script>
-<script src="js/toon.js?v=138"></script>
-<script src="js/scene.js?v=138"></script>
-<script src="js/grass.js?v=138"></script>
-<script src="js/folk.js?v=138"></script>
-<script src="js/models.js?v=138"></script>
-<script src="js/actors.js?v=138"></script>
-<script src="js/fish.js?v=138"></script>
-<script src="js/legends.js?v=138"></script>
-<script src="js/fishing.js?v=138"></script>
-<script src="js/fight.js?v=138"></script>
-<script src="js/linedrag.js?v=138"></script>
-<script src="js/player.js?v=138"></script>
-<script src="js/npcs.js?v=138"></script>
-<script src="js/path.js?v=138"></script>
-<script src="js/gun.js?v=138"></script>
-<script src="js/arsenal.js?v=138"></script>
-<script src="js/camp.js?v=138"></script>
-<script src="js/wild.js?v=138"></script>
-<script src="js/decay.js?v=138"></script>
-<script src="js/contest.js?v=138"></script>
-<script src="js/bugs.js?v=138"></script>
-<script src="js/floaters.js?v=138"></script>
-<script src="js/animals.js?v=138"></script>
-<script src="js/wardens.js?v=138"></script>
-<script src="js/interiors.js?v=138"></script>
-<script src="js/life.js?v=138"></script>
-<script src="js/weed.js?v=138"></script>
-<script src="js/markers.js?v=138"></script>
-<script src="js/swimmers.js?v=138"></script>
-<script src="js/couples.js?v=138"></script>
-<script src="js/tim.js?v=138"></script>
-<script src="js/bikes.js?v=138"></script>
-<script src="js/lockpick.js?v=138"></script>
-<script src="js/wanted.js?v=138"></script>
-<script src="js/tools.js?v=138"></script>
-<script src="js/hud.js?v=138"></script>
-<script src="js/share.js?v=138"></script>
-<script src="js/menus.js?v=138"></script>
-<script src="js/mobile.js?v=138"></script>
-<script src="js/patchnotes.js?v=138"></script>
-<script src="js/staff.js?v=138"></script>
-<script src="js/thief.js?v=138"></script>
-<script src="js/needs.js?v=138"></script>
-<script src="js/seats.js?v=138"></script>
-<script src="js/waypoint.js?v=138"></script>
-<script src="js/boats.js?v=138"></script>
-<script src="js/prison.js?v=138"></script>
-<script src="js/coastguard.js?v=138"></script>
-<script src="js/swim.js?v=138"></script>
-<script src="js/cine.js?v=138"></script>
-<script src="js/text.js?v=138"></script>
-<script src="js/bodies.js?v=138"></script>
-<script src="js/inventory.js?v=138"></script>
-<script src="js/main.js?v=138"></script>
-<script src="js/rep.js?v=138"></script>
+<script src="js/util.js?v=140"></script>
+<script src="js/data.js?v=140"></script>
+<script src="js/audio.js?v=140"></script>
+<script src="js/music.js?v=140"></script>
+<script src="js/voice.js?v=140"></script>
+<script src="js/world.js?v=140"></script>
+<script src="js/scene-sprites.js?v=140"></script>
+<script src="js/toon.js?v=140"></script>
+<script src="js/scene.js?v=140"></script>
+<script src="js/grass.js?v=140"></script>
+<script src="js/folk.js?v=140"></script>
+<script src="js/models.js?v=140"></script>
+<script src="js/actors.js?v=140"></script>
+<script src="js/fish.js?v=140"></script>
+<script src="js/legends.js?v=140"></script>
+<script src="js/fishing.js?v=140"></script>
+<script src="js/fight.js?v=140"></script>
+<script src="js/linedrag.js?v=140"></script>
+<script src="js/player.js?v=140"></script>
+<script src="js/npcs.js?v=140"></script>
+<script src="js/path.js?v=140"></script>
+<script src="js/gun.js?v=140"></script>
+<script src="js/arsenal.js?v=140"></script>
+<script src="js/camp.js?v=140"></script>
+<script src="js/wild.js?v=140"></script>
+<script src="js/decay.js?v=140"></script>
+<script src="js/contest.js?v=140"></script>
+<script src="js/bugs.js?v=140"></script>
+<script src="js/floaters.js?v=140"></script>
+<script src="js/animals.js?v=140"></script>
+<script src="js/wardens.js?v=140"></script>
+<script src="js/interiors.js?v=140"></script>
+<script src="js/life.js?v=140"></script>
+<script src="js/weed.js?v=140"></script>
+<script src="js/markers.js?v=140"></script>
+<script src="js/swimmers.js?v=140"></script>
+<script src="js/couples.js?v=140"></script>
+<script src="js/tim.js?v=140"></script>
+<script src="js/bikes.js?v=140"></script>
+<script src="js/lockpick.js?v=140"></script>
+<script src="js/wanted.js?v=140"></script>
+<script src="js/tools.js?v=140"></script>
+<script src="js/hud.js?v=140"></script>
+<script src="js/share.js?v=140"></script>
+<script src="js/menus.js?v=140"></script>
+<script src="js/mobile.js?v=140"></script>
+<script src="js/patchnotes.js?v=140"></script>
+<script src="js/staff.js?v=140"></script>
+<script src="js/thief.js?v=140"></script>
+<script src="js/needs.js?v=140"></script>
+<script src="js/seats.js?v=140"></script>
+<script src="js/waypoint.js?v=140"></script>
+<script src="js/boats.js?v=140"></script>
+<script src="js/prison.js?v=140"></script>
+<script src="js/coastguard.js?v=140"></script>
+<script src="js/swim.js?v=140"></script>
+<script src="js/cine.js?v=140"></script>
+<script src="js/text.js?v=140"></script>
+<script src="js/modes.js?v=140"></script>
+<script src="js/bodies.js?v=140"></script>
+<script src="js/inventory.js?v=140"></script>
+<script src="js/main.js?v=140"></script>
+<script src="js/rep.js?v=140"></script>
 </body>
 </html>
