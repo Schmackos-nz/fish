@@ -130,7 +130,7 @@ const Rig = {
     if (Fishing.state !== 'idle') return;
     if (!Fishing.canCastWith(Fishing.lureId)) { Hud.toast('You\'re out of ' + LURE_BY_ID[Fishing.lureId].name + 's.', UI.bad, 2); return; }
     this.isOpen = true; this.step = 0; this.inEye = 0; this.wraps = 0; this.wrapA = 0; this.lastA = null; this.pull = 0; this.burn = 0; this.wet = false; this.bumps = 0;
-    this.msg = 'Thread the line through the eye of the ' + LURE_BY_ID[Fishing.lureId].name.toLowerCase() + '. Steady hands…';
+    this.msg = 'Move the line tip through the eye of the ' + LURE_BY_ID[Fishing.lureId].name.toLowerCase() + ', left to right. Steady hands…';
     document.getElementById('rig').classList.remove('hidden');
     this.wire();
     const loop = () => { if (!this.isOpen) return; this.frame(1 / 60); requestAnimationFrame(loop); };
@@ -163,13 +163,18 @@ const Rig = {
     this.t += dt;
     const E = this.EYE, m = this.m;
     // Your hand shakes a bit; more when you're tired, hungry, itchy or poisoned.
-    const shake = 2.5 + (100 - (Game.energy || 100)) * 0.05 + Bugs.itch * 6 + (Poison.level ? Poison.level() * 8 : 0);
+    const shake = Math.min(7, 1.5 + (100 - (Game.energy || 100)) * 0.03 + Bugs.itch * 4);
+    const prev = { x: this.tip.x, y: this.tip.y };
     this.tip.x = m.x + Math.sin(this.t * 7.3) * shake + Math.sin(this.t * 13.1) * shake * 0.5;
     this.tip.y = m.y + Math.cos(this.t * 6.1) * shake + Math.sin(this.t * 17.7) * shake * 0.4;
     if (this.step === 0) {
-      const d = U.dist(this.tip.x, this.tip.y, E.x, E.y);
-      if (m.down && d < 5) { this.inEye += dt; if (this.inEye > 0.35) { this.step = 1; this.msg = 'Through! Now wrap the tag end around the main line — circle the line 5 to 7 times.'; Sfx.click(); } }
-      else { if (m.down && d >= 5 && d < 11 && this.inEye >= 0) { this.bumps++; this.inEye = -0.3; this.msg = 'Bumped the eye. Again — line tip dead centre.'; Sfx.knot && Sfx.knot(); } this.inEye = Math.min(0, this.inEye + dt); }
+      // Sweep the line tip through the eye, left to right. Clip the metal and you'll have to come round again.
+      const hole = 10;
+      if (prev.x < E.x && this.tip.x >= E.x && this.tip.x - prev.x < 80) {
+        const k = (E.x - prev.x) / (this.tip.x - prev.x || 1), y = prev.y + (this.tip.y - prev.y) * k, off = Math.abs(y - E.y);
+        if (off < hole) { this.step = 1; this.msg = 'Through! Now wrap the tag end around the main line: hold the mouse and circle the dotted ring 5 to 7 times.'; Sfx.click(); }
+        else if (off < hole + 10) { this.bumps++; this.msg = 'Clipped the eye. Come back round and go again, through the middle.'; Sfx.knot && Sfx.knot(); }
+      }
     } else if (this.step === 1) {
       // Wrap around a point on the standing line.
       const cx = 230, cy = 150;
@@ -181,7 +186,7 @@ const Rig = {
         if (w > this.wraps) { this.wraps = w; Sfx.click(); this.msg = this.wraps + ' wrap' + (this.wraps > 1 ? 's' : '') + (this.wraps >= 5 && this.wraps <= 7 ? ' — perfect. Hit TUCK.' : this.wraps > 7 ? ' — getting bulky…' : '…'); }
       } else this.lastA = null;
     } else if (this.step === 2) {
-      if (m.pressed && U.dist(this.tip.x, this.tip.y, E.x - 28, E.y + 4) < 12) { this.step = 3; this.msg = 'Tucked. Wet it (or don\'t), then drag DOWN slowly to cinch it tight.'; Sfx.click(); }
+      if (m.pressed && U.dist(m.x, m.y, E.x - 30, E.y + 4) < 20) { this.step = 3; this.msg = 'Tucked. Wet it (or don\'t), then drag DOWN slowly to cinch it tight.'; Sfx.click(); }
       else if (m.pressed) this.msg = 'Missed the loop. It\'s the little gap just left of the eye.';
     } else if (this.step === 3) {
       if (m.down) {
@@ -207,8 +212,9 @@ const Rig = {
     g.fillStyle = LURE_BY_ID[Fishing.lureId].color; g.strokeStyle = '#000'; g.lineWidth = 2;
     g.beginPath(); g.ellipse(E.x + 70, E.y + 22, 58, 22, 0.25, 0, 7); g.fill(); g.stroke();
     g.strokeStyle = '#9aa3ad'; g.lineWidth = 4; g.beginPath(); g.moveTo(E.x + 120, E.y + 40); g.quadraticCurveTo(E.x + 150, E.y + 95, E.x + 112, E.y + 92); g.stroke();
-    g.lineWidth = 6; g.strokeStyle = '#c7ccd2'; g.beginPath(); g.arc(E.x, E.y, 8, 0, 7); g.stroke();
-    g.lineWidth = 3; g.strokeStyle = '#c7ccd2'; g.beginPath(); g.moveTo(E.x + 8, E.y); g.lineTo(E.x + 20, E.y + 8); g.stroke();
+    g.lineWidth = 4; g.strokeStyle = '#c7ccd2'; g.beginPath(); g.arc(E.x, E.y, 12, 0, 7); g.stroke();
+    g.lineWidth = 3; g.beginPath(); g.moveTo(E.x + 13, E.y + 2); g.lineTo(E.x + 22, E.y + 9); g.stroke();
+    if (this.step === 0) { g.strokeStyle = 'rgba(242,193,78,0.6)'; g.lineWidth = 2; g.setLineDash([6, 6]); g.beginPath(); g.moveTo(E.x - 90, E.y); g.lineTo(E.x - 18, E.y); g.stroke(); g.setLineDash([]); g.fillStyle = 'rgba(242,193,78,0.8)'; g.beginPath(); g.moveTo(E.x - 18, E.y - 6); g.lineTo(E.x - 8, E.y); g.lineTo(E.x - 18, E.y + 6); g.fill(); }
     // The main line coming down from the rod.
     g.strokeStyle = '#e8f4ff'; g.lineWidth = 1.6;
     g.beginPath(); g.moveTo(40, 0); g.quadraticCurveTo(60, 120, this.step === 0 ? 120 : 230, 150);
@@ -223,7 +229,7 @@ const Rig = {
       g.fillStyle = '#f2c14e'; g.beginPath(); g.arc(this.tip.x, this.tip.y, 3, 0, 7); g.fill();
     }
     if (this.step === 1) { g.strokeStyle = 'rgba(242,193,78,0.35)'; g.setLineDash([4, 6]); g.beginPath(); g.arc(230, 150, 40, 0, 7); g.stroke(); g.setLineDash([]); }
-    if (this.step === 2) { g.strokeStyle = '#f2c14e'; g.lineWidth = 1.5; g.beginPath(); g.arc(E.x - 28, E.y + 4, 7, 0, 7); g.stroke(); }
+    if (this.step === 2) { g.strokeStyle = '#f2c14e'; g.lineWidth = 1.5; g.beginPath(); g.arc(E.x - 30, E.y + 4, 11, 0, 7); g.stroke(); }
     if (this.step === 3) {
       g.fillStyle = 'rgba(255,255,255,0.15)'; g.fillRect(470, 40, 18, 240);
       g.fillStyle = this.burn > 0.4 ? '#ff6a4a' : '#8fd16a'; g.fillRect(470, 280 - 240 * U.clamp(this.pull, 0, 1), 18, 240 * U.clamp(this.pull, 0, 1));
