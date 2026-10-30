@@ -69,7 +69,7 @@ const Game = {
   },
 
   save() {
-    if (Rogue.on) return; // a roguelike run never touches your real save
+    if (Rogue.on || FishMode.on) return; // a roguelike run (or a fish) never touches your real save
     try {
       localStorage.setItem(SAVE_KEY, JSON.stringify({
         seed: this.seed, money: this.money, lures: this.lures, owned: this.owned, drag: this.drag,
@@ -225,10 +225,11 @@ function refreshTitle() {
   $('newBtn').querySelector('span').textContent = 'New Game';
   $('newBtn').classList.remove('danger');
   document.querySelectorAll('.gta-menu button').forEach((b, i) => b.classList.toggle('on', i === 0));
+  $('mainMenu').classList.remove('hidden'); $('modeMenu').classList.add('hidden'); $('title').classList.remove('modes');
 }
 
 function showTitle() {
-  if (Rogue.on) return location.reload(); // back to the real save
+  if (Rogue.on || FishMode.on) return location.reload(); // back to the real save
   if (Mud.on) Mud.stop();
   Realism.stop();
   drawTitleTim();
@@ -322,6 +323,15 @@ function wireScreens() {
   $('dlgBtn').onclick = () => { enterPlay(); Mud.start('dialog'); };
   $('realBtn').onclick = () => { enterPlay(); Realism.start(); };
   $('rogueBtn').onclick = () => Rogue.start();
+  $('fishBtn').onclick = () => FishMode.start();
+  // Special Modes: a sub-menu that swaps in for the main one.
+  const modes = (on) => {
+    $('mainMenu').classList.toggle('hidden', on); $('modeMenu').classList.toggle('hidden', !on); $('title').classList.toggle('modes', on);
+    document.querySelectorAll('.gta-menu button').forEach((b) => b.classList.remove('on'));
+    (on ? $('mudBtn') : $('modesBtn')).classList.add('on');
+  };
+  $('modesBtn').onclick = () => modes(true);
+  $('modesBack').onclick = () => modes(false);
   Rogue.hook();
   const mudIn = $('mudIn');
   mudIn.addEventListener('keydown', (e) => {
@@ -378,14 +388,14 @@ function handleGlobalKeys() {
 function titleFrame(dt) {
   titleT += dt;
   const modalOpen = !$('help').classList.contains('hidden') || !$('settings').classList.contains('hidden');
-  const items = [...document.querySelectorAll('.gta-menu button')];
+  const items = [...document.querySelectorAll('.gta-menu:not(.hidden) button')];
   if (!modalOpen && (Input.pressed('ArrowDown') || Input.pressed('ArrowUp') || Input.pressed('KeyS') || Input.pressed('KeyW'))) {
     const cur = items.findIndex((b) => b.classList.contains('on')), dir = Input.pressed('ArrowUp') || Input.pressed('KeyW') ? -1 : 1;
     items.forEach((b) => b.classList.remove('on'));
     items[(cur + dir + items.length) % items.length].classList.add('on'); Sfx.click();
   }
   if (Input.pressed('Enter') && !modalOpen) (items.find((b) => b.classList.contains('on')) || $('startBtn')).click();
-  if (Input.pressed('Escape')) closeModals();
+  if (Input.pressed('Escape') && !closeModals() && !$('modeMenu').classList.contains('hidden')) $('modesBack').click();
   const c = World.lakes[0];
   if (Cine.active) Cine.update(dt);
   else {
@@ -475,6 +485,7 @@ function frame(now) {
     Mud.update(dt); Realism.update(); Rogue.update();
     if (!Mud.on || Mud.style === 'dialog') {
     Actors.update(dt, Game.env);
+    FishMode.render(dt);
     Npcs.render();
     Wardens.render();
     Gun.render(dt);
@@ -518,4 +529,5 @@ window.addEventListener('load', () => {
   requestAnimationFrame(frame);
   // 'New run' from a roguelike death reloads straight into another run.
   if (sessionStorage.getItem('reelwild.autoRogue')) { sessionStorage.removeItem('reelwild.autoRogue'); setTimeout(() => Rogue.start(), 300); }
+  if (sessionStorage.getItem('reelwild.autoFish')) { sessionStorage.removeItem('reelwild.autoFish'); setTimeout(() => FishMode.start(), 300); }
 });

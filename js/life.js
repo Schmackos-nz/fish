@@ -339,6 +339,7 @@ const Interact = {
     return list.length ? list : b ? [b] : [];
   },
   best() {
+    if (FishMode.on) return null; // fins can't open doors
     const P = Player, cands = [];
     this.cands = cands;
     const add = (x, y, r, label, run) => { const d = U.dist(P.x, P.y, x, y); if (d < r * (this.reach || 1)) cands.push({ d, x, y, label, run }); };

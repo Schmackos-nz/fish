@@ -25,6 +25,7 @@ const Player = {
   update(dt) {
     const F = Fishing.state;
     const k = Input.keys;
+    if (FishMode.on) return FishMode.move(dt); // you're the fish
     if (Seats.update(dt)) return; // sat down
     if (Needs.busy) { this.moving = false; this.running = false; return; } // busy (toilet, digging): stay put
     let ix = 0, iy = 0;

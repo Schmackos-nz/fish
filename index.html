@@ -247,6 +247,23 @@
   #cine.out .skip, #cine.logo .skip { opacity: 0; }
   #title .gta-left { pointer-events: none; }
   #title .gta-left .gta-menu, #title .gta-left .gta-menu button { pointer-events: auto; }
+  .gta-menu.hidden { display: none; }
+  .gta-sub { padding: 2px 18px 6px; font: 700 13px system-ui; letter-spacing: 3px; text-transform: uppercase; color: #FF5FA2; }
+  .gta-menu button.back { color: #B9B3C8; }
+  #modeMenu button { font-size: clamp(15px, 1.5vw, 21px); padding: 3px 18px; }
+  #title.modes #saveInfo { display: none; }
+  @media (max-height: 520px) { #modeMenu button { font-size: 4.2vh; padding: 2px 14px; } }
+  #fishHud { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+  #fishStats { position: absolute; left: 20px; top: 20px; width: 300px; padding: 12px 14px; border-radius: 14px; background: rgba(10,22,30,0.82); color: #F4F0FA; font: 600 15px system-ui; }
+  #fishStats b { color: #8FE3FF; font-size: 17px; } #fishStats small { display: block; margin-top: 6px; font-weight: 500; opacity: 0.8; font-size: 12px; }
+  .fbar { position: relative; height: 14px; margin-top: 6px; border-radius: 7px; background: rgba(255,255,255,0.12); overflow: hidden; }
+  .fbar i { position: absolute; inset: 0 auto 0 0; } .fbar span { position: absolute; left: 8px; top: -1px; font-size: 11px; }
+  #fishFeed { position: absolute; left: 20px; top: 150px; width: 340px; font: 500 13px system-ui; }
+  #fishFeed p { margin: 0 0 4px; padding: 4px 8px; border-radius: 8px; background: rgba(10,22,30,0.6); color: #E8E4F0; }
+  #fishFeed p.good { color: #8FD16A; } #fishFeed p.bad { color: #FF8A8A; } #fishFeed p.warn { color: #F2C14E; } #fishFeed p.say { color: #9CD3FF; } #fishFeed p.dim { opacity: 0.7; }
+  #fishTip { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); padding: 10px 18px; border-radius: 12px; background: rgba(10,22,30,0.85); color: #F4F0FA; font: 700 15px system-ui; text-align: center; white-space: nowrap; }
+  #fishTip.warn { background: rgba(120,80,10,0.9); } #fishTip.bad { background: rgba(140,20,30,0.92); font-size: 18px; }
+  #fishTip .tens { margin-top: 6px; height: 12px; border-radius: 6px; background: rgba(255,255,255,0.2); overflow: hidden; } #fishTip .tens i { display: block; height: 100%; background: linear-gradient(90deg, #F2C14E, #FF4A4A); }
   #title .gta-left { position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: center; padding: 0 0 0 6vw; width: min(560px, 48vw); }
   .gta-logo { position: relative; transform: rotate(-3deg); margin-bottom: 4vh; line-height: 0.86; font-family: "Anton", Impact, sans-serif; text-transform: uppercase; }
   .gta-logo div { -webkit-text-stroke: 3px #000; paint-order: stroke fill; text-shadow: 6px 6px 0 rgba(0,0,0,0.45); }
@@ -445,6 +462,7 @@
 <div id="reelW" class="hidden"><canvas id="reelCv" width="220" height="220"></canvas><button id="rigBtn">Tie on (T)</button></div>
 <div id="rig" class="hidden"><div class="rig-sheet"><canvas id="rigCv" width="520" height="340"></canvas><div class="rig-btns"><button id="rigTuck">Tuck</button><button id="rigWet">Lick the knot</button><button id="rigCancel">Cancel</button></div></div></div>
 <div id="rogueBar" class="hidden"></div>
+<div id="fishHud" class="hidden"><div id="fishStats"></div><div id="fishFeed"></div><div id="fishTip"></div></div>
 <div id="rogue" class="hidden"><div id="rogueCard"></div></div>
 <div id="title">
   <div class="gta-shade"></div>
@@ -463,15 +481,21 @@
       <div class="gta-tag">Jack GAY?</div>
     </div>
     <div id="saveInfo" class="hidden"></div>
-    <nav class="gta-menu">
+    <nav class="gta-menu" id="mainMenu">
       <button id="startBtn" class="primary"><span>Start fishing</span></button>
       <button id="newBtn"><span>New Game</span></button>
+      <button id="modesBtn"><span>Special Modes ›</span></button>
+      <button id="helpBtn"><span>How to play</span></button>
+      <button id="settingsBtn"><span>Settings</span></button>
+    </nav>
+    <nav class="gta-menu hidden" id="modeMenu">
+      <div class="gta-sub">Special Modes</div>
       <button id="mudBtn"><span>Text Mode</span></button>
       <button id="dlgBtn"><span>Dialog Mode</span></button>
       <button id="realBtn"><span>Realism Mode</span></button>
       <button id="rogueBtn"><span>Roguelike Run</span></button>
-      <button id="helpBtn"><span>How to play</span></button>
-      <button id="settingsBtn"><span>Settings</span></button>
+      <button id="fishBtn"><span>Fish Mode</span></button>
+      <button id="modesBack" class="back"><span>‹ Back</span></button>
     </nav>
   </div>
   <footer><button id="verBtn" class="ver-btn" title="Patch notes"><b>v2.1</b> · Patch notes</button><button id="themeBtn" class="theme-btn">▶ Replay cinematic</button><span>🎣 Best with a mouse &amp; keyboard</span></footer>
@@ -593,68 +617,69 @@
 </div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="js/util.js?v=140"></script>
-<script src="js/data.js?v=140"></script>
-<script src="js/audio.js?v=140"></script>
-<script src="js/music.js?v=140"></script>
-<script src="js/voice.js?v=140"></script>
-<script src="js/world.js?v=140"></script>
-<script src="js/scene-sprites.js?v=140"></script>
-<script src="js/toon.js?v=140"></script>
-<script src="js/scene.js?v=140"></script>
-<script src="js/grass.js?v=140"></script>
-<script src="js/folk.js?v=140"></script>
-<script src="js/models.js?v=140"></script>
-<script src="js/actors.js?v=140"></script>
-<script src="js/fish.js?v=140"></script>
-<script src="js/legends.js?v=140"></script>
-<script src="js/fishing.js?v=140"></script>
-<script src="js/fight.js?v=140"></script>
-<script src="js/linedrag.js?v=140"></script>
-<script src="js/player.js?v=140"></script>
-<script src="js/npcs.js?v=140"></script>
-<script src="js/path.js?v=140"></script>
-<script src="js/gun.js?v=140"></script>
-<script src="js/arsenal.js?v=140"></script>
-<script src="js/camp.js?v=140"></script>
-<script src="js/wild.js?v=140"></script>
-<script src="js/decay.js?v=140"></script>
-<script src="js/contest.js?v=140"></script>
-<script src="js/bugs.js?v=140"></script>
-<script src="js/floaters.js?v=140"></script>
-<script src="js/animals.js?v=140"></script>
-<script src="js/wardens.js?v=140"></script>
-<script src="js/interiors.js?v=140"></script>
-<script src="js/life.js?v=140"></script>
-<script src="js/weed.js?v=140"></script>
-<script src="js/markers.js?v=140"></script>
-<script src="js/swimmers.js?v=140"></script>
-<script src="js/couples.js?v=140"></script>
-<script src="js/tim.js?v=140"></script>
-<script src="js/bikes.js?v=140"></script>
-<script src="js/lockpick.js?v=140"></script>
-<script src="js/wanted.js?v=140"></script>
-<script src="js/tools.js?v=140"></script>
-<script src="js/hud.js?v=140"></script>
-<script src="js/share.js?v=140"></script>
-<script src="js/menus.js?v=140"></script>
-<script src="js/mobile.js?v=140"></script>
-<script src="js/patchnotes.js?v=140"></script>
-<script src="js/staff.js?v=140"></script>
-<script src="js/thief.js?v=140"></script>
-<script src="js/needs.js?v=140"></script>
-<script src="js/seats.js?v=140"></script>
-<script src="js/waypoint.js?v=140"></script>
-<script src="js/boats.js?v=140"></script>
-<script src="js/prison.js?v=140"></script>
-<script src="js/coastguard.js?v=140"></script>
-<script src="js/swim.js?v=140"></script>
-<script src="js/cine.js?v=140"></script>
-<script src="js/text.js?v=140"></script>
-<script src="js/modes.js?v=140"></script>
-<script src="js/bodies.js?v=140"></script>
-<script src="js/inventory.js?v=140"></script>
-<script src="js/main.js?v=140"></script>
-<script src="js/rep.js?v=140"></script>
+<script src="js/util.js?v=143"></script>
+<script src="js/data.js?v=143"></script>
+<script src="js/audio.js?v=143"></script>
+<script src="js/music.js?v=143"></script>
+<script src="js/voice.js?v=143"></script>
+<script src="js/world.js?v=143"></script>
+<script src="js/scene-sprites.js?v=143"></script>
+<script src="js/toon.js?v=143"></script>
+<script src="js/scene.js?v=143"></script>
+<script src="js/grass.js?v=143"></script>
+<script src="js/folk.js?v=143"></script>
+<script src="js/models.js?v=143"></script>
+<script src="js/actors.js?v=143"></script>
+<script src="js/fish.js?v=143"></script>
+<script src="js/legends.js?v=143"></script>
+<script src="js/fishing.js?v=143"></script>
+<script src="js/fight.js?v=143"></script>
+<script src="js/linedrag.js?v=143"></script>
+<script src="js/player.js?v=143"></script>
+<script src="js/npcs.js?v=143"></script>
+<script src="js/path.js?v=143"></script>
+<script src="js/gun.js?v=143"></script>
+<script src="js/arsenal.js?v=143"></script>
+<script src="js/camp.js?v=143"></script>
+<script src="js/wild.js?v=143"></script>
+<script src="js/decay.js?v=143"></script>
+<script src="js/contest.js?v=143"></script>
+<script src="js/bugs.js?v=143"></script>
+<script src="js/floaters.js?v=143"></script>
+<script src="js/animals.js?v=143"></script>
+<script src="js/wardens.js?v=143"></script>
+<script src="js/interiors.js?v=143"></script>
+<script src="js/life.js?v=143"></script>
+<script src="js/weed.js?v=143"></script>
+<script src="js/markers.js?v=143"></script>
+<script src="js/swimmers.js?v=143"></script>
+<script src="js/couples.js?v=143"></script>
+<script src="js/tim.js?v=143"></script>
+<script src="js/bikes.js?v=143"></script>
+<script src="js/lockpick.js?v=143"></script>
+<script src="js/wanted.js?v=143"></script>
+<script src="js/tools.js?v=143"></script>
+<script src="js/hud.js?v=143"></script>
+<script src="js/share.js?v=143"></script>
+<script src="js/menus.js?v=143"></script>
+<script src="js/mobile.js?v=143"></script>
+<script src="js/patchnotes.js?v=143"></script>
+<script src="js/staff.js?v=143"></script>
+<script src="js/thief.js?v=143"></script>
+<script src="js/needs.js?v=143"></script>
+<script src="js/seats.js?v=143"></script>
+<script src="js/waypoint.js?v=143"></script>
+<script src="js/boats.js?v=143"></script>
+<script src="js/prison.js?v=143"></script>
+<script src="js/coastguard.js?v=143"></script>
+<script src="js/swim.js?v=143"></script>
+<script src="js/cine.js?v=143"></script>
+<script src="js/text.js?v=143"></script>
+<script src="js/modes.js?v=143"></script>
+<script src="js/fishmode.js?v=143"></script>
+<script src="js/bodies.js?v=143"></script>
+<script src="js/inventory.js?v=143"></script>
+<script src="js/main.js?v=143"></script>
+<script src="js/rep.js?v=143"></script>
 </body>
 </html>

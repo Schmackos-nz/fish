@@ -4,6 +4,8 @@
 const PATCH_NOTES = [
   { v: '2.3', name: 'Fresh Coat', date: '31 Oct 2026', notes: [
     ['new', 'The Coast Guard: an orange patrol boat with lights and siren chases you down for reported boat theft, being wanted on the water, or fishing without a permit from a boat. A jetski can outrun them; if you reach the shore they radio the wardens'],
+    ['new', 'Fish Mode: you ARE the fish. Swim the lake, snap up bugs and smaller fish, and nibble the locals\' bait. Spit it before they strike, or get hooked and thrash to snap the line. Every bait you steal makes you bigger'],
+    ['changed', 'All the special modes now live in their own Special Modes menu under New Game'],
     ['new', 'Dialog Mode: the whole game as a run of dialog boxes. Pick choices (or press 1-9) to look around, travel, talk, fish, strike and reel'],
     ['new', 'Realism Mode: the valley runs on your real clock. Tie your own lure on (thread the eye, wrap, tuck, wet and pull tight; a sloppy knot snaps under load), open the bail yourself, cast, and turn the reel handle on screen'],
     ['new', 'Roguelike Run: a brand-new valley every run with one life. Earn the day\'s cash quota by 8pm, pick one of three rewards, and the quota climbs. Get wasted, busted or miss the quota and the run is over. Your normal save is never touched'],

@@ -150,6 +150,7 @@ const Hud = {
     this.ox = ins.l;
     g.setTransform(d * k, 0, 0, d * k, d * ins.l, 0);
     const W = this.W = (innerWidth - ins.l - ins.r) / k, H = this.H = innerHeight / k;
+    if (FishMode.on) { this.drawMinimap(W - 20 - 82, 20 + 82); return; } // a fish needs no wallet
     const sh = this.drawStatus(20, 20);
     this.drawRep(20, 20 + sh + 8);
     if (Mobile.active) this.drawVitals(20, 20 + sh + 12 + 152 + 42);
