@@ -51,7 +51,7 @@ const Scene3D = {
   disposeTree(o) {
     o.traverse((c) => {
       if (c.geometry) c.geometry.dispose();
-      if (c.material) (Array.isArray(c.material) ? c.material : [c.material]).forEach((m) => { if (m.map && !Object.values(this._tex || {}).includes(m.map)) m.map.dispose(); m.dispose(); });
+      if (c.material) (Array.isArray(c.material) ? c.material : [c.material]).forEach((m) => { if (m.map && !Object.values(this._tex || {}).includes(m.map) && !(m.map.userData && m.map.userData.cached)) m.map.dispose(); m.dispose(); });
     });
   },
 
@@ -265,25 +265,67 @@ const Scene3D = {
   // Real 3D trees, bushes, rocks and logs: low-poly parts, cel-shaded, each with an ink outline hull.
   // One InstancedMesh per part, so a whole forest is a handful of draw calls.
   buildFoliage3D() {
-    const toon = (color) => new THREE.MeshToonMaterial({ color, gradientMap: Toon.gradient() });
+    // Leaves and needles painted on like the grass: short tapered blades in light and dark greens' shades.
+    const leafTex = (needles) => {
+      const c = document.createElement('canvas'); c.width = c.height = 128;
+      const g = c.getContext('2d'); g.fillStyle = 'rgb(222,222,222)'; g.fillRect(0, 0, 128, 128);
+      let seed = needles ? 7 : 3; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+      for (let i = 0; i < (needles ? 700 : 520); i++) {
+        const x = rnd() * 128, y = rnd() * 128, v = 150 + rnd() * 105 | 0, len = needles ? 6 + rnd() * 7 : 4 + rnd() * 6;
+        const a = needles ? Math.PI / 2 + (rnd() - 0.5) * 1.1 : -Math.PI / 2 + (rnd() - 0.5) * 1.8, bend = (rnd() - 0.5) * 3;
+        g.strokeStyle = 'rgb(' + v + ',' + v + ',' + v + ')'; g.lineWidth = needles ? 1.1 : 1.6 + rnd() * 1.2; g.lineCap = 'round';
+        for (const ox of [0, -128, 128]) for (const oy of [0, -128, 128]) {
+          g.beginPath(); g.moveTo(x + ox, y + oy);
+          g.quadraticCurveTo(x + ox + Math.cos(a) * len * 0.5 + bend, y + oy + Math.sin(a) * len * 0.5, x + ox + Math.cos(a) * len, y + oy + Math.sin(a) * len);
+          g.stroke();
+        }
+      }
+      const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(needles ? 3 : 2, needles ? 2 : 2);
+      t.userData = { cached: true };
+      return t;
+    };
+    const LEAF = this.leafTex || (this.leafTex = { leaf: leafTex(false), needle: leafTex(true) });
+    const toon = (color, map) => new THREE.MeshToonMaterial({ color: map ? new THREE.Color(color).multiplyScalar(1.14) : color, map: map || null, gradientMap: Toon.gradient() });
     const ink = new THREE.MeshBasicMaterial({ color: 0x1a1410, side: THREE.BackSide });
+    // Lumpy, bushy silhouettes: push each corner in or out a little (same point, same push, so no cracks).
+    const lumpy = (geo, amt) => {
+      const pos = geo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), l = Math.hypot(x, y, z) || 1;
+        const k = 1 + (U.hash2(Math.round(x * 97), Math.round(y * 89 + z * 71), 5) - 0.5) * amt;
+        pos.setXYZ(i, x / l * l * k, y / l * l * k, z / l * l * k);
+      }
+      geo.computeVertexNormals();
+      return geo;
+    };
+    // Pine tiers with a ragged, needly skirt.
+    const ragged = (geo, h) => {
+      const pos = geo.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        if (Math.abs(pos.getY(i) + h / 2) > 1e-3) continue;
+        const a = Math.atan2(pos.getZ(i), pos.getX(i)), k = 1 + Math.cos(a * 7) * 0.13;
+        pos.setX(i, pos.getX(i) * k); pos.setZ(i, pos.getZ(i) * k); pos.setY(i, pos.getY(i) + (k - 1) * -0.25);
+      }
+      geo.computeVertexNormals();
+      return geo;
+    };
     // Push every vertex out along its normal: the outline hull.
     const inflate = (geo, d) => {
       const g = geo.clone(), pos = g.attributes.position, nrm = g.attributes.normal;
       for (let i = 0; i < pos.count; i++) pos.setXYZ(i, pos.getX(i) + nrm.getX(i) * d, pos.getY(i) + nrm.getY(i) * d, pos.getZ(i) + nrm.getZ(i) * d);
       return g;
     };
-    const part = (geo, color, x = 0, y = 0, z = 0, outline = 0.035) => { geo.translate(x, y, z); return { geo, color, outline }; };
-    const cone = (r, h, seg = 7) => new THREE.ConeGeometry(r, h, seg);
-    const ball = (r, d = 0) => new THREE.IcosahedronGeometry(r, d);
+    const part = (geo, color, x = 0, y = 0, z = 0, outline = 0.035, map = null) => { geo.translate(x, y, z); return { geo, color, outline, map }; };
+    const cone = (r, h, seg = 14) => ragged(new THREE.ConeGeometry(r, h, seg, 2), h);
+    const ball = (r, d = 0) => lumpy(new THREE.IcosahedronGeometry(r, Math.max(1, d)), 0.22);
     const trunk = (r0, r1, h) => part(new THREE.CylinderGeometry(r0, r1, h, 7), 0x7A4E2A, 0, h / 2, 0, 0.025);
     const KINDS = {
       [O.PINE]: { r: 0.55, parts: [trunk(0.07, 0.11, 0.7),
-        part(cone(0.66, 0.95), 0x2F8A4A, 0, 0.92), part(cone(0.52, 0.85), 0x3A9A52, 0, 1.42), part(cone(0.36, 0.72), 0x48AA5C, 0, 1.9)] },
+        part(cone(0.66, 0.95), 0x2F8A4A, 0, 0.92, 0, 0.035, LEAF.needle), part(cone(0.52, 0.85), 0x3A9A52, 0, 1.42, 0, 0.035, LEAF.needle), part(cone(0.36, 0.72), 0x48AA5C, 0, 1.9, 0, 0.035, LEAF.needle)] },
       [O.OAK]: { r: 0.7, parts: [trunk(0.09, 0.14, 0.9),
-        part(ball(0.6, 1), 0x4FA644, 0, 1.3), part(ball(0.42), 0x5AB34C, 0.42, 1.1, 0.1), part(ball(0.4), 0x48A040, -0.4, 1.12, -0.06),
-        part(ball(0.38), 0x66BE52, 0.06, 1.72, 0.04)] },
-      [O.BUSH]: { r: 0.45, parts: [part(ball(0.34, 1), 0x46993F, 0, 0.27), part(ball(0.25), 0x52A548, 0.27, 0.21, 0.1), part(ball(0.24), 0x40903A, -0.26, 0.2, -0.05),
+        part(ball(0.6, 1), 0x4FA644, 0, 1.3, 0, 0.035, LEAF.leaf), part(ball(0.42), 0x5AB34C, 0.42, 1.1, 0.1, 0.035, LEAF.leaf), part(ball(0.4), 0x48A040, -0.4, 1.12, -0.06, 0.035, LEAF.leaf),
+        part(ball(0.38), 0x66BE52, 0.06, 1.72, 0.04, 0.035, LEAF.leaf)] },
+      [O.BUSH]: { r: 0.45, parts: [part(ball(0.34, 1), 0x46993F, 0, 0.27, 0, 0.035, LEAF.leaf), part(ball(0.25), 0x52A548, 0.27, 0.21, 0.1, 0.035, LEAF.leaf), part(ball(0.24), 0x40903A, -0.26, 0.2, -0.05, 0.035, LEAF.leaf),
         part(ball(0.06, 0), 0xD9363A, 0.12, 0.48, 0.24, 0.02), part(ball(0.06, 0), 0xD9363A, -0.2, 0.36, 0.22, 0.02), part(ball(0.06, 0), 0xD9363A, 0.32, 0.3, 0.28, 0.02)] },
       [O.BOULDER]: { r: 0.45, parts: [part(new THREE.DodecahedronGeometry(0.42, 0).scale(1, 0.62, 0.85), 0xA3A39C, 0, 0.2), part(new THREE.DodecahedronGeometry(0.22, 0), 0x95958E, 0.3, 0.1, 0.18)] },
       [O.LOG]: { r: 0.5, parts: [part(new THREE.CylinderGeometry(0.15, 0.15, 1.05, 9).rotateZ(Math.PI / 2), 0x8A5A30, 0, 0.15),
@@ -310,7 +352,7 @@ const Scene3D = {
       });
       const cap = Math.min(list.length, 5000), meshes = [];
       for (const pt of K.parts) {
-        const mesh = new THREE.InstancedMesh(pt.geo, toon(pt.color), cap);
+        const mesh = new THREE.InstancedMesh(pt.geo, toon(pt.color, pt.map), cap);
         // Sized up front: three sizes a lazily-made colour buffer by the current count, which starts at 0.
         mesh.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(cap * 3).fill(1), 3);
         const hull = pt.outline ? new THREE.InstancedMesh(inflate(pt.geo, pt.outline), ink, cap) : null;
