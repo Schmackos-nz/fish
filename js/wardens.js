@@ -62,6 +62,14 @@ const Wardens = {
     w.x = s.x; w.y = s.y; w.state = 'patrol'; w.target = null; w.t = 0;
   },
 
+  nearestDry(x, y) {
+    for (let r = 0.5; r <= 14; r += 0.5) for (let k = 0; k < 16; k++) {
+      const a = k / 16 * Math.PI * 2, px = x + Math.cos(a) * r, py = y + Math.sin(a) * r;
+      if (footOK(px, py, false)) return { x: px, y: py };
+    }
+    return null;
+  },
+
   say(w, list, time = 3) { w.bubble = Array.isArray(list) ? U.pick(Math.random, list) : list; w.bubbleT = time; Voice.babble(w.bubble, w.x, w.y, w.name); },
 
   update(dt) {
@@ -80,7 +88,7 @@ const Wardens = {
         // Amble from bank to bank, pausing to look over the water.
         if (!w.target || U.dist(w.x, w.y, w.target.x, w.target.y) < 0.5) {
           if (w.t > 3 + Math.random() * 4 || !w.target) {
-            const near = Npcs.spots.filter((s) => U.dist(s.x, s.y, w.x, w.y) < 30 && U.dist(s.x, s.y, w.x, w.y) > 6);
+            const near = Npcs.spots.filter((s) => U.dist(s.x, s.y, w.x, w.y) < 30 && U.dist(s.x, s.y, w.x, w.y) > 6 && !(w.bad && w.bad.has(s)));
             // Patrols drift toward wherever the angler is.
             const pull = near.filter((s) => U.dist(s.x, s.y, Player.x, Player.y) < pd);
             const pool = pull.length && Math.random() < 0.6 ? pull : near;
@@ -118,7 +126,25 @@ const Wardens = {
         if (w.t > 2.5) { w.state = 'patrol'; w.t = 0; }
       }
 
-      if (speed) {
+      const pursuing = w.state === 'chase' || w.state === 'inspect';
+      if (!pursuing && w.state !== 'chat' && World.isWater(w.x, w.y)) {
+        // Left standing in the shallows after a chase: wade straight back out to the nearest dry ground.
+        w.shoreT = (w.shoreT || 0) + dt;
+        if (!w.shore || w.shoreT > 5) { w.shore = this.nearestDry(w.x, w.y); w.shoreT = 0; }
+        const s = w.shore, a = s ? Math.atan2(s.y - w.y, s.x - w.x) : 0, st = 2.2 * dt;
+        if (s && !World.blocked(w.x + Math.cos(a) * st, w.y + Math.sin(a) * st)) { w.x += Math.cos(a) * st; w.y += Math.sin(a) * st; w.face = a; w.walk += dt * 1.3; }
+        else unstick(w, 99); // no way out on foot: hop to the nearest bank
+        w.path = null;
+        continue;
+      }
+      w.shore = null;
+      if (speed && w.state === 'patrol' && w.target) {
+        // Patrols path round lakes and rivers like everyone else, instead of walking at them in a straight line.
+        Path.follow(w, w.target, speed, dt);
+        // Can't get there (the search came back empty): forget that spot rather than re-searching every frame.
+        if (!w.path) { w.fails = (w.fails || 0) + 1; if (w.fails > 2) { (w.bad || (w.bad = new Set())).add(w.target); w.target = null; w.fails = 0; } } else w.fails = 0;
+        w.walk += dt * speed * 0.6; w.stuck = 0;
+      } else if (speed) {
         // Steer around trees and deep water: try straight, then widening sidesteps.
         const base = Math.atan2(ty - w.y, tx - w.x);
         let moved = false;

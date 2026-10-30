@@ -4,6 +4,7 @@
 const PATCH_NOTES = [
   { v: '2.3', name: 'Fresh Coat', date: '31 Oct 2026', notes: [
     ['new', 'The Coast Guard: an orange patrol boat with lights and siren chases you down for reported boat theft, being wanted on the water, or fishing without a permit from a boat. A jetski can outrun them; if you reach the shore they radio the wardens'],
+    ['fixed', 'Wardens no longer get stranded in the water after a chase: they wade straight back out, and their patrols now path round lakes and rivers'],
     ['new', 'Fish Mode: you ARE the fish. Swim the lake, snap up bugs and smaller fish, and nibble the locals\' bait. Spit it before they strike, or get hooked and thrash to snap the line. Every bait you steal makes you bigger'],
     ['changed', 'All the special modes now live in their own Special Modes menu under New Game'],
     ['new', 'Dialog Mode: the whole game as a run of dialog boxes. Pick choices (or press 1-9) to look around, travel, talk, fish, strike and reel. Cast a line from anywhere and you walk to the nearest water first'],
