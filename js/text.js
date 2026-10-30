@@ -268,8 +268,12 @@ const Mud = {
         const done = Path.follow(Player, g, Player.wading ? 2 : 3.6, dt) || U.dist(Player.x, Player.y, g.x, g.y) < 0.8;
         Player.moving = true; Player.walkT += dt;
         this.stuckT = U.dist(ox, oy, Player.x, Player.y) < 0.02 ? this.stuckT + dt : 0;
-        if (done) { this.goal = null; this.print('You arrive at ' + this.goalName + '.', 'sys'); this.look(); }
-        else if (this.stuckT > 2.5) { this.goal = null; this.print('You can\'t find a way any further.', 'sys'); this.look(); }
+        if (done) {
+          this.goal = null; this.print('You arrive at ' + this.goalName + '.', 'sys');
+          const then = this.then; this.then = null;
+          if (then) then(); else this.look();
+        }
+        else if (this.stuckT > 2.5) { this.goal = null; this.then = null; this.print('You can\'t find a way any further.', 'sys'); this.look(); }
       }
     }
     // Things worth announcing.
@@ -299,7 +303,7 @@ const Mud = {
       case 'map': case 'm': return this.map(+arg || 12);
       case 'go': case 'goto': case 'walk': case 'travel': return this.go(arg.replace(/^to\s+/, ''));
       case 'places': case 'where': return this.listPlaces();
-      case 'stop': this.goal = null; this.swimDir = null; return this.print('You stop.', 'sys');
+      case 'stop': this.goal = null; this.then = null; this.swimDir = null; return this.print('You stop.', 'sys');
       case 'who': case 'people': { const p = this.people(30); return this.print(p.length ? p.map((x) => x.name + ' — ' + x.doing + ', ' + this.where(x.x, x.y)).join('\n') : 'Nobody around.', p.length ? 'say' : 'sys'); }
       case 'actions': case 'a': { const a = this.listActions(); return this.print(a.length ? a.map((x, i) => '[' + (i + 1) + '] ' + x.label).join('\n') : 'Nothing to do right here. Try LOOK, or GO somewhere.', a.length ? 'act' : 'sys'); }
       case 'do': case 'use': case 'e': return this.doAction((+arg || 1) - 1);
@@ -445,7 +449,15 @@ const TFish = {
       const x = P.x + Math.cos(a) * r, y = P.y + Math.sin(a) * r;
       if (World.isWater(x, y) && World.depthAt(x, y) > 0.3) { best = { x, y }; break; }
     }
-    if (!best) return Mud.print('There\'s no water within casting range' + (want ? ' that way' : '') + '.', 'sys');
+    if (!best) {
+      if (want) return Mud.print('There\'s no water within casting range that way.', 'sys');
+      // Nothing in range: walk to the nearest bit of bank, then cast.
+      const bank = this.nearestBank();
+      if (!bank) return Mud.print('There\'s no water anywhere near here.', 'sys');
+      Mud.walkTo(bank.x, bank.y, 'the water\'s edge');
+      Mud.then = () => this.cast();
+      return;
+    }
     this.spot = best; P.face = Math.atan2(best.y - P.y, best.x - P.x);
     this.sp = Fish.pickSpecies(best.x, best.y, Game.env);
     this.state = 'wait'; this.t = 5 + Math.random() * 14 * (this.sp ? 1 / Math.max(0.4, Fish.timeMult(this.sp, Game.env)) : 3);
@@ -459,6 +471,21 @@ const TFish = {
       if (w) Wardens.startChase(w, 'Fishing without a permit');
       else if (Boats.riding) CoastGuard.launch('Fishing without a ' + Permits.name(zone));
     }
+  },
+
+  // The closest dry spot right beside fishable water.
+  nearestBank() {
+    const P = Player;
+    for (let r = 2; r <= 90; r += 2) for (let k = 0; k < 32; k++) {
+      const a = k / 32 * Math.PI * 2, x = P.x + Math.cos(a) * r, y = P.y + Math.sin(a) * r;
+      if (!World.inB(Math.floor(x), Math.floor(y)) || !World.isWater(x, y) || World.depthAt(x, y) < 0.3) continue;
+      // Step back toward you until you're on dry land.
+      for (let s = 0.5; s < r; s += 0.5) {
+        const bx = x - Math.cos(a) * s, by = y - Math.sin(a) * s;
+        if (!World.isWater(bx, by) && !World.blocked(bx, by)) return { x: bx, y: by };
+      }
+    }
+    return null;
   },
 
   wait() {

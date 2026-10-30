@@ -100,6 +100,10 @@ const Realism = {
     g.strokeStyle = '#2a8cd8'; g.lineWidth = 1.2;
     for (let r = 14; r < 34; r += 3) { g.beginPath(); g.arc(0, 0, r, this.ang * 0.3, this.ang * 0.3 + 5.6); g.stroke(); }
     g.fillStyle = '#20252c'; g.beginPath(); g.arc(0, 0, 11, 0, 7); g.fill();
+    // The handle's path, always shown, with a pulsing hint on the knob until you take hold.
+    g.strokeStyle = this.turning ? 'rgba(143,209,106,0.7)' : 'rgba(242,193,78,0.75)'; g.lineWidth = 2; g.setLineDash([6, 6]); g.lineDashOffset = -this.ang * 20;
+    g.beginPath(); g.arc(0, 0, 62, 0, 7); g.stroke(); g.setLineDash([]);
+    if (!this.turning && Fishing.state !== 'idle') { g.strokeStyle = 'rgba(242,193,78,' + (0.5 + Math.sin(performance.now() / 160) * 0.4) + ')'; g.lineWidth = 3; g.beginPath(); g.arc(Math.cos(this.ang) * 62, Math.sin(this.ang) * 62, 24, 0, 7); g.stroke(); }
     // Handle arm and knob.
     g.rotate(this.ang);
     g.strokeStyle = '#1b1f26'; g.lineWidth = 9; g.lineCap = 'round';
@@ -115,6 +119,8 @@ const Realism = {
     g.fillText(bail ? 'BAIL OPEN' : 'BAIL', 0, -18);
     g.restore();
     g.fillStyle = 'rgba(255,255,255,0.8)'; g.font = '600 11px system-ui'; g.textAlign = 'center';
+    if (!this.turning && Fishing.state !== 'idle') { g.fillStyle = '#F2C14E'; g.font = '800 12px system-ui'; g.fillText('GRAB THE KNOB · TURN ↻', 110, 196); }
+    g.fillStyle = 'rgba(255,255,255,0.8)'; g.font = '600 11px system-ui';
     g.fillText('Drag ' + Game.drag.toFixed(1) + ' kg · ' + (this.rigged ? 'knot ' + Math.round(this.knot * 100) + '%' : 'NOT TIED ON'), 110, 214);
   },
 };
@@ -306,10 +312,9 @@ const Dlg = {
         add('Save', () => this.run('save')); add('Quit to menu', () => this.run('quit'), 'bad');
         back(); break;
       default: {
-        const n = Mud.listActions().length;
         add('Look around', () => this.run('look'));
         add('Cast a line', () => this.run('cast'), 'go');
-        add('Things to do' + (n ? ' (' + n + ')' : ''), () => { this.menu = 'actions'; });
+        add('Things to do…', () => { this.menu = 'actions'; });
         add('Go somewhere…', () => { this.menu = 'places'; });
         add('Walk…', () => { this.menu = 'walk'; });
         add('People nearby…', () => { this.menu = 'people'; });
@@ -336,12 +341,13 @@ const Dlg = {
     if (!force && sig === this.sig) return;
     this.sig = sig;
     const wrap = document.getElementById('dlgChoices');
-    wrap.innerHTML = '';
+    while (wrap.children.length > C.length) wrap.lastChild.remove();
+    while (wrap.children.length < C.length) wrap.appendChild(document.createElement('button'));
     C.forEach((c, i) => {
-      const b = document.createElement('button');
-      b.className = c.cls; b.innerHTML = '<kbd>' + (i < 9 ? i + 1 : '') + '</kbd>' + c.label.replace(/</g, '&lt;');
+      const b = wrap.children[i], html = '<kbd>' + (i < 9 ? i + 1 : '') + '</kbd>' + c.label.replace(/</g, '&lt;');
+      if (b.className !== c.cls) b.className = c.cls;
+      if (b.innerHTML !== html) b.innerHTML = html;
       b.onclick = () => { c.fn(); this.render(true); };
-      wrap.appendChild(b);
     });
   },
 

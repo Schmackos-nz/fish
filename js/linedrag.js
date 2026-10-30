@@ -77,6 +77,31 @@ const LineDrag = {
     return '#9A968C';
   },
 
+  // Where to grab is always marked: a ring on the lure (or the fish), brighter when you're over it, green while
+  // you hold it, with arrows pointing back toward you, the way to drag.
+  drawGrab(hud, sx, sy) {
+    const g = hud.g, hot = this.hover || this.grabbing, r = 22 + Math.sin(Game.time * 5) * 2.5;
+    g.strokeStyle = this.grabbing ? '#8FD16A' : hot ? '#FFFFFF' : 'rgba(242,193,78,0.85)'; g.lineWidth = hot ? 3 : 2.5; g.setLineDash([6, 4]);
+    g.beginPath(); g.arc(sx, sy, r, 0, 7); g.stroke(); g.setLineDash([]);
+    if (!this.grabbing) {
+      this.drawPull(g, sx, sy);
+      hud.text(Fishing.state === 'fight' ? 'GRAB THE FISH' : 'GRAB & DRAG', sx, sy - r - 8, hot ? UI.ink : '#F2C14E', 11, 'center', 800);
+    }
+  },
+  drawPull(g, sx, sy) {
+    const [px, py, ok] = Scene3D.project(Player.x, Player.y, 0); if (!ok) return;
+    const a = Math.atan2(py - sy, px - sx), ph = (Game.time * 1.6) % 1;
+    g.fillStyle = 'rgba(242,193,78,0.9)';
+    for (let i = 0; i < 3; i++) {
+      const d = 34 + (i + ph) * 14, x = sx + Math.cos(a) * d, y = sy + Math.sin(a) * d;
+      g.globalAlpha = 0.85 * (1 - (i + ph) / 3);
+      g.save(); g.translate(x, y); g.rotate(a);
+      g.beginPath(); g.moveTo(9, 0); g.lineTo(-6, -9); g.lineTo(-2, 0); g.lineTo(-6, 9); g.closePath(); g.fill();
+      g.restore();
+    }
+    g.globalAlpha = 1;
+  },
+
   // The cursor is a little reel while the line's out; the lure gets a ring when you can grab it.
   draw(hud) {
     const cv = hud.cv, on = this.active();
@@ -89,16 +114,14 @@ const LineDrag = {
       if (!ok) return;
       const g = hud.g; g.strokeStyle = this.tensionColor(); g.lineWidth = 4;
       g.beginPath(); g.arc(sx, sy, 22, 0, 7); g.stroke();
+      if (!this.grabbing) this.drawPull(g, sx, sy);
       hud.text('drag ' + Game.drag.toFixed(2) + ' kg' + (Fishing.bailOpen ? ' · bail OPEN' : ''), sx, sy + 38, Fishing.bailOpen ? UI.bad : UI.ink, 11, 'center', 600);
       return;
     }
     const g = hud.g, m = Input.mouse, t = this.target();
     if (t) {
       const [sx, sy, ok] = Scene3D.project(t.x, t.y, Fishing.state === 'fight' ? -0.2 : 0);
-      if (ok && (this.hover || this.grabbing)) {
-        g.strokeStyle = this.grabbing ? '#8FD16A' : 'rgba(243,234,214,0.8)'; g.lineWidth = 2; g.setLineDash([5, 4]);
-        g.beginPath(); g.arc(sx, sy, 20 + Math.sin(Game.time * 6) * 2, 0, 7); g.stroke(); g.setLineDash([]);
-      }
+      if (ok) this.drawGrab(hud, sx, sy);
     }
     // Reel glyph: spool, handle spinning with your cranking, bail arm open or shut.
     this.spin = (this.spin || 0) + this.turns * 0.1;
