@@ -33,7 +33,7 @@
     const menu = document.getElementById('mainMenu');
     if (!menu) return;
     const b = document.createElement('button');
-    b.id = 'quitBtn'; b.className = 'back';
+    b.id = 'desktopQuitBtn'; b.className = 'back';
     b.innerHTML = '<span>Quit to desktop</span>';
     b.onclick = () => { if (timer) flush(); D.quit(); };
     menu.appendChild(b);
