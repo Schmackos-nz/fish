@@ -76,6 +76,7 @@ const Boats = {
 
   board(b) {
     if (Bikes.riding || Fishing.state !== 'idle') return;
+    Swim.stop();
     this.riding = b; this.driving = b.type === 'jetski'; this.vel = { x: 0, y: 0 };
     Player.place(b.x, b.y); Player.crouch = false; Player.face = b.ang;
     if (b.type === 'jetski') { this.prevTool = Tools.current; Tools.current = 'hands'; Gun.out = false; }
@@ -96,6 +97,15 @@ const Boats = {
       }
     }
     Hud.toast('Too far from shore to hop off — get closer to land or the dock.', UI.muted, 1.8);
+  },
+
+  jumpIn() {
+    const b = this.riding; if (!b) return;
+    this.riding = null; this.driving = false; this.vel = { x: 0, y: 0 };
+    if (this.prevTool) { Tools.current = this.prevTool; this.prevTool = null; }
+    if (b.mine && !b.stolen) { Game.boat = { type: b.type, x: b.x, y: b.y, ang: b.ang, owner: b.owner }; Game.save(); }
+    const a = b.ang + Math.PI / 2;
+    Swim.start(b.x + Math.cos(a) * 0.9, b.y + Math.sin(a) * 0.9);
   },
 
   canDisembark() {
@@ -135,11 +145,14 @@ const Boats = {
     if (this.riding) {
       const b = this.riding;
       if (b.type === 'dinghy') cands.push({ d: 0, x: b.x, y: b.y, label: this.driving ? 'Let go of the motor' : 'Take the motor', run: () => { this.driving = !this.driving; if (this.driving) { Fishing.reelInFast(); Sfx.tone(70, 0.5, 0.25, 'sawtooth', 110); } this.vel = { x: 0, y: 0 }; } });
-      if (this.canDisembark() && !(b.type === 'dinghy' && this.driving)) cands.push({ d: 0.5, x: b.x, y: b.y, label: 'Get out of the ' + BOAT_TYPES[b.type].name.toLowerCase(), run: () => this.disembark() });
+      if (!(b.type === 'dinghy' && this.driving)) {
+        if (this.canDisembark()) cands.push({ d: 0.5, x: b.x, y: b.y, label: 'Get out of the ' + BOAT_TYPES[b.type].name.toLowerCase(), run: () => this.disembark() });
+        else cands.push({ d: 0.6, x: b.x, y: b.y, label: 'Jump in for a swim', run: () => this.jumpIn() });
+      }
       return true;
     }
     if (Interior.active || Bikes.riding) return false;
-    const b = this.near(); if (!b) return false;
+    const b = this.near(Swim.on ? 2.6 : 2.2); if (!b) return false;
     if (b.mine) add(b.x, b.y, 2.2, (b.type === 'jetski' ? 'Ride your ' : 'Climb into your ') + BOAT_TYPES[b.type].name.toLowerCase(), () => this.board(b));
     else if (b.type === 'jetski') add(b.x, b.y, 2.2, 'Hot-wire ' + b.owner + '\'s jetski', () => LockPick.openBoat(b));
     else add(b.x, b.y, 2.2, 'Untie ' + b.owner + '\'s dinghy (theft!)', () => this.untieDinghy(b));

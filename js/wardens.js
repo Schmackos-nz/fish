@@ -220,6 +220,7 @@ const Jail = {
     }
     Fishing.reelInFast(); Fight.end(); Sfx.setDrag(0);
     if (Bikes.riding) Bikes.dismount();
+    Swim.stop();
     const boatBack = Boats.seize(); if (boatBack) reasons = reasons.concat([boatBack]);
     CoastGuard.stand(null);
     // A stolen ride gets impounded and handed back to its owner.

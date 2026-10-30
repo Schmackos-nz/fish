@@ -38,6 +38,9 @@ const Player = {
     const free = F === 'idle' && !Menus.open;
     if (Bikes.riding) { Bikes.ride(dt, ix, iy); return; }
     if (Boats.riding) { Boats.ride(dt, ix, iy); return; }
+    // Somehow out of your depth (off a jetski, a fall, a reload): you're swimming.
+    if (!Swim.on && !this.airborne && !Interior.active && Swim.deep(this.x, this.y)) Swim.start(this.x, this.y);
+    if (Swim.on) { Swim.move(dt, ix, iy); return; }
 
     // Moves: Space jump; C crouches — or, while running, drops you into a slide.
     this.rollCool = Math.max(0, this.rollCool - dt);

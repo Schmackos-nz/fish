@@ -4,6 +4,7 @@
 const PATCH_NOTES = [
   { v: '2.3', name: 'Fresh Coat', date: '31 Oct 2026', notes: [
     ['new', 'The Coast Guard: an orange patrol boat with lights and siren chases you down for reported boat theft, being wanted on the water, or fishing without a permit from a boat. A jetski can outrun them; if you reach the shore they radio the wardens'],
+    ['new', 'Swimming! Face deep water and press E to dive in, or jump off a boat mid-lake. Front crawl anywhere (Shift to sprint), climb back aboard boats or up onto docks. It tires you out: run out of energy and you start taking damage'],
     ['new', 'Poo in the water floats. It drifts off on the current, and anyone it bobs past is horrified. Swimmers get straight out'],
     ['new', 'FPS counter under the wind sock'],
     ['changed', 'Sunny days are much less glaring on the eyes: softer light, with sun glare and a lens flare to show the sunshine instead'],

@@ -158,6 +158,7 @@ const Actors = {
     if (riding) { const a = p.face; px += Math.cos(a) * S.seatX; py += Math.sin(a) * S.seatX; y += S.seatY; } // on the seat
     if (Seats.sitting) y += Seats.sitting.h - 0.12; // on the seat
     if (Boats.riding) { y = Boats.deckY() + p.z; const off = Boats.riding.type === 'jetski' ? -0.15 : Boats.driving ? -0.62 : -0.1; px += Math.cos(p.face) * off; py += Math.sin(p.face) * off; } // aboard (at the tiller when driving)
+    if (Swim.on) y = -0.62 + Math.sin(Game.time * 2.6) * 0.04;
     this.player.position.set(px, y, py);
     this.rig.yaw.rotation.y = -p.face;
     Models.pose(this.rig, {
@@ -170,12 +171,14 @@ const Actors = {
     } else this.rig.upper.rotation.y = 0;
     if (riding) Bikes.holdBars(this.rig, Game.bike.id, p.x, p.y, p.face, base + p.z);
     if (Boats.riding) Boats.posePlayer(this.rig);
+    if (Swim.on) Swim.pose(this.rig);
     this.handWorld = Models.handPos(this.rig, this.handWorld || new THREE.Vector3());
     // While wading the shadow becomes a foam ring at the waterline.
-    this.playerShadow.position.set(p.x, p.wading ? 0.03 : Math.max(base, 0.01) + 0.015, p.y);
-    this.playerShadow.material.color.set(p.wading ? 0xeaf6f4 : 0x000000);
-    this.playerShadow.material.opacity = p.wading ? 0.55 : 0.28;
-    this.playerShadow.scale.setScalar(p.wading ? 1.25 + Math.sin(Game.time * 3) * 0.06 : 1 - p.z * 0.5);
+    const wet = p.wading || Swim.on;
+    this.playerShadow.position.set(p.x, wet ? 0.03 : Math.max(base, 0.01) + 0.015, p.y);
+    this.playerShadow.material.color.set(wet ? 0xeaf6f4 : 0x000000);
+    this.playerShadow.material.opacity = wet ? 0.55 : 0.28;
+    this.playerShadow.scale.setScalar(wet ? 1.25 + Math.sin(Game.time * 3) * 0.06 : 1 - p.z * 0.5);
     this.keeper.position.set(World.shopkeeper.x, Scene3D.standH(World.shopkeeper.x, World.shopkeeper.y), World.shopkeeper.y);
     Models.pose(this.keeper.userData.rig, { t: Game.time });
     Scene3D.lantern.position.set(p.x, base + 1.4, p.y);
